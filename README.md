@@ -2,6 +2,8 @@
 
 An [Agent Skill](https://agentskills.io) that turns a course's slides and notes into an **interactive exam review page**, and then keeps improving it from how you actually answer.
 
+**Live demo: <https://rzhang569.github.io/study-guide/>** (a fictional intro probability course; your answers are saved only in your own browser)
+
 > **Status: v0.1.0, early release.** Feedback and issues are welcome.
 >
 > - **Tested:** building pages; using them locally in a browser; the Export progress → paste to Claude loop; installing the Claude Code plugin from GitHub.
@@ -9,7 +11,7 @@ An [Agent Skill](https://agentskills.io) that turns a course's slides and notes 
 
 ![Notes: each topic has a one-line lead, a formula, a worked figure and a plain-language box](docs/notes.png)
 
-Ask Claude something like *"my STAT 453 midterm covers lectures 1–11, here are the slides, make me a review page"*. You get one HTML file with:
+Ask Claude something like *"my BIO 201 midterm covers lectures 1–8, here are the slides, make me a review page"*. You get one HTML file with:
 
 - **Notes by lecture.** Every claim cites a slide page ("L7 p.23"). Each lecture has a glossary, one-line leads, concrete examples before formulas, "in plain words" boxes, figures and red trap boxes for what true/false questions twist.
 - **A practice box at the end of every section**, so you test yourself right after reading instead of after five lectures.
@@ -23,7 +25,7 @@ Ask Claude something like *"my STAT 453 midterm covers lectures 1–11, here are
 |---|---|
 | ![A missed practice question showing why the picked option is wrong](docs/practice.png) | ![Mock exam score report by lecture with flag calibration](docs/mock.png) |
 
-The demo course in [`skills/study-guide/examples/demo`](skills/study-guide/examples/demo) is fictional (three lectures of intro probability). Open its `review.html` in a browser to try everything.
+The demo course in [`skills/study-guide/examples/demo`](skills/study-guide/examples/demo) is fictional (three lectures of intro probability). Try it at the [live demo](https://rzhang569.github.io/study-guide/), or open its `review.html` locally.
 
 ## What's different
 
@@ -53,7 +55,7 @@ Inside a session the commands are `/plugin marketplace add rzhang569/study-guide
 
 Talk to Claude normally:
 
-- "Midterm on Oct 20, lectures 1–11, T/F + MC + short answers, no calculator. Slides are in `./slides`. Build me a review page."
+- "Midterm next Tuesday, lectures 1–8, T/F + MC + short answers, no calculator. Slides are in `./slides`. Build me a review page."
 - "Here's the sample exam PDF, but don't read it, I want to take it timed. Just match the mock exam to it."
 - "Here's my exported progress. What should I review, and can you add drills for it?"
 

@@ -14,5 +14,5 @@
     "defaultMinutes": 15,
     "note": "The real exam also has two short-answer questions; practice those in the Short answer tab."
   },
-  "footer": "Demo course written for this repository. PROB 101 is fictional; references such as “L2 p.4” show the citation format a real course page uses."
+  "footer": "Demo course for the <a href='https://github.com/rzhang569/study-guide'>study-guide</a> Agent Skill. PROB 101 is fictional; references such as “L2 p.4” show the citation format a real course page uses."
 }

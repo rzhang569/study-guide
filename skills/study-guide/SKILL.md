@@ -60,7 +60,7 @@ python3 <skill-dir>/scripts/build.py --init <course-dir>
 This copies the demo course. Then edit `course.json`:
 
 - `title`, `lang` and `lectures`. Lecture labels are exactly what questions and groups use, e.g. `"L1"` or `"L5–L6"`.
-- `storageKey`: unique per course and exam, e.g. `"stat453-mt1"`. Progress is stored under it, so **never change it once the student has started**.
+- `storageKey`: unique per course and exam, e.g. `"bio201-mt1"`. Progress is stored under it, so **never change it once the student has started**.
 - `mock.sections`: one entry per question type, in exam order, with counts matching the real paper.
 - `mock.minutes`: limits to choose from. Include the real one; if the mock omits long questions, also offer a proportionally shorter one.
 
