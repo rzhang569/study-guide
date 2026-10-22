@@ -244,6 +244,7 @@ select{font:inherit;font-size:14px;padding:5px 8px;border:1px solid var(--line);
 .big{font-family:var(--f-display);font-size:36px;font-weight:700;color:var(--accent);line-height:1.1;font-variant-numeric:tabular-nums}
 .sumtop .sub{color:var(--muted);font-size:14px}
 .gtable td{font-variant-numeric:tabular-nums}
+.gtable .num{white-space:nowrap}
 .gbar{height:8px;border-radius:4px;background:var(--code-bg);overflow:hidden;min-width:80px}
 .gbar span{display:block;height:100%;background:var(--accent)}
 .gbar span.low{background:var(--warn)}
@@ -396,6 +397,8 @@ details.more[open] > summary{margin-bottom:6px}
 .try-bar.t .b i{background:var(--accent)}
 .try-bar .v{font-family:var(--f-mono);font-size:12.5px}
 @media (max-width:600px){
+  .gtable th,.gtable td{padding:6px 8px}
+  .gbar{min-width:40px}
   .try-bar{grid-template-columns:5em minmax(0,1fr) 5em;row-gap:0}
   .try-bar .v:nth-of-type(4),.try-bar .v:nth-of-type(5){grid-column:2 / 4;font-size:12px;color:var(--muted)}
   .try-sl{grid-template-columns:6em minmax(0,1fr) 3em}
