@@ -1,0 +1,12 @@
+{
+  "name": "study-guide",
+  "description": "The study-guide skill: interactive exam review pages built by Claude.",
+  "owner": { "name": "Ruoshi Zhang" },
+  "plugins": [
+    {
+      "name": "study-guide",
+      "source": "./",
+      "description": "Interactive exam review pages: cited notes, practice with per-option explanations, timed mock exams, mistake notebook, progress-driven drills."
+    }
+  ]
+}

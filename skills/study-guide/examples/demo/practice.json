@@ -1,0 +1,187 @@
+{
+  "groups": [
+    { "id": "p1", "lec": "L1", "sec": "l1", "title": "L1 · Counting and basics", "desc": "Equally likely outcomes, complements, inclusion–exclusion, ordered vs unordered counts." },
+    { "id": "p2", "lec": "L2", "sec": "l2", "title": "L2 · Conditioning and Bayes", "desc": "Shrink the world, test independence with numbers, reverse a conditional." },
+    { "id": "p3", "lec": "L3", "sec": "l3", "title": "L3 · Expectation and variance", "desc": "Weighted averages, linearity, how shifting and scaling change variance." }
+  ],
+  "items": [
+    { "g": "p1", "id": "p1-1", "type": "single", "src": "L1 p.8",
+      "stem": "Two fair dice are rolled. What is P(the sum is 7)?",
+      "opts": [
+        { "t": "1/6", "why": "Six of the 36 equally likely ordered pairs sum to 7: (1,6), (2,5), …, (6,1)." },
+        { "t": "1/11", "why": "Treats the 11 possible sums as equally likely. They are not: 7 can happen six ways, 2 only one way." },
+        { "t": "7/36", "why": "Uses the target sum as the number of favorable outcomes. Count the pairs instead: there are 6." },
+        { "t": "1/12", "why": "That is P(sum = 4): three pairs out of 36." }
+      ],
+      "ans": 0, "why": "List the 36 ordered pairs and count the ones that add to 7." },
+    { "g": "p1", "id": "p1-2", "type": "tf", "src": "L1 p.8",
+      "stem": "When two fair dice are rolled, the 11 possible sums (2 through 12) are equally likely.",
+      "opts": [
+        { "why": "The mix-up: the 36 ordered pairs are equally likely, so it is tempting to think the sums are too." },
+        { "why": "Corrected: the 36 ordered pairs are equally likely; the sums are not (7 has six pairs, 2 has one)." }
+      ],
+      "ans": 1 },
+    { "g": "p1", "id": "p1-3", "type": "fill", "src": "L1 p.14",
+      "stem": "A fair die is rolled 4 times. What is P(at least one six)? Give 3 decimals or an expression.",
+      "accept": ["0.518", "671/1296", "1-(5/6)^4"], "answer": "1 − (5/6)<sup>4</sup> ≈ 0.518",
+      "why": "&ldquo;At least one&rdquo; is the complement of &ldquo;none&rdquo;. P(no six in 4 rolls) = (5/6)<sup>4</sup> = 625/1296." },
+    { "g": "p1", "id": "p1-4", "type": "single", "src": "L1 p.15",
+      "stem": "P(A) = 0.5, P(B) = 0.4 and P(A ∩ B) = 0.2. What is P(A ∪ B)?",
+      "opts": [
+        { "t": "0.7", "why": "0.5 + 0.4 − 0.2: add both, subtract the overlap once." },
+        { "t": "0.9", "why": "Adds the two without subtracting the overlap, so the 0.2 in both is counted twice." },
+        { "t": "0.2", "why": "That is the intersection, the part in both." },
+        { "t": "0.5", "why": "That is P(A) alone; the union is at least as big as each event." }
+      ],
+      "ans": 0, "why": "Inclusion–exclusion: P(A ∪ B) = P(A) + P(B) − P(A ∩ B)." },
+    { "g": "p1", "id": "p1-5", "type": "multi", "src": "L1 p.12–16",
+      "stem": "Which statements hold for <b>any</b> events A and B?",
+      "opts": [
+        { "t": "P(A<sup>c</sup>) = 1 − P(A)", "why": "Always: A and its complement split the sample space." },
+        { "t": "P(A ∪ B) ≤ P(A) + P(B)", "why": "Always: the sum counts the overlap twice, so it can only be bigger." },
+        { "t": "P(A ∩ B) = P(A) P(B)", "why": "Only when A and B are independent." },
+        { "t": "P(A ∩ B) ≤ P(A)", "why": "Always: the intersection is part of A." },
+        { "t": "P(A ∪ B) = P(A) + P(B)", "why": "Only when A and B are disjoint." }
+      ],
+      "ans": [0, 1, 3], "why": "The two false ones need an extra condition: independence for the product, disjointness for the plain sum." },
+    { "g": "p1", "id": "p1-6", "type": "single", "src": "L1 p.20",
+      "stem": "A club of 8 people picks a president, a vice-president and a treasurer, all different people. How many ways?",
+      "opts": [
+        { "t": "336", "why": "8 choices for president, then 7, then 6: order matters because the titles differ." },
+        { "t": "56", "why": "That is C(8, 3), the number of 3-person groups. It ignores who holds which title." },
+        { "t": "512", "why": "8 · 8 · 8 lets one person hold two titles." },
+        { "t": "24", "why": "That is 4!, which does not match any step here." }
+      ],
+      "ans": 0, "why": "Ordered selection without repeats: 8 · 7 · 6." },
+    { "g": "p1", "id": "p1-7", "type": "tf", "src": "L1 p.22",
+      "stem": "From 8 people, there are exactly 6 times as many (president, VP, treasurer) lists as there are 3-person committees.",
+      "opts": [
+        { "why": "336 / 56 = 6 = 3!: each committee can hand out its three titles in 3! ways." },
+        { "why": "The mix-up: thinking the two counts are equal, or differ by a factor of 3 instead of 3! = 6." }
+      ],
+      "ans": 0 },
+    { "g": "p1", "id": "p1-8", "type": "card", "src": "L1 p.16",
+      "stem": "Write inclusion–exclusion for three events A, B, C.",
+      "answer": "P(A ∪ B ∪ C) = P(A) + P(B) + P(C) − P(A ∩ B) − P(A ∩ C) − P(B ∩ C) + P(A ∩ B ∩ C). Add singles, subtract pairs, add the triple back." },
+
+    { "g": "p2", "id": "p2-1", "type": "single", "src": "L2 p.5",
+      "stem": "One fair die is rolled. What is P(6 | the roll is even)?",
+      "opts": [
+        { "t": "1/3", "why": "Given even, the world is {2, 4, 6}, and one of the three is a 6." },
+        { "t": "1/6", "why": "That ignores the information that the roll is even." },
+        { "t": "1/2", "why": "That is P(even), the condition itself." },
+        { "t": "2/3", "why": "That is P(not 6 | even)." }
+      ],
+      "ans": 0, "why": "P(6 ∩ even) / P(even) = (1/6) / (1/2) = 1/3." },
+    { "g": "p2", "id": "p2-2", "type": "fill", "src": "L2 p.6",
+      "stem": "P(A ∩ B) = 0.12 and P(B) = 0.4. What is P(A | B)?",
+      "accept": ["0.3", "3/10"], "answer": "0.3",
+      "why": "P(A | B) = P(A ∩ B) / P(B) = 0.12 / 0.4." },
+    { "g": "p2", "id": "p2-3", "type": "tf", "src": "L2 p.12",
+      "stem": "If A and B are disjoint and both have positive probability, then A and B are independent.",
+      "opts": [
+        { "why": "The mix-up: &ldquo;they have nothing in common&rdquo; sounds like &ldquo;they do not affect each other&rdquo;." },
+        { "why": "Corrected: disjoint events with positive probability are dependent. Knowing A happened makes B impossible, so P(B | A) = 0 ≠ P(B)." }
+      ],
+      "ans": 1 },
+    { "g": "p2", "id": "p2-4", "type": "single", "src": "L2 p.24",
+      "stem": "A disease affects 1% of people. A test detects 90% of cases and gives a false positive for 5% of healthy people. You test positive. Which is closest to P(disease | positive)?",
+      "opts": [
+        { "t": "About 15%", "why": "Per 1000 people: 9 true positives and about 50 false positives, so 9/59 ≈ 15%." },
+        { "t": "About 90%", "why": "That is P(positive | disease), how good the test is, not what a positive means." },
+        { "t": "About 85%", "why": "90% − 5% does not correspond to any probability here." },
+        { "t": "About 1%", "why": "That is the prior; it ignores the positive result." }
+      ],
+      "ans": 0, "why": "Bayes: 0.009 / (0.009 + 0.0495) ≈ 0.154. The rare disease keeps the posterior low." },
+    { "g": "p2", "id": "p2-5", "type": "multi", "src": "L2 p.13",
+      "stem": "A fair coin is flipped twice. Which pairs of events are independent?",
+      "opts": [
+        { "t": "&ldquo;first flip is H&rdquo; and &ldquo;second flip is H&rdquo;", "why": "Independent: separate flips. 1/4 = 1/2 · 1/2." },
+        { "t": "&ldquo;first flip is H&rdquo; and &ldquo;both flips are H&rdquo;", "why": "Dependent: P(both | first H) = 1/2, but P(both) = 1/4." },
+        { "t": "&ldquo;first flip is H&rdquo; and &ldquo;the two flips match&rdquo;", "why": "Independent: P(match) = 1/2 and P(match | first H) = P(second H) = 1/2." },
+        { "t": "&ldquo;at least one H&rdquo; and &ldquo;both are T&rdquo;", "why": "Dependent: they are disjoint, so one rules out the other." }
+      ],
+      "ans": [0, 2], "why": "Check P(B | A) = P(B) with numbers; intuition about &ldquo;sharing a flip&rdquo; is unreliable." },
+    { "g": "p2", "id": "p2-6", "type": "single", "src": "L2 p.19",
+      "stem": "Factory A makes 60% of the parts and 2% of its parts are defective; factory B makes 40% and 5% of its parts are defective. What is P(a random part is defective)?",
+      "opts": [
+        { "t": "0.032", "why": "0.6 · 0.02 + 0.4 · 0.05 = 0.012 + 0.020." },
+        { "t": "0.035", "why": "The plain average of 2% and 5% ignores that factory A makes more parts." },
+        { "t": "0.070", "why": "2% + 5% adds rates from different groups without weights." },
+        { "t": "0.020", "why": "That is factory B&rsquo;s share of defects, 0.4 · 0.05, only one branch." }
+      ],
+      "ans": 0, "why": "Law of total probability: weight each factory&rsquo;s defect rate by its share of production." },
+    { "g": "p2", "id": "p2-7", "type": "tf", "src": "L2 p.21",
+      "stem": "If P(A) = P(B) &gt; 0, then P(A | B) = P(B | A).",
+      "opts": [
+        { "why": "Bayes: P(A | B) = P(B | A) · P(A) / P(B), and the ratio is 1 when P(A) = P(B)." },
+        { "why": "The mix-up: remembering that the two conditionals usually differ and forgetting when they agree." }
+      ],
+      "ans": 0 },
+    { "g": "p2", "id": "p2-8", "type": "fill", "src": "L2 p.22",
+      "stem": "Same factories as above (A: 60% of parts, 2% defective; B: 40%, 5% defective). A part is defective. What is P(it came from B)?",
+      "accept": ["0.625", "5/8"], "answer": "0.02 / 0.032 = 0.625",
+      "why": "Share of the defective branch that comes from B: 0.020 out of 0.032." },
+
+    { "g": "p3", "id": "p3-1", "type": "single", "src": "L3 p.6",
+      "stem": "X is the roll of a fair six-sided die. What is E[X]?",
+      "opts": [
+        { "t": "3.5", "why": "(1 + 2 + … + 6) / 6 = 21 / 6." },
+        { "t": "3", "why": "Rounds the answer to a possible roll; E[X] need not be a value X takes." },
+        { "t": "21", "why": "The sum of the faces, not weighted by 1/6." },
+        { "t": "6", "why": "The largest value, not the average." }
+      ],
+      "ans": 0, "why": "Each face has weight 1/6." },
+    { "g": "p3", "id": "p3-2", "type": "tf", "src": "L3 p.7",
+      "stem": "The expected value of a random variable is always one of the values it can take.",
+      "opts": [
+        { "why": "The mix-up: reading &ldquo;expected&rdquo; as &ldquo;most likely&rdquo;." },
+        { "why": "Corrected: E[X] is a weighted average. A fair die has E[X] = 3.5, which no roll shows." }
+      ],
+      "ans": 1 },
+    { "g": "p3", "id": "p3-3", "type": "fill", "src": "L3 p.8",
+      "stem": "X takes the values 0, 1, 2 with probabilities 0.5, 0.3, 0.2. What is E[X]?",
+      "accept": ["0.7", "7/10"], "answer": "0 · 0.5 + 1 · 0.3 + 2 · 0.2 = 0.7",
+      "why": "Multiply each value by its probability and add." },
+    { "g": "p3", "id": "p3-4", "type": "single", "src": "L3 p.14",
+      "stem": "Four people get their hats back in a random order. What is the expected number of people who get their own hat?",
+      "opts": [
+        { "t": "1", "why": "Each person matches with probability 1/4; by linearity, 4 · 1/4 = 1." },
+        { "t": "1/4", "why": "That is one person&rsquo;s chance, not the expected count." },
+        { "t": "4", "why": "That would mean everyone always matches." },
+        { "t": "1/24", "why": "That is P(everyone matches) = 1/4!." }
+      ],
+      "ans": 0, "why": "Write the count as a sum of 4 indicators. Linearity works even though the indicators are dependent." },
+    { "g": "p3", "id": "p3-5", "type": "multi", "src": "L3 p.11–20",
+      "stem": "Which hold for <b>any</b> random variables X, Y and constants a, b?",
+      "opts": [
+        { "t": "E[X + Y] = E[X] + E[Y]", "why": "Always: linearity needs no independence." },
+        { "t": "E[aX + b] = aE[X] + b", "why": "Always: linearity again." },
+        { "t": "Var(aX + b) = a<sup>2</sup> Var(X)", "why": "Always: the shift b does not change spread, and scaling squares." },
+        { "t": "Var(X + Y) = Var(X) + Var(Y)", "why": "Needs X and Y uncorrelated (independence is enough). In general add 2 Cov(X, Y)." },
+        { "t": "E[XY] = E[X] E[Y]", "why": "Needs independence (or zero covariance)." },
+        { "t": "Var(X) ≥ 0", "why": "Always: it is an average of squares." }
+      ],
+      "ans": [0, 1, 2, 5], "why": "Expectation is linear without conditions; variance of a sum and expectation of a product need independence." },
+    { "g": "p3", "id": "p3-6", "type": "fill", "src": "L3 p.25",
+      "stem": "X ~ Binomial(n = 20, p = 0.3). What is Var(X)?",
+      "accept": ["4.2", "20*0.3*0.7"], "answer": "np(1 − p) = 20 · 0.3 · 0.7 = 4.2",
+      "why": "A binomial is a sum of n independent Bernoulli(p), each with variance p(1 − p)." },
+    { "g": "p3", "id": "p3-7", "type": "single", "src": "L3 p.21",
+      "stem": "Var(X) = 4. What is Var(3X − 2)?",
+      "opts": [
+        { "t": "36", "why": "3<sup>2</sup> · 4; the −2 shifts X but does not change its spread." },
+        { "t": "12", "why": "Multiplies by 3 instead of 3<sup>2</sup>." },
+        { "t": "10", "why": "3 · 4 − 2: applies the linear map to the variance itself." },
+        { "t": "34", "why": "9 · 4 − 2: the shift does not belong in the variance." }
+      ],
+      "ans": 0, "why": "Var(aX + b) = a<sup>2</sup> Var(X)." },
+    { "g": "p3", "id": "p3-8", "type": "tf", "src": "L3 p.23",
+      "stem": "For a Bernoulli(p) variable, the variance is largest when p = 0.5.",
+      "opts": [
+        { "why": "p(1 − p) is a parabola with its peak 0.25 at p = 0.5." },
+        { "why": "The mix-up: thinking variance grows with p. At p = 1 the variable is constant and the variance is 0." }
+      ],
+      "ans": 0 }
+  ]
+}

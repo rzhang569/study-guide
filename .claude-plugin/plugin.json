@@ -1,0 +1,8 @@
+{
+  "name": "study-guide",
+  "version": "0.1.0",
+  "description": "Builds an interactive exam review page from a course's slides and notes: cited lecture notes, a practice bank with per-option explanations, step-by-step short answers, timed mock exams from a separate pool, a mistake notebook, and progress Claude reads back to write targeted drills.",
+  "author": { "name": "Ruoshi Zhang" },
+  "license": "MIT",
+  "keywords": ["study", "exam", "review", "quiz", "mock-exam", "education"]
+}

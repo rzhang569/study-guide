@@ -1,0 +1,2191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROB 101 Midterm review (demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap">
+<style>
+/* Exam-booklet look: serif headings, mint paper, Scantron-green accent, sticky contents on the left, one reading column.
+   Light theme only, on purpose: it reads like a printed review packet. */
+:root{
+  --bg:#E2F0E8; --surface:#F8FCFA; --ink:#13201A; --muted:#4B5D55; --line:#C3D7CC;
+  --accent:#0C6A52; --accent-soft:#D0EADD; --on-accent:#FFFFFF;
+  --warn:#B23A22; --warn-soft:#FBE4DA; --good:#1B7A3A; --bad:#B3261E;
+  --code-bg:#E4EFE9; --hl:#F3E9B8;
+  --play:#2B5C8A; --play-soft:#E2EBF4; --play-line:#B7CBDF; color-scheme:light;
+  --f-display:"Source Serif 4","Noto Serif SC","Songti SC",Georgia,serif;
+  --f-math:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --f-body:"IBM Plex Sans","Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.75}
+a{color:var(--accent)}
+code{font-family:var(--f-mono);font-size:.88em;background:var(--code-bg);padding:.08em .35em;border-radius:4px;overflow-wrap:anywhere}
+.m{font-family:var(--f-math);font-style:italic;font-size:1.06em;white-space:nowrap}
+.m.up{font-style:normal}
+.m.brk{white-space:normal}
+.steps,.traps{grid-template-columns:minmax(0,1fr)}
+.fx{font-family:var(--f-math);font-size:18px;line-height:1.6;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 16px;margin:12px 0;overflow-x:auto;white-space:nowrap}
+.fx .note{font-family:var(--f-body);font-size:13.5px;color:var(--muted);margin-left:12px;white-space:normal}
+.fx i{font-style:italic}
+.fx + .fx{margin-top:-4px}
+.wrap{max-width:1140px;margin:0 auto;padding-inline:20px;padding-block:28px 80px;display:grid;grid-template-columns:210px minmax(0,1fr);gap:48px}
+.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 20px);align-self:start;font-size:14px;line-height:1.5;max-height:calc((100vh - 40px) / var(--z,1));overflow-y:auto}
+.toc a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.rail{display:none}
+.secprac{scroll-margin-top:16px}
+.toc p{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.toc a{display:block;padding:6px 10px;border-radius:6px;color:var(--ink);text-decoration:none}
+.toc a:hover,.toc a:focus-visible{background:var(--accent-soft);outline:none}
+.toc .n{font-family:var(--f-mono);color:var(--accent);margin-right:6px}
+main{min-width:0;max-width:780px}
+.hero{padding-block:8px 28px;border-bottom:2px solid var(--ink);margin-bottom:28px}
+.eyebrow{font-family:var(--f-mono);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:0}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(30px,5vw,44px);line-height:1.2;margin:.25em 0 .35em;text-wrap:balance}
+.hero p{margin:.4em 0;color:var(--muted);max-width:64ch}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:22px 0 0}
+.facts div{background:var(--surface);padding:12px 14px;min-width:0}
+.facts dt{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.facts dd{margin:2px 0 0;font-weight:500;line-height:1.5}
+.howto{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:18px 0 0}
+.howto h2{font-family:var(--f-display);font-size:18px;margin:0 0 6px}
+.howto ul{margin:0;padding-left:1.2em}
+.part{padding-top:24px;margin-top:36px;border-top:2px solid var(--ink)}
+.part-no{font-family:var(--f-mono);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:0}
+.part h2{font-family:var(--f-display);font-weight:700;font-size:clamp(24px,3.6vw,32px);line-height:1.25;margin:.15em 0 .2em;text-wrap:balance}
+.part-src{color:var(--muted);font-size:14px;margin:0 0 6px}
+.part-intro{margin:.6em 0 0}
+.topic{margin-top:34px;scroll-margin-top:16px}
+.topic-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
+.topic h3{font-family:var(--f-display);font-weight:700;font-size:21px;line-height:1.35;margin:0;text-wrap:balance}
+.pri{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.06em;padding:2px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.pri.p3{color:var(--on-accent);background:var(--accent);border-color:var(--accent)}
+.pri.p2{color:var(--accent)}
+.pri.p1{color:var(--muted)}
+.src{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);margin:4px 0 10px}
+.lead{font-size:17.5px;font-weight:500;margin:10px 0 12px;padding-left:14px;border-left:3px solid var(--accent)}
+.lead b{color:var(--accent);font-weight:600;margin-right:4px}
+.topic ul,.topic ol{padding-left:1.25em;margin:.5em 0}
+.topic li{margin:.25em 0}
+.trap,.eg,.plain{border-radius:8px;padding:10px 14px;margin:12px 0;font-size:15px}
+.trap{background:var(--warn-soft)}
+.trap b:first-child{color:var(--warn);margin-right:6px}
+.eg{background:var(--accent-soft)}
+.eg b:first-child{color:var(--accent);margin-right:6px}
+.eg ol,.eg ul{margin:.4em 0 0}
+.plain{background:var(--surface);border:1px dashed var(--accent)}
+.plain b:first-child{color:var(--accent);margin-right:6px}
+.tbl{overflow-x:auto;margin:12px 0;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;line-height:1.55}
+th,td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--line)}
+th{font-weight:600;background:var(--code-bg);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+pre.code{font-family:var(--f-mono);font-size:13.5px;line-height:1.6;background:var(--code-bg);border-radius:8px;padding:12px 14px;overflow-x:auto;margin:12px 0}
+pre.code .c{color:var(--muted)}
+pre.code .k{color:var(--accent);font-weight:500}
+pre.code .w{color:var(--warn);font-weight:500}
+figure{margin:16px 0}
+.dia{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px}
+.dia svg{display:block;width:100%;min-width:560px;height:auto}
+.vid{margin:14px 0}
+.vid video{display:block;width:100%;max-width:760px;height:auto;aspect-ratio:16/9;background:var(--ink);border:1px solid var(--line);border-radius:10px}
+figcaption{font-size:14px;color:var(--muted);margin-top:8px;line-height:1.6}
+.dia text{font-family:var(--f-body);font-size:14px;fill:var(--ink)}
+.dia .mono{font-family:var(--f-mono);font-size:13px}
+.dia .mth{font-family:var(--f-math);font-style:italic;font-size:15px}
+.dia .small{font-size:12.5px;fill:var(--muted)}
+.dia .ttl{font-weight:600;font-size:15px}
+.dia .wtxt{fill:var(--warn)}
+.dia .fs-m{font-size:14px}
+.dia .fs-l{font-size:15px;font-weight:700}
+.dia text.halo{paint-order:stroke;stroke:var(--surface);stroke-width:5px;stroke-linejoin:round}
+.dia .atxt{fill:var(--accent)}
+.dia .node{fill:var(--surface);stroke:var(--ink);stroke-width:1.6}
+.dia .node.hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.dia .node.wn{fill:var(--warn-soft);stroke:var(--warn);stroke-width:2}
+.dia .node.ghost{fill:var(--surface);stroke:var(--muted);stroke-dasharray:4 3}
+.dia .edge{stroke:var(--muted);stroke-width:2;fill:none}
+.dia .edge.ghost{stroke-dasharray:4 3}
+.dia .edge.acc{stroke:var(--accent)}
+.dia .edge.wn{stroke:var(--warn)}
+.dia .edge.thin{stroke-width:1;opacity:.55}
+.dia .edge.thin.ghost{opacity:.4}
+.dia .div{stroke:var(--line);stroke-width:1.5}
+.dia .axis{stroke:var(--ink);stroke-width:1.4;fill:none}
+.dia .grid{stroke:var(--line);stroke-width:1}
+.dia .arrow{stroke:var(--accent);stroke-width:2;fill:none;marker-end:url(#ah)}
+.dia .arrow.wn{stroke:var(--warn);marker-end:url(#ahw)}
+.dia .box{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.dia .box.acc{stroke:var(--accent);stroke-width:1.8}
+.dia .box.fill{fill:var(--accent-soft);stroke:var(--accent)}
+.dia .box.wfill{fill:var(--warn-soft);stroke:var(--warn)}
+.dia .cell{fill:var(--surface);stroke:var(--muted);stroke-width:1}
+.dia .cell.hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+.dia .cell.wn{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.5}
+.dia .cell.z{fill:var(--code-bg);stroke:var(--muted);stroke-dasharray:3 2}
+.dia .dot{fill:var(--accent)}
+.dia .dot.w{fill:var(--warn)}
+.dia .dot.o{fill:var(--surface);stroke:var(--warn);stroke-width:2.5}
+.dia .curve{fill:none;stroke-width:2.4}
+.dia .curve.a{stroke:var(--accent)}
+.dia .curve.w{stroke:var(--warn)}
+.dia .curve.m{stroke:var(--muted);stroke-dasharray:5 4}
+.dia .band{fill:var(--accent-soft)}
+.dia .bar{fill:var(--accent)}
+.dia .bar.w{fill:var(--warn)}
+.dia .bar.l{fill:var(--accent-soft);stroke:var(--accent)}
+.ah{fill:var(--accent)}
+.ahw{fill:var(--warn)}
+.terms{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin:14px 0;padding:0}
+.terms div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;line-height:1.55;min-width:0}
+.terms dt{font-family:var(--f-mono);font-size:13px;color:var(--accent);font-weight:500}
+.terms dd{margin:2px 0 0}
+.terms-title{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 0}
+.steps{display:grid;gap:8px;margin:14px 0;padding:0;list-style:none;counter-reset:st}
+.steps li{counter-increment:st;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 12px 9px 44px;position:relative;font-size:15px;line-height:1.6}
+.steps li::before{content:counter(st);position:absolute;left:12px;top:9px;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-family:var(--f-mono);font-size:12px;display:flex;align-items:center;justify-content:center}
+.twocol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+.twocol > div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0;font-size:14.5px;line-height:1.6}
+.twocol h4{margin:0 0 6px;font-size:15px}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:14px 0;font-size:14px}
+.flow span{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 12px;white-space:nowrap}
+.flow span.k{border-color:var(--accent);background:var(--accent-soft)}
+.flow i{font-style:normal;color:var(--accent)}
+.traps{counter-reset:t;list-style:none;padding:0;margin:14px 0;display:grid;gap:8px}
+.traps li{counter-increment:t;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 12px 9px 46px;position:relative;font-size:15px;line-height:1.6}
+.traps li::before{content:counter(t);position:absolute;left:12px;top:9px;font-family:var(--f-mono);font-size:13px;color:var(--warn);width:24px}
+/* practice center */
+.bank-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:14px 0;position:sticky;top:env(safe-area-inset-top,0px);z-index:2}
+.score{font-family:var(--f-mono);font-size:13.5px;margin:0}
+.score b{color:var(--accent)}
+button{font:inherit;color:inherit}
+.reset{background:none;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:13px;cursor:pointer}
+.reset:hover,.reset:focus-visible{border-color:var(--accent);outline:none}
+.qgroup{margin-top:26px}
+.qgroup h3{font-family:var(--f-display);font-size:19px;margin:0}
+.qdesc{color:var(--muted);font-size:14px;margin:2px 0 8px}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0;scroll-margin-top:70px}
+.qmeta{font-family:var(--f-mono);font-size:12px;color:var(--muted);margin:0 0 4px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.flagbtn{font-family:var(--f-body);font-size:12.5px;border:1px solid var(--line);background:none;color:var(--muted);border-radius:999px;padding:2px 10px;cursor:pointer;white-space:nowrap}
+.flagbtn:hover,.flagbtn:focus-visible{border-color:#B7791F;color:#8A5A12;outline:none}
+.flagbtn.on{background:#FBEFD5;border-color:#B7791F;color:#8A5A12;font-weight:600}
+.q.flagged{border-color:#B7791F;box-shadow:inset 4px 0 0 #B7791F}
+.q.pulse{box-shadow:inset 4px 0 0 #B7791F,0 0 0 3px #FBEFD5}
+.flagbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;background:#FFF9EC;border:1px solid #EAD3A3;border-radius:10px;padding:8px 14px;margin:-6px 0 12px}
+.flagbar p{margin:0;font-size:14px}
+.flaghint{color:var(--muted)}
+.flaglist b{color:#8A5A12;margin-right:4px}
+.flaglink{font-family:var(--f-mono);font-size:12.5px;margin-right:8px;white-space:nowrap;color:#8A5A12}
+.flaglink.blank{opacity:.6;text-decoration:underline dotted}
+.flaglink.bad{color:var(--bad);font-weight:600}
+.flaglink.ok{color:var(--good)}
+.flagacts{display:flex;gap:8px;flex-wrap:wrap}
+.btn.small{padding:3px 10px;font-size:12.5px}
+.flagcal{margin:6px 0 0;font-size:14px;color:var(--muted)}
+.qstem{font-size:15.5px;line-height:1.65}
+.qfig{margin:10px 0 6px;padding:6px}
+.qfig svg{min-width:0;max-width:540px}
+.qstem pre{font-family:var(--f-mono);font-size:13px;background:var(--code-bg);border-radius:6px;padding:8px 10px;overflow-x:auto;margin:8px 0}
+.opts{display:grid;gap:4px;margin-top:10px}
+.opt{display:flex;align-items:flex-start;gap:10px;text-align:left;background:none;border:1px solid transparent;border-radius:8px;padding:6px 8px;cursor:pointer;line-height:1.5;font-size:15px}
+.opt:hover,.opt:focus-visible{border-color:var(--line);background:var(--bg);outline:none}
+.bub{flex:0 0 auto;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--warn);color:var(--warn);display:inline-flex;align-items:center;justify-content:center;font-family:var(--f-mono);font-size:12.5px;margin-top:-1px}
+.q.done .opt{cursor:default}
+.q.done .opt:hover{background:none;border-color:transparent}
+.opt.right .bub{background:var(--good);border-color:var(--good);color:var(--surface)}
+.opt.wrong .bub{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.opt.right .otext{font-weight:500}
+.why{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--accent-soft);font-size:14.5px;line-height:1.65}
+.q.missed .why{background:var(--warn-soft)}
+.why b:first-child{margin-right:4px}
+.reveal{margin-top:10px;background:none;border:1px solid var(--accent);color:var(--accent);border-radius:6px;padding:4px 12px;font-size:13.5px;cursor:pointer}
+.pc-controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:14px 0 6px}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:6px 14px;font-size:14px;cursor:pointer;color:var(--ink)}
+.seg button + button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.pc-controls label{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+select{font:inherit;font-size:14px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+.modehint{font-size:13.5px;color:var(--muted);margin:2px 0 0;max-width:68ch}
+.bank-bar .acts{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);border-radius:6px;padding:5px 14px;font-size:13.5px;cursor:pointer}
+.btn.ghost{background:none;color:var(--accent)}
+.btn.warn{border-color:var(--warn);background:var(--warn);color:var(--surface)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:focus-visible,.reveal:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.qtype{font-family:var(--f-mono);font-size:11.5px;padding:1px 7px;border-radius:999px;border:1px solid var(--muted);color:var(--muted);margin-left:6px;white-space:nowrap}
+.qtype.multi{border-color:var(--warn);color:var(--warn)}
+.qtype.fill{border-color:var(--accent);color:var(--accent)}
+.qscore{font-family:var(--f-mono);font-size:12px;margin-left:6px;white-space:nowrap}
+.qscore.sc-full{color:var(--good)}.qscore.sc-part{color:var(--warn)}.qscore.sc-zero{color:var(--bad)}
+.bub.sq{border-radius:6px}
+.opt .obody{display:flex;flex-direction:column;min-width:0}
+.oexp{display:block;font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.55}
+.olabel{font-family:var(--f-mono);font-size:11.5px;margin-left:6px}
+.opt.right .olabel{color:var(--good)}.opt.wrong .olabel{color:var(--bad)}.opt.missed .olabel{color:var(--good)}
+.opt.picked .bub,.opt.sel .bub{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.opt.missed .bub{border-style:dashed;border-color:var(--good);color:var(--good)}
+.qfoot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.fillrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.fillrow input{flex:1 1 200px;min-width:0;font:inherit;font-family:var(--f-mono);font-size:14px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+.fillrow input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.fillrow input.ok{border-color:var(--good)}.fillrow input.bad{border-color:var(--bad)}
+.fillhint{margin:6px 0 0;font-size:14px;color:var(--warn)}
+.summary{background:var(--surface);border:1.5px solid var(--accent);border-radius:10px;padding:14px 16px;margin:14px 0}
+.summary h3{font-family:var(--f-display);font-size:19px;margin:0 0 4px}
+.sumtop{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px}
+.big{font-family:var(--f-display);font-size:36px;font-weight:700;color:var(--accent);line-height:1.1;font-variant-numeric:tabular-nums}
+.sumtop .sub{color:var(--muted);font-size:14px}
+.gtable td{font-variant-numeric:tabular-nums}
+.gbar{height:8px;border-radius:4px;background:var(--code-bg);overflow:hidden;min-width:80px}
+.gbar span{display:block;height:100%;background:var(--accent)}
+.gbar span.low{background:var(--warn)}
+.wrongs{font-size:14px;margin:8px 0 0;line-height:1.8}
+.wrongs a{font-family:var(--f-mono);font-size:12.5px;margin-right:8px;white-space:nowrap}
+details.weak{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 14px;margin:10px 0}
+details.weak summary{cursor:pointer;font-size:14.5px;font-weight:500}
+.empty{color:var(--muted);font-size:14px}
+.sheet{background:var(--surface);border:1.5px solid var(--ink);border-radius:4px;padding:14px 16px;columns:2 300px;column-gap:24px;font-size:13px;line-height:1.5}
+.sheet h4{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:10px 0 4px;break-after:avoid}
+.sheet h4:first-child{margin-top:0}
+.sheet p{margin:0 0 4px;break-inside:avoid}
+footer{margin-top:48px;color:var(--muted);font-size:13.5px;border-top:1px solid var(--line);padding-top:14px}
+/* rendered formulas (MathJax SVG); the plain-text fallback stays if the script does not load */
+.fx .tex-d{display:inline-block;vertical-align:middle}
+.fx mjx-container[jax="SVG"][display="true"]{display:inline-block!important;margin:2px 0!important;text-align:left!important}
+.fx .fxl{font-family:var(--f-body);font-size:13.5px;font-weight:600;color:var(--accent);margin-right:10px;vertical-align:middle}
+.fx .note{vertical-align:middle}
+.m[data-done]{font-style:normal}
+.m.mwide{display:block;max-width:100%;overflow-x:auto;overflow-y:hidden;padding-block:2px;white-space:nowrap}
+mjx-container[jax="SVG"]{color:inherit}
+/* 本节练习 box at the end of each lecture */
+.secprac{margin-top:34px;background:var(--surface);border:1.5px solid var(--accent);border-radius:12px;padding:12px 16px}
+.sp-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 16px}
+.sp-hl{min-width:0}
+.sp-title{font-family:var(--f-display);font-weight:700;font-size:18px;margin:0;line-height:1.3}
+.sp-meta{margin:2px 0 0;font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.sp-body{margin-top:6px}
+.sp-body .q{background:var(--bg)}
+.sp-sub{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;color:var(--accent);margin:22px 0 0}
+.sp-foot{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+a.btn{text-decoration:none;display:inline-block;line-height:1.6}
+/* step-by-step short answers */
+.sastep{border-top:1px dashed var(--line);padding-top:10px;margin-top:12px}
+.saask{margin:0 0 6px;font-size:15px;line-height:1.6}
+.saask b{display:inline-block;font-family:var(--f-mono);font-size:12px;font-weight:500;color:var(--accent);margin-right:8px}
+.sastep .opts{margin-top:4px}
+.sastep .why{margin-top:8px}
+.qstem pre{white-space:pre}
+/* options: text can be selected with the mouse */
+.opt{-webkit-user-select:text;user-select:text}
+.opt .bub{-webkit-user-select:none;user-select:none}
+.opt:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+/* mock answer card */
+.pnav{flex:1 1 100%;display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}
+.qgrid{align-self:stretch;display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:5px;max-height:calc(42vh / var(--z,1));overflow-y:auto}
+.qn{position:relative;font-family:var(--f-mono);font-size:12.5px;height:30px;padding:0;border:1px dashed var(--muted);border-radius:6px;background:var(--surface);color:var(--muted);cursor:pointer;font-variant-numeric:tabular-nums}
+.qn:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.qn.ans{border:1px solid var(--accent);background:var(--accent-soft);color:var(--ink)}
+.qn.ok{border:1px solid var(--good);background:#DCEFE2;color:var(--good)}
+.qn.bad{border:1px solid var(--bad);background:#F7DEDB;color:var(--bad)}
+.qn.flg{box-shadow:inset 0 0 0 2px #B7791F}
+.qn.flg::after{content:"";position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:#B7791F}
+.legend{margin:0;font-size:12.5px;color:var(--muted)}
+.qn.sw{display:inline-block;width:16px;height:14px;vertical-align:-2px;margin:0 3px 0 8px;cursor:default}
+.qn.sw:first-child{margin-left:0}
+.qn.sw::after{top:1px;right:1px;width:5px;height:5px}
+.fresh{color:var(--muted);font-size:12.5px}
+/* mistake notebook */
+.wbk{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:2px 0 8px;font-size:13px;color:var(--muted);line-height:1.5}
+.wbt{font-family:var(--f-mono);font-size:11.5px;padding:1px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.wbt.bad{color:var(--bad)}
+.wbt.flg{color:#8A5A12}
+.wbt.ok{color:var(--good)}
+.wbn{min-width:0}
+/* "only need these" box and folded derivations */
+.must{background:var(--surface);border:2px solid var(--accent);border-radius:12px;padding:12px 18px;margin:16px 0 4px}
+.must .must-t{font-family:var(--f-display);font-weight:700;font-size:18px;margin:0 0 4px;color:var(--accent)}
+.must ol{margin:.3em 0;padding-left:1.3em}
+.must li{margin:.3em 0}
+.must p{margin:.4em 0 0;font-size:14.5px;color:var(--muted)}
+details.more{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:6px 14px;margin:14px 0}
+details.more > summary{cursor:pointer;font-size:14.5px;color:var(--accent);font-weight:500}
+details.more[open] > summary{margin-bottom:6px}
+/* two-step buttons: the armed state shows a cancel button next to it */
+.confirm{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}
+.reset.armed{border-color:var(--warn);color:var(--warn)}
+/* mock exam clock */
+.clock{font-variant-numeric:tabular-nums;color:var(--accent)}
+.clock.low{color:var(--warn)}
+.limsel{font-size:13px;padding:4px 6px}
+.timeline{margin:6px 0 0;font-size:14px;color:var(--muted)}
+.timeline b{color:var(--warn)}
+/* Wide screens: a right rail listing the current lecture's topics; on 27-inch monitors at native resolution the whole page is scaled up a little, since a CSS pixel is physically small there. --z keeps vh-based heights correct under zoom. */
+@media (min-width:1500px){
+  .wrap{max-width:1340px;grid-template-columns:210px minmax(0,780px) 210px;justify-content:center}
+  .rail{display:block;position:sticky;top:calc(env(safe-area-inset-top,0px) + 20px);align-self:start;max-height:calc((100vh - 40px) / var(--z,1));overflow-y:auto;font-size:13.5px;line-height:1.45}
+  .rail[hidden]{display:none}
+}
+@media (min-width:2200px){.wrap{zoom:1.22;--z:1.22}}
+@media (min-width:2500px){.wrap{zoom:1.3;--z:1.3}}
+.rail-k{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+.rail-t{font-family:var(--f-display);font-weight:700;font-size:15px;line-height:1.35;margin:0 0 10px;color:var(--ink)}
+.rail ol{list-style:none;margin:0;padding:0 0 0 2px;display:grid;gap:1px;border-left:2px solid var(--line)}
+.rail a{display:block;padding:5px 10px;margin-left:-2px;border-left:2px solid transparent;color:var(--muted);text-decoration:none}
+.rail a .n{font-family:var(--f-mono);font-size:12px;color:var(--accent);margin-right:5px}
+.rail a:hover,.rail a:focus-visible{color:var(--ink);background:var(--accent-soft);outline:none}
+.rail a.on{color:var(--ink);font-weight:600;border-left-color:var(--accent);background:var(--accent-soft)}
+.rail a.prac{margin-top:8px;color:var(--accent);font-weight:500}
+/* 试一试: blue-ink boxes so they read as a sandbox, apart from the scored practice */
+.try{margin:18px 0 8px;border:1px solid var(--play-line);border-top:3px solid var(--play);border-radius:10px;background:var(--surface);padding:12px 16px 14px}
+.try-h{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 0 4px}
+.try-h b{font-family:var(--f-display);font-size:16px;color:var(--play)}
+.try-tag{font-family:var(--f-mono);font-size:11px;letter-spacing:.05em;color:var(--play);background:var(--play-soft);border-radius:999px;padding:1px 9px}
+.try-q{margin:2px 0 10px;font-size:14.5px;color:var(--muted)}
+.try-given{margin:4px 0 8px;font-weight:500}
+.try-steps{margin:6px 0;padding-left:1.5em;display:grid;gap:8px}
+.try-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.try-ask{min-width:0}
+.try input[type=text]{width:7.5em;font-family:var(--f-mono);font-size:15px;padding:3px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+.try input[type=text]:focus{outline:2px solid var(--play);outline-offset:1px}
+.try .mk{font-weight:700;min-width:1em}
+.try .mk.ok{color:var(--good)}
+.try .mk.bad{color:var(--bad)}
+.try-sol{font-size:14px;line-height:1.6;color:var(--ink);background:var(--play-soft);border-radius:6px;padding:4px 10px;margin-top:4px}
+.try-note{font-size:14px;color:var(--play);margin:8px 0 0}
+.try-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.try-seg{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}
+.try-opt{border:1px solid var(--play-line);background:var(--surface);color:var(--ink);border-radius:999px;padding:2px 12px;font-size:13.5px;cursor:pointer}
+.try-opt[aria-pressed="true"]{background:var(--play);border-color:var(--play);color:var(--on-accent)}
+.try-opt:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.try-sl{display:grid;grid-template-columns:7.5em minmax(0,1fr) 3.5em;align-items:center;gap:10px;margin:4px 0;font-size:14px}
+.try-sl input{width:100%;accent-color:var(--play)}
+.try-sl-v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
+.try-data{margin:2px 0 6px}
+.try-cnt{font-weight:500;margin-right:4px}
+.try-plot{margin:8px 0 4px;max-width:560px}
+.try-plot svg{display:block;width:100%;height:auto}
+.try-plot text{font-family:var(--f-mono);font-size:12px;fill:var(--muted)}
+.try-plot .tp-lb{fill:var(--accent);font-weight:600}
+.try-plot .tp-lb.w{fill:var(--warn)}
+.tp-ax{stroke:var(--ink);stroke-width:1.2}
+.tp-gr{stroke:var(--line);stroke-width:1}
+.tp-c{fill:none;stroke:var(--play);stroke-width:2.4}
+.tp-c2{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:5 4}
+.tp-mk{stroke:var(--accent);stroke-width:1.4;stroke-dasharray:3 3}
+.tp-mk.w{stroke:var(--warn)}
+.tp-gd{stroke:var(--warn);stroke-width:1.2;stroke-dasharray:3 3}
+.tp-dot{fill:var(--warn)}
+.tp-dot.st{fill:var(--ink)}
+.tp-path{fill:none;stroke:var(--warn);stroke-width:1.4;opacity:.75}
+.tp-bar{fill:var(--play);opacity:.85}
+.tp-bar.end{fill:var(--warn)}
+.try-out{font-size:14.5px;line-height:1.7;margin-top:6px;font-variant-numeric:tabular-nums}
+.try-bars{display:grid;gap:4px;margin:8px 0}
+.try-bar{display:grid;grid-template-columns:5.5em minmax(60px,1fr) 5.5em 7em 5.5em;align-items:center;gap:8px;font-size:13.5px;font-variant-numeric:tabular-nums}
+.try-bar .b{height:12px;background:var(--play-soft);border-radius:3px;overflow:hidden}
+.try-bar .b i{display:block;height:100%;background:var(--play)}
+.try-bar.t .k{font-weight:700;color:var(--accent)}
+.try-bar.t .b i{background:var(--accent)}
+.try-bar .v{font-family:var(--f-mono);font-size:12.5px}
+@media (max-width:600px){
+  .try-bar{grid-template-columns:5em minmax(0,1fr) 5em;row-gap:0}
+  .try-bar .v:nth-of-type(4),.try-bar .v:nth-of-type(5){grid-column:2 / 4;font-size:12px;color:var(--muted)}
+  .try-sl{grid-template-columns:6em minmax(0,1fr) 3em}
+}
+@media (max-width:900px){
+  .wrap{grid-template-columns:minmax(0,1fr);gap:8px}
+  .toc{position:static;max-height:none}
+  .toc ol{display:flex;flex-wrap:wrap;gap:6px}
+  .toc a{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px;background:var(--surface)}
+  .twocol{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+/* export progress panel */
+.pc-controls .export{display:inline-flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
+.export-panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;max-width:100%}
+.export-panel textarea{display:block;width:100%;min-width:0;max-width:560px;font-family:var(--f-mono);font-size:12px;line-height:1.5;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);padding:6px 8px;margin-top:6px;resize:vertical}
+#export-host{display:contents}
+/* page skeleton pieces the build script adds */
+.toc .toc-sub{font-family:var(--f-body);font-size:12.5px;letter-spacing:0;text-transform:none;color:var(--muted);margin:14px 0 0}
+@media print{.toc,.rail,.bank-bar,.secprac,#practice{display:none!important}.wrap{display:block}}
+
+</style>
+<script>
+window.MathJax = {
+  startup: { typeset: false, pageReady: function () { return MathJax.startup.defaultPageReady().then(function () { if (window.__renderTex) window.__renderTex(); }); } },
+  svg: { fontCache: "local" },
+  options: { enableMenu: false }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg-full.min.js" defer></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
+<marker id="ahw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ahw"/></marker>
+</defs></svg>
+<div class="wrap">
+<nav class="toc" aria-label="Contents">
+  <p>Contents</p>
+  <ol><li><a href="#exam"><span class="n">0</span>Exam info</a></li><li><a href="#l1"><span class="n">1</span>L1 Counting and basics</a></li><li><a href="#l2"><span class="n">2</span>L2 Conditioning and Bayes</a></li><li><a href="#l3"><span class="n">3</span>L3 Expectation and variance</a></li><li><a href="#traps"><span class="n">!</span>Traps at a glance</a></li><li><a href="#practice"><span class="n">?</span>Practice and exams</a></li></ol>
+</nav>
+<main>
+<header class="hero" id="exam">
+  <p class="eyebrow">PROB 101 · Midterm 1 · L1–L3 · demo</p>
+  <h1>Midterm review: from counting to expectation</h1>
+  <p>Organized by lecture. Every claim carries a slide reference such as <code>L2 p.4</code>, so you can check it against the deck. Each lecture opens with a short glossary; learn the words first, then read on.</p>
+  <dl class="facts">
+    <div><dt>When</dt><dd>Week 6, in class, 30 minutes</dd></div>
+    <div><dt>Format</dt><dd>True/false, multiple choice, fill-in, two short answers</dd></div>
+    <div><dt>Allowed</dt><dd>One handwritten note sheet</dd></div>
+    <div><dt>Not allowed</dt><dd>Calculator, phone, AI. Keep the numbers easy to work by hand</dd></div>
+    <div><dt>Scope</dt><dd>L1–L3</dd></div>
+    <div><dt>Weight</dt><dd>20% of the course grade</dd></div>
+  </dl>
+  <div class="howto">
+    <h2>How to use this page</h2>
+    <ul>
+      <li><b>Tags:</b> <span class="pri p3">core</span> on the practice sheet or worked on the slides; <span class="pri p2">likely</span> covered in class and easy to turn into a true/false; <span class="pri p1">background</span> read once.</li>
+      <li><b>Each topic:</b> read the one-line lead after the green bar, then the figure, then the details and the red <b>Trap</b> boxes. Dashed <b>In plain words</b> boxes explain the idea without notation.</li>
+      <li><b>Practice:</b> every lecture ends with a practice box, so you can test yourself right after reading. At the bottom: the full practice bank, step-by-step short answers, timed mock exams drawn from their own pool, and a mistake notebook that fills itself.</li>
+      <li><b>Option text can be selected</b> with the mouse; a drag that selects text does not count as a click.</li>
+    </ul>
+  </div>
+</header>
+
+<section class="part" id="l1" data-toc="L1 Counting and basics">
+  <p class="part-no">Part 1 · L1</p>
+  <h2>Counting and probability basics</h2>
+  <p class="part-src">Slides L1 p.1–24 · reading: notes ch. 1</p>
+
+  <p class="terms-title">Glossary</p>
+  <dl class="terms">
+    <div><dt>sample space <span class="m">Ω</span></dt><dd>the list of every possible outcome of the experiment</dd></div>
+    <div><dt>event</dt><dd>a set of outcomes, e.g. &ldquo;the sum is 7&rdquo;</dd></div>
+    <div><dt>complement <span class="m">A<sup>c</sup></span></dt><dd>everything in <span class="m">Ω</span> that is not in <span class="m">A</span></dd></div>
+    <div><dt>union / intersection</dt><dd><span class="m">A ∪ B</span>: A or B (or both). <span class="m">A ∩ B</span>: both at once</dd></div>
+    <div><dt>permutation</dt><dd>an ordered arrangement: first, second, third&hellip;</dd></div>
+    <div><dt>combination</dt><dd>an unordered selection: who is in, not in what order</dd></div>
+  </dl>
+
+  <article class="topic" id="l1-equally">
+    <div class="topic-head"><h3>1.1 Equally likely outcomes</h3><span class="pri p3">core</span></div>
+    <p class="src">L1 p.6–9</p>
+    <p class="lead"><b>In one line</b>When every outcome is equally likely, a probability is a count: favorable outcomes divided by all outcomes.</p>
+    <div class="fx"><span class="tex-d" data-tex="P(A)=\frac{|A|}{|\Omega|}">P(A) = |A| / |Ω|</span><span class="note">only when every outcome in Ω is equally likely</span></div>
+    <figure>
+      <div class="dia"><svg viewBox="0 0 560 280" role="img" aria-label="Six by six grid of two-dice outcomes; the six cells that sum to 7 are highlighted">
+        <text x="172" y="22" class="small" text-anchor="middle">die 1</text>
+        <text x="14" y="155" class="small">die 2</text>
+        <g class="mono">
+          <text x="87" y="42" text-anchor="middle">1</text><text x="121" y="42" text-anchor="middle">2</text><text x="155" y="42" text-anchor="middle">3</text><text x="189" y="42" text-anchor="middle">4</text><text x="223" y="42" text-anchor="middle">5</text><text x="257" y="42" text-anchor="middle">6</text>
+          <text x="62" y="72" text-anchor="end">1</text><text x="62" y="106" text-anchor="end">2</text><text x="62" y="140" text-anchor="end">3</text><text x="62" y="174" text-anchor="end">4</text><text x="62" y="208" text-anchor="end">5</text><text x="62" y="242" text-anchor="end">6</text>
+        </g>
+        <g>
+          <rect class="cell wn" x="70" y="50" width="34" height="34"/><rect class="cell" x="104" y="50" width="34" height="34"/><rect class="cell" x="138" y="50" width="34" height="34"/><rect class="cell" x="172" y="50" width="34" height="34"/><rect class="cell" x="206" y="50" width="34" height="34"/><rect class="cell hl" x="240" y="50" width="34" height="34"/>
+          <rect class="cell" x="70" y="84" width="34" height="34"/><rect class="cell" x="104" y="84" width="34" height="34"/><rect class="cell" x="138" y="84" width="34" height="34"/><rect class="cell" x="172" y="84" width="34" height="34"/><rect class="cell hl" x="206" y="84" width="34" height="34"/><rect class="cell" x="240" y="84" width="34" height="34"/>
+          <rect class="cell" x="70" y="118" width="34" height="34"/><rect class="cell" x="104" y="118" width="34" height="34"/><rect class="cell" x="138" y="118" width="34" height="34"/><rect class="cell hl" x="172" y="118" width="34" height="34"/><rect class="cell" x="206" y="118" width="34" height="34"/><rect class="cell" x="240" y="118" width="34" height="34"/>
+          <rect class="cell" x="70" y="152" width="34" height="34"/><rect class="cell" x="104" y="152" width="34" height="34"/><rect class="cell hl" x="138" y="152" width="34" height="34"/><rect class="cell" x="172" y="152" width="34" height="34"/><rect class="cell" x="206" y="152" width="34" height="34"/><rect class="cell" x="240" y="152" width="34" height="34"/>
+          <rect class="cell" x="70" y="186" width="34" height="34"/><rect class="cell hl" x="104" y="186" width="34" height="34"/><rect class="cell" x="138" y="186" width="34" height="34"/><rect class="cell" x="172" y="186" width="34" height="34"/><rect class="cell" x="206" y="186" width="34" height="34"/><rect class="cell" x="240" y="186" width="34" height="34"/>
+          <rect class="cell hl" x="70" y="220" width="34" height="34"/><rect class="cell" x="104" y="220" width="34" height="34"/><rect class="cell" x="138" y="220" width="34" height="34"/><rect class="cell" x="172" y="220" width="34" height="34"/><rect class="cell" x="206" y="220" width="34" height="34"/><rect class="cell" x="240" y="220" width="34" height="34"/>
+        </g>
+        <text x="306" y="92" class="ttl">Sum = 7: 6 of 36 cells</text>
+        <text x="306" y="116" class="atxt">P = 6/36 = 1/6</text>
+        <text x="306" y="164" class="ttl">Sum = 2: only (1, 1)</text>
+        <text x="306" y="188" class="wtxt">P = 1/36</text>
+        <text x="306" y="232" class="small">The 36 ordered pairs are equally likely;</text>
+        <text x="306" y="250" class="small">the 11 sums are not.</text>
+      </svg></div>
+      <figcaption>Two fair dice. Count cells, not sums: a sum of 7 has six cells, a sum of 2 has one (L1 p.8).</figcaption>
+    </figure>
+    <div class="plain"><b>In plain words</b>Write out every outcome so that each one is equally likely, then count. For two dice the right list is the 36 ordered pairs (die 1, die 2), not the 11 sums.</div>
+    <div class="trap"><b>Trap</b>&ldquo;There are 11 possible sums, so P(sum = 7) = 1/11&rdquo; is wrong: the sums are not equally likely. Always check that your outcomes are.</div>
+  </article>
+
+  <article class="topic" id="l1-rules">
+    <div class="topic-head"><h3>1.2 Complement and inclusion–exclusion</h3><span class="pri p3">core</span></div>
+    <p class="src">L1 p.12–16</p>
+    <p class="lead"><b>In one line</b>&ldquo;At least one&rdquo; is easiest as one minus &ldquo;none&rdquo;; for &ldquo;A or B&rdquo;, add both and subtract the overlap once.</p>
+    <div class="fx"><span class="tex-d" data-tex="P(A^c)=1-P(A)">P(Aᶜ) = 1 − P(A)</span></div>
+    <div class="fx"><span class="tex-d" data-tex="P(A\cup B)=P(A)+P(B)-P(A\cap B)">P(A ∪ B) = P(A) + P(B) − P(A ∩ B)</span><span class="note">the overlap was counted twice</span></div>
+    <div class="eg"><b>Example</b>Roll a fair die 4 times. P(at least one six) = 1 − P(no six) = <span class="m" data-tex="1-(5/6)^4">1 − (5/6)<sup>4</sup></span> = 1 − 625/1296 ≈ 0.518 (L1 p.14).</div>
+    <div class="trap"><b>Trap</b><span class="m">P(A ∪ B) = P(A) + P(B)</span> only when A and B cannot happen together. Otherwise you count the overlap twice and can even get a &ldquo;probability&rdquo; above 1.</div>
+  </article>
+
+  <article class="topic" id="l1-count">
+    <div class="topic-head"><h3>1.3 Permutations and combinations</h3><span class="pri p2">likely</span></div>
+    <p class="src">L1 p.18–24</p>
+    <p class="lead"><b>In one line</b>Ask &ldquo;does order matter?&rdquo; If yes, multiply the choices; if no, divide out the orderings.</p>
+    <div class="tbl"><table>
+      <tr><th>Question</th><th>Order?</th><th>Count from 8 people</th></tr>
+      <tr><td>President, VP, treasurer</td><td>yes</td><td>8 · 7 · 6 = 336</td></tr>
+      <tr><td>A 3-person committee</td><td>no</td><td><span class="m" data-tex="\binom{8}{3}=\frac{336}{3!}=56">C(8, 3) = 336 / 3! = 56</span></td></tr>
+    </table></div>
+    <div class="plain"><b>In plain words</b>Every committee of 3 can be turned into 3! = 6 different officer lists by handing out the titles. So officer lists are 6 times as many as committees.</div>
+    <div class="trap"><b>Trap</b>Repeated letters: BOOK has 4!/2! = 12 arrangements, not 24, because swapping the two O&rsquo;s changes nothing.</div>
+  </article>
+</section>
+
+<section class="part" id="l2" data-toc="L2 Conditioning and Bayes">
+  <p class="part-no">Part 2 · L2</p>
+  <h2>Conditional probability and Bayes&rsquo; rule</h2>
+  <p class="part-src">Slides L2 p.1–30 · reading: notes ch. 2</p>
+
+  <div class="must"><p class="must-t">If this lecture feels abstract, the exam only needs these three moves</p>
+    <ol>
+      <li>Condition = shrink the world to what you know, then measure inside it.</li>
+      <li>Independent means knowing one event does not change the other&rsquo;s probability.</li>
+      <li>Bayes: work out both branches that lead to the evidence, then take the share of the branch you care about.</li>
+    </ol>
+  </div>
+
+  <p class="terms-title">Glossary</p>
+  <dl class="terms">
+    <div><dt>conditional probability</dt><dd><span class="m">P(A | B)</span>: probability of A once you know B happened</dd></div>
+    <div><dt>independent</dt><dd><span class="m">P(A ∩ B) = P(A) P(B)</span>; equivalently <span class="m">P(A | B) = P(A)</span></dd></div>
+    <div><dt>law of total probability</dt><dd>split by cases, weight each case by how common it is, add</dd></div>
+    <div><dt>prior / posterior</dt><dd>belief before / after seeing the evidence</dd></div>
+    <div><dt>base rate</dt><dd>how common the condition is in the population (the prior)</dd></div>
+  </dl>
+
+  <p class="terms-title">Everyday analogies</p>
+  <div class="tbl"><table>
+    <tr><th>Term</th><th>Think of it as</th></tr>
+    <tr><td>Conditioning on B</td><td>Only looking at the rows of a spreadsheet where column B says &ldquo;yes&rdquo;</td></tr>
+    <tr><td>Base rate</td><td>How many needles there are in the haystack before you start searching</td></tr>
+    <tr><td>False positive</td><td>A smoke alarm going off for toast</td></tr>
+  </table></div>
+
+  <article class="topic" id="l2-cond">
+    <div class="topic-head"><h3>2.1 Conditional probability</h3><span class="pri p3">core</span></div>
+    <p class="src">L2 p.4–8</p>
+    <p class="lead"><b>In one line</b>Knowing B happened shrinks the sample space to B; <span class="m">P(A | B)</span> is the share of B that is also A.</p>
+    <div class="fx"><span class="tex-d" data-tex="P(A\mid B)=\frac{P(A\cap B)}{P(B)},\qquad P(B)>0">P(A | B) = P(A ∩ B) / P(B), with P(B) &gt; 0</span></div>
+    <div class="eg"><b>Example</b>One fair die. Given the roll is even, the world is {2, 4, 6}; one of those is a 6, so P(6 | even) = 1/3 (L2 p.5).</div>
+    <div class="plain"><b>In plain words</b>Filter first, then count. Out of the even rolls, what fraction are sixes?</div>
+  </article>
+
+  <article class="topic" id="l2-indep">
+    <div class="topic-head"><h3>2.2 Independence</h3><span class="pri p2">likely</span></div>
+    <p class="src">L2 p.10–14</p>
+    <p class="lead"><b>In one line</b>A and B are independent when learning one tells you nothing about the other.</p>
+    <div class="trap"><b>Trap</b>Disjoint is not independent. If A and B cannot both happen and each has positive probability, learning A tells you B did <b>not</b> happen: <span class="m">P(B | A) = 0 ≠ P(B)</span>. That is strong dependence.</div>
+    <div class="eg"><b>Check it with numbers</b>Two fair coin flips. A = &ldquo;first is H&rdquo;, M = &ldquo;the two flips match&rdquo;. P(M) = 1/2 and P(M | A) = P(second is H) = 1/2, so A and M are independent even though both mention the first flip (L2 p.13).</div>
+  </article>
+
+  <article class="topic" id="l2-bayes">
+    <div class="topic-head"><h3>2.3 Total probability and Bayes&rsquo; rule</h3><span class="pri p3">core</span></div>
+    <p class="src">L2 p.18–30 · practice sheet Q4–Q5</p>
+    <p class="lead"><b>In one line</b>To reverse a conditional, count how often the evidence shows up on each branch, then take the share that comes from the branch you care about.</p>
+    <div class="fx"><span class="tex-d" data-tex="P(D\mid +)=\frac{P(+\mid D)\,P(D)}{P(+\mid D)\,P(D)+P(+\mid D^c)\,P(D^c)}">P(D | +) = P(+ | D) P(D) / [P(+ | D) P(D) + P(+ | Dᶜ) P(Dᶜ)]</span></div>
+    <figure>
+      <div class="dia"><svg viewBox="0 0 560 250" role="img" aria-label="Tree of 1000 people: 10 sick of whom 9 test positive, 990 healthy of whom about 50 test positive">
+        <rect class="node" x="200" y="14" width="160" height="40" rx="8"/><text x="280" y="40" text-anchor="middle" class="ttl">1000 people</text>
+        <line class="edge" x1="280" y1="54" x2="130" y2="96"/><line class="edge" x1="280" y1="54" x2="440" y2="96"/>
+        <rect class="node" x="30" y="96" width="200" height="40" rx="8"/><text x="130" y="122" text-anchor="middle">10 sick (1%)</text>
+        <rect class="node" x="330" y="96" width="220" height="40" rx="8"/><text x="440" y="122" text-anchor="middle">990 healthy (99%)</text>
+        <line class="edge" x1="130" y1="136" x2="62" y2="184"/><line class="edge" x1="130" y1="136" x2="176" y2="184"/>
+        <line class="edge" x1="440" y1="136" x2="382" y2="184"/><line class="edge" x1="440" y1="136" x2="498" y2="184"/>
+        <rect class="node hl" x="10" y="184" width="104" height="44" rx="8"/><text x="62" y="211" text-anchor="middle">9 test +</text>
+        <rect class="node ghost" x="124" y="184" width="104" height="44" rx="8"/><text x="176" y="211" text-anchor="middle" class="small">1 test −</text>
+        <rect class="node wn" x="330" y="184" width="104" height="44" rx="8"/><text x="382" y="211" text-anchor="middle">≈50 test +</text>
+        <rect class="node ghost" x="446" y="184" width="104" height="44" rx="8"/><text x="498" y="211" text-anchor="middle" class="small">940 test −</text>
+      </svg></div>
+      <figcaption>Disease in 1% of people, test catches 90% of cases, 5% false positives. Positives: 9 + 50 = 59, and only 9 of them are sick, so P(sick | +) = 9/59 ≈ 15% (L2 p.24).</figcaption>
+    </figure>
+    <div class="plain"><b>In plain words</b>The test is good, but healthy people outnumber sick people 99 to 1. Even a small false-alarm rate on that huge group produces more positives than the real cases do.</div>
+    <div class="trap"><b>Trap</b><span class="m">P(+ | D)</span> (how good the test is) is not <span class="m">P(D | + )</span> (what a positive means for you). Mixing them up is called base-rate neglect.</div>
+  </article>
+</section>
+
+<section class="part" id="l3" data-toc="L3 Expectation and variance">
+  <p class="part-no">Part 3 · L3</p>
+  <h2>Random variables, expectation and variance</h2>
+  <p class="part-src">Slides L3 p.1–28 · reading: notes ch. 3</p>
+
+  <p class="terms-title">Glossary</p>
+  <dl class="terms">
+    <div><dt>random variable</dt><dd>a number determined by the outcome, e.g. the number of heads</dd></div>
+    <div><dt>PMF <span class="m">p(x)</span></dt><dd>probability mass function: <span class="m">P(X = x)</span> for each value</dd></div>
+    <div><dt>expectation <span class="m">E[X]</span></dt><dd>probability-weighted average of the values; the long-run average</dd></div>
+    <div><dt>variance <span class="m">Var(X)</span></dt><dd>expected squared distance from the mean; how spread out X is</dd></div>
+    <div><dt>Bernoulli(p)</dt><dd>1 with probability p, 0 otherwise</dd></div>
+    <div><dt>Binomial(n, p)</dt><dd>number of successes in n independent Bernoulli(p) trials</dd></div>
+  </dl>
+
+  <article class="topic" id="l3-exp">
+    <div class="topic-head"><h3>3.1 Expectation</h3><span class="pri p3">core</span></div>
+    <p class="src">L3 p.5–9</p>
+    <p class="lead"><b>In one line</b>Multiply each value by its probability and add.</p>
+    <div class="fx"><span class="tex-d" data-tex="E[X]=\sum_x x\,p(x)">E[X] = Σ x · p(x)</span></div>
+    <div class="eg"><b>Example</b>A fair die: (1 + 2 + 3 + 4 + 5 + 6) / 6 = 3.5 (L3 p.6). No roll ever shows 3.5; it is the average over many rolls.</div>
+    <div class="trap"><b>Trap</b>Weight by probability. A game that pays $10 with probability 0.2 and costs $3 otherwise is worth 0.2 · 10 − 0.8 · 3 = −$0.40 per play, not the plain average of $10 and −$3.</div>
+  </article>
+
+  <article class="topic" id="l3-lin">
+    <div class="topic-head"><h3>3.2 Linearity of expectation</h3><span class="pri p3">core</span></div>
+    <p class="src">L3 p.11–15</p>
+    <p class="lead"><b>In one line</b><span class="m">E[aX + bY + c] = aE[X] + bE[Y] + c</span>, always, even when X and Y depend on each other.</p>
+    <div class="eg"><b>Example</b>Four people get their hats back in random order. Person i gets their own hat with probability 1/4, so the expected number of matches is 4 · 1/4 = 1, even though the matches are dependent (L3 p.14).</div>
+    <div class="plain"><b>In plain words</b>Break a messy count into a sum of yes/no indicators, take the expectation of each, add. You never need the joint distribution.</div>
+    <div class="trap"><b>Trap</b>Linearity is about sums. <span class="m">E[XY] = E[X]E[Y]</span> needs independence, and <span class="m">E[g(X)] ≠ g(E[X])</span> in general (e.g. <span class="m">E[X²] ≠ (E[X])²</span>).</div>
+  </article>
+
+  <article class="topic" id="l3-var">
+    <div class="topic-head"><h3>3.3 Variance and the binomial</h3><span class="pri p2">likely</span></div>
+    <p class="src">L3 p.18–28</p>
+    <p class="lead"><b>In one line</b>Compute variance as <span class="m">E[X²] − (E[X])²</span>; shifting X does not change it, scaling by a multiplies it by <span class="m">a²</span>.</p>
+    <div class="fx"><span class="tex-d" data-tex="\mathrm{Var}(X)=E[X^2]-(E[X])^2,\qquad \mathrm{Var}(aX+b)=a^2\,\mathrm{Var}(X)">Var(X) = E[X²] − (E[X])²,  Var(aX + b) = a² Var(X)</span></div>
+    <div class="fx"><span class="tex-d" data-tex="X\sim\mathrm{Bin}(n,p):\quad E[X]=np,\qquad \mathrm{Var}(X)=np(1-p)">X ~ Bin(n, p): E[X] = np, Var(X) = np(1 − p)</span></div>
+    <figure>
+      <div class="dia"><svg viewBox="0 0 560 260" role="img" aria-label="Bar chart of the Binomial(10, 0.5) probabilities, symmetric around 5">
+        <text x="50" y="24" class="small">P(X = k), X ~ Bin(10, 0.5)</text>
+        <line class="axis" x1="40" y1="220" x2="540" y2="220"/>
+        <rect class="bar l" x="50" y="219" width="34" height="1"/>
+        <rect class="bar l" x="94" y="213.2" width="34" height="6.8"/>
+        <rect class="bar l" x="138" y="189.2" width="34" height="30.8"/>
+        <rect class="bar" x="182" y="138" width="34" height="82"/>
+        <rect class="bar" x="226" y="76.4" width="34" height="143.6"/>
+        <rect class="bar" x="270" y="47.7" width="34" height="172.3"/>
+        <rect class="bar" x="314" y="76.4" width="34" height="143.6"/>
+        <rect class="bar" x="358" y="138" width="34" height="82"/>
+        <rect class="bar l" x="402" y="189.2" width="34" height="30.8"/>
+        <rect class="bar l" x="446" y="213.2" width="34" height="6.8"/>
+        <rect class="bar l" x="490" y="219" width="34" height="1"/>
+        <line class="edge acc ghost" x1="287" y1="34" x2="287" y2="220"/>
+        <text x="296" y="40" class="atxt">mean np = 5</text>
+        <g class="mono" text-anchor="middle">
+          <text x="67" y="240">0</text><text x="111" y="240">1</text><text x="155" y="240">2</text><text x="199" y="240">3</text><text x="243" y="240">4</text><text x="287" y="240">5</text><text x="331" y="240">6</text><text x="375" y="240">7</text><text x="419" y="240">8</text><text x="463" y="240">9</text><text x="507" y="240">10</text>
+        </g>
+      </svg></div>
+      <figcaption>Ten fair coin flips. The bars for 3–7 heads (dark) hold about 89% of the probability; the spread is <span class="m">√(np(1 − p)) ≈ 1.58</span> (L3 p.24).</figcaption>
+    </figure>
+    <div class="trap"><b>Trap</b><span class="m">Var(3X − 2) = 9 Var(X)</span>: square the 3, drop the −2. Writing 3 Var(X) or subtracting 2 are the two classic slips.</div>
+    <details class="more"><summary>Why Var(X) = E[X²] − (E[X])² (not on the exam)</summary>
+      <p>Let <span class="m">μ = E[X]</span>. Expand <span class="m">(X − μ)² = X² − 2μX + μ²</span> and take expectations with linearity: <span class="m">E[X²] − 2μ² + μ² = E[X²] − μ²</span>.</p>
+    </details>
+  </article>
+</section>
+
+<section class="part" id="traps" data-toc="Traps at a glance" data-n="!">
+  <p class="part-no">Last ten minutes</p>
+  <h2>Traps at a glance</h2>
+  <p class="part-src">The one-word changes true/false questions love. Each item points back to its topic.</p>
+  <ol class="traps">
+    <li>The 11 sums of two dice are <b>not</b> equally likely; count the 36 ordered pairs (1.1).</li>
+    <li><span class="m">P(A ∪ B) = P(A) + P(B)</span> only for disjoint events; otherwise subtract the overlap (1.2).</li>
+    <li>&ldquo;At least one&rdquo; → 1 − P(none) (1.2).</li>
+    <li>Officers (ordered) = committees (unordered) × k! (1.3).</li>
+    <li>Disjoint events with positive probability are <b>dependent</b> (2.2).</li>
+    <li><span class="m">P(+ | D) ≠ P(D | +)</span>; a rare condition keeps <span class="m">P(D | +)</span> low (2.3).</li>
+    <li><span class="m">E[X]</span> need not be a possible value of X (3.1).</li>
+    <li>Linearity of expectation holds <b>without</b> independence; <span class="m">E[XY] = E[X]E[Y]</span> does not (3.2).</li>
+    <li><span class="m">Var(aX + b) = a² Var(X)</span>; the shift b disappears (3.3).</li>
+  </ol>
+</section>
+
+<section class="part" id="practice"></section>
+
+<footer>Demo course written for this repository. PROB 101 is fictional; references such as “L2 p.4” show the citation format a real course page uses.</footer>
+</main>
+<aside class="rail" hidden></aside>
+</div>
+<script>window.STUDY_DATA = {"config": {"title": "PROB 101 Midterm review (demo)", "lang": "en", "storageKey": "demo-prob101-mt1", "lectures": ["L1", "L2", "L3"], "mock": {"sections": [{"cat": "tf", "n": 4}, {"cat": "single", "n": 4}, {"cat": "multi", "n": 1}, {"cat": "fill", "n": 2}], "minutes": [{"m": 15, "note": "suggested"}, {"m": 30, "note": "real exam pace"}, 0], "defaultMinutes": 15, "note": "The real exam also has two short-answer questions; practice those in the Short answer tab."}, "footer": "Demo course written for this repository. PROB 101 is fictional; references such as “L2 p.4” show the citation format a real course page uses."}, "practice": {"groups": [{"id": "p1", "lec": "L1", "sec": "l1", "title": "L1 · Counting and basics", "desc": "Equally likely outcomes, complements, inclusion–exclusion, ordered vs unordered counts."}, {"id": "p2", "lec": "L2", "sec": "l2", "title": "L2 · Conditioning and Bayes", "desc": "Shrink the world, test independence with numbers, reverse a conditional."}, {"id": "p3", "lec": "L3", "sec": "l3", "title": "L3 · Expectation and variance", "desc": "Weighted averages, linearity, how shifting and scaling change variance."}], "items": [{"g": "p1", "id": "p1-1", "type": "single", "src": "L1 p.8", "stem": "Two fair dice are rolled. What is P(the sum is 7)?", "opts": [{"t": "1/6", "why": "Six of the 36 equally likely ordered pairs sum to 7: (1,6), (2,5), …, (6,1)."}, {"t": "1/11", "why": "Treats the 11 possible sums as equally likely. They are not: 7 can happen six ways, 2 only one way."}, {"t": "7/36", "why": "Uses the target sum as the number of favorable outcomes. Count the pairs instead: there are 6."}, {"t": "1/12", "why": "That is P(sum = 4): three pairs out of 36."}], "ans": 0, "why": "List the 36 ordered pairs and count the ones that add to 7."}, {"g": "p1", "id": "p1-2", "type": "tf", "src": "L1 p.8", "stem": "When two fair dice are rolled, the 11 possible sums (2 through 12) are equally likely.", "opts": [{"why": "The mix-up: the 36 ordered pairs are equally likely, so it is tempting to think the sums are too."}, {"why": "Corrected: the 36 ordered pairs are equally likely; the sums are not (7 has six pairs, 2 has one)."}], "ans": 1}, {"g": "p1", "id": "p1-3", "type": "fill", "src": "L1 p.14", "stem": "A fair die is rolled 4 times. What is P(at least one six)? Give 3 decimals or an expression.", "accept": ["0.518", "671/1296", "1-(5/6)^4"], "answer": "1 − (5/6)<sup>4<\/sup> ≈ 0.518", "why": "&ldquo;At least one&rdquo; is the complement of &ldquo;none&rdquo;. P(no six in 4 rolls) = (5/6)<sup>4<\/sup> = 625/1296."}, {"g": "p1", "id": "p1-4", "type": "single", "src": "L1 p.15", "stem": "P(A) = 0.5, P(B) = 0.4 and P(A ∩ B) = 0.2. What is P(A ∪ B)?", "opts": [{"t": "0.7", "why": "0.5 + 0.4 − 0.2: add both, subtract the overlap once."}, {"t": "0.9", "why": "Adds the two without subtracting the overlap, so the 0.2 in both is counted twice."}, {"t": "0.2", "why": "That is the intersection, the part in both."}, {"t": "0.5", "why": "That is P(A) alone; the union is at least as big as each event."}], "ans": 0, "why": "Inclusion–exclusion: P(A ∪ B) = P(A) + P(B) − P(A ∩ B)."}, {"g": "p1", "id": "p1-5", "type": "multi", "src": "L1 p.12–16", "stem": "Which statements hold for <b>any<\/b> events A and B?", "opts": [{"t": "P(A<sup>c<\/sup>) = 1 − P(A)", "why": "Always: A and its complement split the sample space."}, {"t": "P(A ∪ B) ≤ P(A) + P(B)", "why": "Always: the sum counts the overlap twice, so it can only be bigger."}, {"t": "P(A ∩ B) = P(A) P(B)", "why": "Only when A and B are independent."}, {"t": "P(A ∩ B) ≤ P(A)", "why": "Always: the intersection is part of A."}, {"t": "P(A ∪ B) = P(A) + P(B)", "why": "Only when A and B are disjoint."}], "ans": [0, 1, 3], "why": "The two false ones need an extra condition: independence for the product, disjointness for the plain sum."}, {"g": "p1", "id": "p1-6", "type": "single", "src": "L1 p.20", "stem": "A club of 8 people picks a president, a vice-president and a treasurer, all different people. How many ways?", "opts": [{"t": "336", "why": "8 choices for president, then 7, then 6: order matters because the titles differ."}, {"t": "56", "why": "That is C(8, 3), the number of 3-person groups. It ignores who holds which title."}, {"t": "512", "why": "8 · 8 · 8 lets one person hold two titles."}, {"t": "24", "why": "That is 4!, which does not match any step here."}], "ans": 0, "why": "Ordered selection without repeats: 8 · 7 · 6."}, {"g": "p1", "id": "p1-7", "type": "tf", "src": "L1 p.22", "stem": "From 8 people, there are exactly 6 times as many (president, VP, treasurer) lists as there are 3-person committees.", "opts": [{"why": "336 / 56 = 6 = 3!: each committee can hand out its three titles in 3! ways."}, {"why": "The mix-up: thinking the two counts are equal, or differ by a factor of 3 instead of 3! = 6."}], "ans": 0}, {"g": "p1", "id": "p1-8", "type": "card", "src": "L1 p.16", "stem": "Write inclusion–exclusion for three events A, B, C.", "answer": "P(A ∪ B ∪ C) = P(A) + P(B) + P(C) − P(A ∩ B) − P(A ∩ C) − P(B ∩ C) + P(A ∩ B ∩ C). Add singles, subtract pairs, add the triple back."}, {"g": "p2", "id": "p2-1", "type": "single", "src": "L2 p.5", "stem": "One fair die is rolled. What is P(6 | the roll is even)?", "opts": [{"t": "1/3", "why": "Given even, the world is {2, 4, 6}, and one of the three is a 6."}, {"t": "1/6", "why": "That ignores the information that the roll is even."}, {"t": "1/2", "why": "That is P(even), the condition itself."}, {"t": "2/3", "why": "That is P(not 6 | even)."}], "ans": 0, "why": "P(6 ∩ even) / P(even) = (1/6) / (1/2) = 1/3."}, {"g": "p2", "id": "p2-2", "type": "fill", "src": "L2 p.6", "stem": "P(A ∩ B) = 0.12 and P(B) = 0.4. What is P(A | B)?", "accept": ["0.3", "3/10"], "answer": "0.3", "why": "P(A | B) = P(A ∩ B) / P(B) = 0.12 / 0.4."}, {"g": "p2", "id": "p2-3", "type": "tf", "src": "L2 p.12", "stem": "If A and B are disjoint and both have positive probability, then A and B are independent.", "opts": [{"why": "The mix-up: &ldquo;they have nothing in common&rdquo; sounds like &ldquo;they do not affect each other&rdquo;."}, {"why": "Corrected: disjoint events with positive probability are dependent. Knowing A happened makes B impossible, so P(B | A) = 0 ≠ P(B)."}], "ans": 1}, {"g": "p2", "id": "p2-4", "type": "single", "src": "L2 p.24", "stem": "A disease affects 1% of people. A test detects 90% of cases and gives a false positive for 5% of healthy people. You test positive. Which is closest to P(disease | positive)?", "opts": [{"t": "About 15%", "why": "Per 1000 people: 9 true positives and about 50 false positives, so 9/59 ≈ 15%."}, {"t": "About 90%", "why": "That is P(positive | disease), how good the test is, not what a positive means."}, {"t": "About 85%", "why": "90% − 5% does not correspond to any probability here."}, {"t": "About 1%", "why": "That is the prior; it ignores the positive result."}], "ans": 0, "why": "Bayes: 0.009 / (0.009 + 0.0495) ≈ 0.154. The rare disease keeps the posterior low."}, {"g": "p2", "id": "p2-5", "type": "multi", "src": "L2 p.13", "stem": "A fair coin is flipped twice. Which pairs of events are independent?", "opts": [{"t": "&ldquo;first flip is H&rdquo; and &ldquo;second flip is H&rdquo;", "why": "Independent: separate flips. 1/4 = 1/2 · 1/2."}, {"t": "&ldquo;first flip is H&rdquo; and &ldquo;both flips are H&rdquo;", "why": "Dependent: P(both | first H) = 1/2, but P(both) = 1/4."}, {"t": "&ldquo;first flip is H&rdquo; and &ldquo;the two flips match&rdquo;", "why": "Independent: P(match) = 1/2 and P(match | first H) = P(second H) = 1/2."}, {"t": "&ldquo;at least one H&rdquo; and &ldquo;both are T&rdquo;", "why": "Dependent: they are disjoint, so one rules out the other."}], "ans": [0, 2], "why": "Check P(B | A) = P(B) with numbers; intuition about &ldquo;sharing a flip&rdquo; is unreliable."}, {"g": "p2", "id": "p2-6", "type": "single", "src": "L2 p.19", "stem": "Factory A makes 60% of the parts and 2% of its parts are defective; factory B makes 40% and 5% of its parts are defective. What is P(a random part is defective)?", "opts": [{"t": "0.032", "why": "0.6 · 0.02 + 0.4 · 0.05 = 0.012 + 0.020."}, {"t": "0.035", "why": "The plain average of 2% and 5% ignores that factory A makes more parts."}, {"t": "0.070", "why": "2% + 5% adds rates from different groups without weights."}, {"t": "0.020", "why": "That is factory B&rsquo;s share of defects, 0.4 · 0.05, only one branch."}], "ans": 0, "why": "Law of total probability: weight each factory&rsquo;s defect rate by its share of production."}, {"g": "p2", "id": "p2-7", "type": "tf", "src": "L2 p.21", "stem": "If P(A) = P(B) &gt; 0, then P(A | B) = P(B | A).", "opts": [{"why": "Bayes: P(A | B) = P(B | A) · P(A) / P(B), and the ratio is 1 when P(A) = P(B)."}, {"why": "The mix-up: remembering that the two conditionals usually differ and forgetting when they agree."}], "ans": 0}, {"g": "p2", "id": "p2-8", "type": "fill", "src": "L2 p.22", "stem": "Same factories as above (A: 60% of parts, 2% defective; B: 40%, 5% defective). A part is defective. What is P(it came from B)?", "accept": ["0.625", "5/8"], "answer": "0.02 / 0.032 = 0.625", "why": "Share of the defective branch that comes from B: 0.020 out of 0.032."}, {"g": "p3", "id": "p3-1", "type": "single", "src": "L3 p.6", "stem": "X is the roll of a fair six-sided die. What is E[X]?", "opts": [{"t": "3.5", "why": "(1 + 2 + … + 6) / 6 = 21 / 6."}, {"t": "3", "why": "Rounds the answer to a possible roll; E[X] need not be a value X takes."}, {"t": "21", "why": "The sum of the faces, not weighted by 1/6."}, {"t": "6", "why": "The largest value, not the average."}], "ans": 0, "why": "Each face has weight 1/6."}, {"g": "p3", "id": "p3-2", "type": "tf", "src": "L3 p.7", "stem": "The expected value of a random variable is always one of the values it can take.", "opts": [{"why": "The mix-up: reading &ldquo;expected&rdquo; as &ldquo;most likely&rdquo;."}, {"why": "Corrected: E[X] is a weighted average. A fair die has E[X] = 3.5, which no roll shows."}], "ans": 1}, {"g": "p3", "id": "p3-3", "type": "fill", "src": "L3 p.8", "stem": "X takes the values 0, 1, 2 with probabilities 0.5, 0.3, 0.2. What is E[X]?", "accept": ["0.7", "7/10"], "answer": "0 · 0.5 + 1 · 0.3 + 2 · 0.2 = 0.7", "why": "Multiply each value by its probability and add."}, {"g": "p3", "id": "p3-4", "type": "single", "src": "L3 p.14", "stem": "Four people get their hats back in a random order. What is the expected number of people who get their own hat?", "opts": [{"t": "1", "why": "Each person matches with probability 1/4; by linearity, 4 · 1/4 = 1."}, {"t": "1/4", "why": "That is one person&rsquo;s chance, not the expected count."}, {"t": "4", "why": "That would mean everyone always matches."}, {"t": "1/24", "why": "That is P(everyone matches) = 1/4!."}], "ans": 0, "why": "Write the count as a sum of 4 indicators. Linearity works even though the indicators are dependent."}, {"g": "p3", "id": "p3-5", "type": "multi", "src": "L3 p.11–20", "stem": "Which hold for <b>any<\/b> random variables X, Y and constants a, b?", "opts": [{"t": "E[X + Y] = E[X] + E[Y]", "why": "Always: linearity needs no independence."}, {"t": "E[aX + b] = aE[X] + b", "why": "Always: linearity again."}, {"t": "Var(aX + b) = a<sup>2<\/sup> Var(X)", "why": "Always: the shift b does not change spread, and scaling squares."}, {"t": "Var(X + Y) = Var(X) + Var(Y)", "why": "Needs X and Y uncorrelated (independence is enough). In general add 2 Cov(X, Y)."}, {"t": "E[XY] = E[X] E[Y]", "why": "Needs independence (or zero covariance)."}, {"t": "Var(X) ≥ 0", "why": "Always: it is an average of squares."}], "ans": [0, 1, 2, 5], "why": "Expectation is linear without conditions; variance of a sum and expectation of a product need independence."}, {"g": "p3", "id": "p3-6", "type": "fill", "src": "L3 p.25", "stem": "X ~ Binomial(n = 20, p = 0.3). What is Var(X)?", "accept": ["4.2", "20*0.3*0.7"], "answer": "np(1 − p) = 20 · 0.3 · 0.7 = 4.2", "why": "A binomial is a sum of n independent Bernoulli(p), each with variance p(1 − p)."}, {"g": "p3", "id": "p3-7", "type": "single", "src": "L3 p.21", "stem": "Var(X) = 4. What is Var(3X − 2)?", "opts": [{"t": "36", "why": "3<sup>2<\/sup> · 4; the −2 shifts X but does not change its spread."}, {"t": "12", "why": "Multiplies by 3 instead of 3<sup>2<\/sup>."}, {"t": "10", "why": "3 · 4 − 2: applies the linear map to the variance itself."}, {"t": "34", "why": "9 · 4 − 2: the shift does not belong in the variance."}], "ans": 0, "why": "Var(aX + b) = a<sup>2<\/sup> Var(X)."}, {"g": "p3", "id": "p3-8", "type": "tf", "src": "L3 p.23", "stem": "For a Bernoulli(p) variable, the variance is largest when p = 0.5.", "opts": [{"why": "p(1 − p) is a parabola with its peak 0.25 at p = 0.5."}, {"why": "The mix-up: thinking variance grows with p. At p = 1 the variable is constant and the variance is 0."}], "ans": 0}]}, "mock": {"groups": [{"id": "m1", "lec": "L1", "title": "L1 · Counting and basics"}, {"id": "m2", "lec": "L2", "title": "L2 · Conditioning and Bayes"}, {"id": "m3", "lec": "L3", "title": "L3 · Expectation and variance"}], "items": [{"g": "m1", "id": "m1-1", "type": "tf", "stem": "If P(A) = 0.3, then P(not A) = 0.7.", "opts": [{"why": "Complement rule: 1 − 0.3."}, {"why": "The mix-up: none here; A and not A always add to 1."}], "ans": 0}, {"g": "m1", "id": "m1-2", "type": "tf", "stem": "P(A ∪ B) can be larger than P(A) + P(B).", "opts": [{"why": "The mix-up: forgetting which way the overlap correction goes."}, {"why": "Corrected: P(A ∪ B) = P(A) + P(B) − P(A ∩ B), which is at most P(A) + P(B)."}], "ans": 1}, {"g": "m1", "id": "m1-3", "type": "tf", "stem": "The letters of BOOK can be arranged in 4! = 24 distinct ways.", "opts": [{"why": "The mix-up: treating the two O&rsquo;s as different letters."}, {"why": "Corrected: 4! / 2! = 12, because swapping the two O&rsquo;s gives the same word."}], "ans": 1}, {"g": "m1", "id": "m1-4", "type": "single", "stem": "Three fair coins are flipped. What is P(exactly two heads)?", "opts": [{"t": "3/8", "why": "HHT, HTH, THH: 3 of the 8 equally likely sequences."}, {"t": "1/2", "why": "That is P(at least two heads) = 4/8."}, {"t": "1/4", "why": "Treats &ldquo;0, 1, 2, 3 heads&rdquo; as four equally likely outcomes; they are not."}, {"t": "2/3", "why": "Two heads out of three coins is a ratio of counts, not a probability."}], "ans": 0, "why": "List the 8 sequences and count those with exactly two H."}, {"g": "m1", "id": "m1-5", "type": "single", "stem": "How many 5-card hands from a standard 52-card deck contain all four aces?", "opts": [{"t": "48", "why": "The four aces are fixed; the fifth card is any of the 48 non-aces."}, {"t": "4! · 48 = 1152", "why": "Orders the aces, but a hand is unordered."}, {"t": "4", "why": "Counts the aces themselves, not hands."}, {"t": "C(52, 5) − 48", "why": "Counts the hands that do <b>not<\/b> contain all four aces."}], "ans": 0, "why": "Fix what must be there, then count the free choices."}, {"g": "m1", "id": "m1-6", "type": "single", "stem": "P(A) = 0.6, P(B) = 0.5 and P(A ∪ B) = 0.9. What is P(A ∩ B)?", "opts": [{"t": "0.2", "why": "0.6 + 0.5 − 0.9, inclusion–exclusion solved for the overlap."}, {"t": "0.3", "why": "0.6 · 0.5 assumes independence, which nothing here says."}, {"t": "0.4", "why": "0.9 − 0.5 is P(A but not B)."}, {"t": "1.1", "why": "0.6 + 0.5 is not a probability at all."}], "ans": 0, "why": "Rearrange P(A ∪ B) = P(A) + P(B) − P(A ∩ B)."}, {"g": "m1", "id": "m1-7", "type": "multi", "stem": "Which lists of outcomes are equally likely?", "opts": [{"t": "One fair die: {1, 2, 3, 4, 5, 6}", "why": "Yes: a fair die by definition."}, {"t": "Two fair coins: {0 heads, 1 head, 2 heads}", "why": "No: 1 head happens two ways (HT, TH), so it has probability 1/2."}, {"t": "Two fair dice: {sum 2, sum 3, …, sum 12}", "why": "No: sum 7 has six ordered pairs, sum 2 has one."}, {"t": "One card from a shuffled deck: {hearts, diamonds, clubs, spades}", "why": "Yes: 13 cards in each suit."}], "ans": [0, 3], "why": "An outcome list is equally likely only if each item covers the same number of underlying equally likely cases."}, {"g": "m1", "id": "m1-8", "type": "fill", "stem": "How many ways are there to choose 2 people out of 6 when order does not matter?", "accept": ["15", "C(6,2)"], "answer": "C(6, 2) = 15", "why": "6 · 5 ordered pairs, divided by 2! orderings."}, {"g": "m1", "id": "m1-9", "type": "fill", "stem": "A fair die is rolled 3 times. What is P(no six at all)? Give 3 decimals or an expression.", "accept": ["0.579", "125/216", "(5/6)^3"], "answer": "(5/6)<sup>3<\/sup> = 125/216 ≈ 0.579", "why": "Each roll avoids a six with probability 5/6, and the rolls are independent."}, {"g": "m2", "id": "m2-1", "type": "tf", "stem": "If P(B) &gt; 0 and P(A | B) = P(A), then A and B are independent.", "opts": [{"why": "Equivalent definition: multiply both sides by P(B) to get P(A ∩ B) = P(A) P(B)."}, {"why": "The mix-up: thinking independence needs a separate check beyond this equation."}], "ans": 0}, {"g": "m2", "id": "m2-2", "type": "tf", "stem": "Whenever P(B) &gt; 0, P(A | B) + P(A<sup>c<\/sup> | B) = 1.", "opts": [{"why": "Conditioning on B gives a probability measure on B, and A, A<sup>c<\/sup> split it."}, {"why": "The mix-up: confusing it with P(A | B) + P(A | B<sup>c<\/sup>), which need not be 1."}], "ans": 0}, {"g": "m2", "id": "m2-3", "type": "tf", "stem": "A positive result on a test that is right 99% of the time means you have the condition with probability 99%.", "opts": [{"why": "The mix-up: reading P(+ | condition) as P(condition | +)."}, {"why": "Corrected: P(condition | +) also depends on the base rate. For a rare condition it can be far below 99%."}], "ans": 1}, {"g": "m2", "id": "m2-4", "type": "single", "stem": "Two cards are drawn from a shuffled deck without replacement. What is P(both are aces)?", "opts": [{"t": "(4/52) · (3/51)", "why": "First ace 4/52; given that, 3 aces remain among 51 cards."}, {"t": "(4/52) · (4/52)", "why": "That is with replacement; here the first ace is gone."}, {"t": "4/52 + 3/51", "why": "Adds where the multiplication rule multiplies."}, {"t": "2 · (4/52)", "why": "Doubles a single-draw probability, which is not how &ldquo;and&rdquo; works."}], "ans": 0, "why": "Multiplication rule: P(A ∩ B) = P(A) P(B | A)."}, {"g": "m2", "id": "m2-5", "type": "single", "stem": "20% of emails are spam. A filter flags 95% of spam and 10% of normal email. An email is flagged. Which is closest to P(spam | flagged)?", "opts": [{"t": "About 70%", "why": "0.19 / (0.19 + 0.08) ≈ 0.70."}, {"t": "95%", "why": "That is P(flagged | spam), the other direction."}, {"t": "About 19%", "why": "That is P(spam and flagged), the numerator only."}, {"t": "About 27%", "why": "That is P(flagged), the denominator only."}], "ans": 0, "why": "Bayes: spam branch 0.2 · 0.95 = 0.19; normal branch 0.8 · 0.10 = 0.08."}, {"g": "m2", "id": "m2-6", "type": "single", "stem": "A and B are independent with P(A) = 0.5 and P(B) = 0.4. What is P(A ∪ B)?", "opts": [{"t": "0.7", "why": "0.5 + 0.4 − 0.5 · 0.4."}, {"t": "0.9", "why": "Forgets to subtract the overlap."}, {"t": "0.2", "why": "That is P(A ∩ B)."}, {"t": "0.8", "why": "1 − 0.2 is the complement of the intersection, not the union."}], "ans": 0, "why": "Independence gives the overlap 0.2; then use inclusion–exclusion."}, {"g": "m2", "id": "m2-7", "type": "multi", "stem": "A fair die is rolled and A = {the roll is even}. For which events B are A and B independent?", "opts": [{"t": "B = {roll ≤ 2}", "why": "Independent: P(A ∩ B) = P({2}) = 1/6 = (1/2)(1/3)."}, {"t": "B = {roll ≤ 3}", "why": "Dependent: P(A ∩ B) = 1/6, but (1/2)(1/2) = 1/4."}, {"t": "B = {roll is 6}", "why": "Dependent: P(A ∩ B) = 1/6, but (1/2)(1/6) = 1/12."}, {"t": "B = {roll is odd}", "why": "Dependent: disjoint from A."}], "ans": [0], "why": "Compute P(A ∩ B) and compare with P(A) P(B) for each option."}, {"g": "m2", "id": "m2-8", "type": "fill", "stem": "P(B) = 0.25 and P(A | B) = 0.4. What is P(A ∩ B)?", "accept": ["0.1", "1/10"], "answer": "0.4 · 0.25 = 0.1", "why": "Multiplication rule."}, {"g": "m3", "id": "m3-1", "type": "tf", "stem": "E[X + Y] = E[X] + E[Y] holds only when X and Y are independent.", "opts": [{"why": "The mix-up: carrying over the condition that E[XY] = E[X]E[Y] needs."}, {"why": "Corrected: linearity of expectation always holds, dependent or not."}], "ans": 1}, {"g": "m3", "id": "m3-2", "type": "tf", "stem": "Adding the same constant to every value of X leaves Var(X) unchanged.", "opts": [{"why": "Var(X + b) = Var(X): the whole distribution slides, the spread stays."}, {"why": "The mix-up: thinking a bigger mean means a bigger variance."}], "ans": 0}, {"g": "m3", "id": "m3-3", "type": "tf", "stem": "If Var(X) = 0, then X equals a single value with probability 1.", "opts": [{"why": "An average of non-negative squares is 0 only if each square with positive probability is 0, so X = E[X]."}, {"why": "The mix-up: thinking zero variance means X is zero; it means X is constant."}], "ans": 0}, {"g": "m3", "id": "m3-4", "type": "single", "stem": "X ~ Binomial(8, 0.25). What is E[X]?", "opts": [{"t": "2", "why": "np = 8 · 0.25."}, {"t": "1.5", "why": "That is the variance np(1 − p)."}, {"t": "0.25", "why": "That is p, the chance of one success."}, {"t": "6", "why": "n(1 − p) is the expected number of failures."}], "ans": 0, "why": "Sum of 8 Bernoulli(0.25) indicators, each with mean 0.25."}, {"g": "m3", "id": "m3-5", "type": "single", "stem": "A game pays $12 with probability 0.25 and costs you $5 otherwise. What are your expected winnings per play?", "opts": [{"t": "−$0.75", "why": "0.25 · 12 − 0.75 · 5 = 3 − 3.75."}, {"t": "$7", "why": "12 − 5 ignores the probabilities."}, {"t": "$3", "why": "0.25 · 12 counts the win and forgets the loss."}, {"t": "$3.50", "why": "(12 − 5) / 2 weights both outcomes equally."}], "ans": 0, "why": "Weight each payoff by its probability."}, {"g": "m3", "id": "m3-6", "type": "single", "stem": "E[X] = 2 and E[X<sup>2<\/sup>] = 13. What is Var(X)?", "opts": [{"t": "9", "why": "13 − 2<sup>2<\/sup>."}, {"t": "11", "why": "13 − 2 forgets to square the mean."}, {"t": "3", "why": "That is the standard deviation, √9."}, {"t": "17", "why": "13 + 4 adds where the formula subtracts."}], "ans": 0, "why": "Var(X) = E[X<sup>2<\/sup>] − (E[X])<sup>2<\/sup>."}, {"g": "m3", "id": "m3-7", "type": "multi", "stem": "X ~ Bernoulli(0.3). Which are correct?", "opts": [{"t": "E[X] = 0.3", "why": "Correct: 1 · 0.3 + 0 · 0.7."}, {"t": "Var(X) = 0.21", "why": "Correct: p(1 − p) = 0.3 · 0.7."}, {"t": "E[X<sup>2<\/sup>] = 0.09", "why": "Wrong: X<sup>2<\/sup> = X for a 0/1 variable, so E[X<sup>2<\/sup>] = 0.3. 0.09 is (E[X])<sup>2<\/sup>."}, {"t": "P(X = 1) = 0.7", "why": "Wrong: P(X = 1) = p = 0.3."}], "ans": [0, 1], "why": "For 0/1 variables, X<sup>2<\/sup> = X is the shortcut."}, {"g": "m3", "id": "m3-8", "type": "fill", "stem": "X takes the values 1, 2, 3 with probabilities 0.2, 0.5, 0.3. What is E[X]?", "accept": ["2.1", "21/10"], "answer": "0.2 + 1.0 + 0.9 = 2.1", "why": "Multiply each value by its probability and add."}, {"g": "m3", "id": "m3-9", "type": "fill", "stem": "Var(X) = 2.5. What is Var(2X + 7)?", "accept": ["10"], "answer": "2<sup>2<\/sup> · 2.5 = 10", "why": "Square the scale, drop the shift."}]}, "short": {"groups": [{"id": "a", "lec": "L2", "sec": "l2", "kind": "Bayes' rule", "title": "① Bayes&rsquo; rule (L2)", "desc": "Practice sheet Q4–Q5 type: compute each branch, add the branches that match the evidence, divide."}, {"id": "b", "lec": "L3", "sec": "l3", "kind": "Expectation and variance", "title": "② Expectation and variance (L3)", "desc": "Practice sheet Q6 type: from a small table to E[X], E[X²], Var(X), then a linear transform."}], "items": [{"k": "a", "id": "sa-a1", "stem": "A condition affects 2% of people. A test detects 95% of cases and gives a false positive for 10% of healthy people. Find P(condition | positive). (10 points)", "steps": [{"ask": "P(positive and has the condition) = ?", "pts": 3, "accept": ["0.019"], "sol": "0.02 × 0.95 = 0.019"}, {"ask": "P(positive and healthy) = ?", "pts": 3, "accept": ["0.098"], "sol": "0.98 × 0.10 = 0.098"}, {"ask": "P(condition | positive) = ? (3 decimals or a fraction)", "pts": 3, "accept": ["0.162", "19/117"], "sol": "0.019 / (0.019 + 0.098) = 0.019 / 0.117 ≈ 0.162"}, {"ask": "Why is the answer so low when the test catches 95% of cases?", "pts": 1, "opts": ["False positives from the large healthy group outnumber the true positives about 5 to 1", "The test is broken", "Sensitivity and the false-positive rate are the same number", "Because 0.95 × 0.10 is small"], "ans": 0, "ow": {"1": "Nothing is broken; the test behaves exactly as described.", "2": "They are different: 95% is P(+ | condition), 10% is P(+ | healthy).", "3": "0.95 × 0.10 mixes the two branches and is not part of the calculation."}, "sol": "Healthy people are 49 times as common, so 10% of them (0.098) swamps 95% of the sick (0.019)."}], "note": "Bayes in three moves: a joint probability for each branch, add the branches that match the evidence, divide."}, {"k": "a", "id": "sa-a2", "stem": "Urn I holds 3 red and 1 blue ball; urn II holds 1 red and 3 blue. Flip a fair coin to pick an urn, then draw one ball. It is red. Find P(urn I | red). (10 points)", "steps": [{"ask": "P(red) = ?", "pts": 4, "accept": ["0.5", "1/2"], "sol": "½ · ¾ + ½ · ¼ = ½"}, {"ask": "P(urn I | red) = ?", "pts": 4, "accept": ["0.75", "3/4"], "sol": "(½ · ¾) / ½ = ¾"}, {"ask": "In one sentence: why is the answer above 1/2?", "pts": 2, "sol": "Red is three times as likely from urn I (¾ vs ¼), so seeing red shifts belief toward urn I."}]}, {"k": "b", "id": "sa-b1", "stem": "X takes the values 0, 1, 2 with probabilities 0.2, 0.5, 0.3. Find E[X], E[X²], Var(X) and Var(5 − 2X). (10 points)", "steps": [{"ask": "E[X] = ?", "pts": 2, "accept": ["1.1"], "sol": "0 · 0.2 + 1 · 0.5 + 2 · 0.3 = 1.1"}, {"ask": "E[X²] = ?", "pts": 2, "accept": ["1.7"], "sol": "0 · 0.2 + 1 · 0.5 + 4 · 0.3 = 1.7"}, {"ask": "Var(X) = ?", "pts": 3, "accept": ["0.49"], "sol": "1.7 − 1.1² = 1.7 − 1.21 = 0.49"}, {"ask": "Var(5 − 2X) = ?", "pts": 3, "accept": ["1.96"], "sol": "(−2)² · 0.49 = 1.96; the 5 drops out"}], "note": "Var(aX + b) = a² Var(X): the sign of a disappears when you square it."}, {"k": "b", "id": "sa-b2", "opt": "The exam asks you to use Var(X) = E[X²] − (E[X])², not to derive it.", "stem": "Show that Var(X) = E[X²] − (E[X])².", "steps": [{"ask": "Write μ = E[X] and expand (X − μ)².", "pts": 1, "sol": "X² − 2μX + μ²"}, {"ask": "Take expectations using linearity.", "pts": 1, "sol": "E[X²] − 2μ · E[X] + μ² = E[X²] − 2μ² + μ² = E[X²] − μ²"}]}]}};</script>
+<script>
+/* Study guide engine: practice bank, step-by-step short answers, a practice box at the end of each
+   page section, timed mock exams drawn from their own pool, and a mistake notebook.
+   Input: window.STUDY_DATA = { config, practice, mock, short } (written by scripts/build.py).
+   Progress lives in localStorage and is mirrored to the artifact db when the page runs as a Claude artifact. */
+(function () {
+  var DATA = window.STUDY_DATA || {};
+  var CFG = DATA.config || {};
+  var KEY = CFG.storageKey || "study-guide";
+
+  /* ================= UI strings ================= */
+  var STR = {
+    zh: {
+      partNo: "做题", title: "练习和考试",
+      intro: "练习题和模拟考试的题互不重复。作答记录自动保存在这个浏览器里，和每节末尾「本节练习」是同一份。",
+      tabPractice: "练习题", tabSA: "简答分步", tabMock: "模拟考试", tabBook: "错题本", tabBookN: "错题本（{n}）", tabsAria: "选择题库",
+      scope: "范围", scopeAll: "全部（{n} 题）", scopeLec: "{lec}（{n} 题）", loading: "加载中",
+      hintPractice: "选完马上看对错和解释，还能接着点别的选项，看它错在哪。多选题选好后点提交，按部分给分；填空题不分大小写、忽略空格，数值按大小判对。得分按第一次作答算。",
+      hintSA: "每道拆成几步：先在纸上写，再填结果点「核对」；也可以直接看答案，对照标准答案自己判。按步骤给分。",
+      hintMock: "每次从模拟题库里按各讲的比例随机抽一套：{parts}。作答时不显示对错，交卷后出成绩单，按讲和总分两个维度看表现，每个选项都有解释。「再抽一套」会优先抽还没做过的题。",
+      hintTimer: "<b>计时：</b>做之前选好限时，点「开始计时」，倒计时显示在上面的条里，时间到自动交卷。",
+      hintFlag: "<b>标记：</b>拿不准的题点题卡右上角的「🚩 标记」，题号会列在下面的条里，点题号直接跳过去；交卷后成绩单会告诉你标记的题错了几道、没标记的题又错了几道。",
+      hintBook: "自动收集三类题：练习题第一次没做对的、模拟考交卷后做错的、模拟考里标记过的。每道题上面写着它是怎么进来的、你当时答的是什么。在这里重做不会改动原来的首次得分；重做对了就记为「重做对了」，默认只显示还没重做对的。",
+      partSep: "、", partN: "{n} 道{name}",
+      export: "导出进度", exportHint: "把这段内容交给 Claude（复制粘贴，或下载成文件），它会读出你的薄弱点，再出针对性的新题。", exportCopy: "复制", exportCopied: "已复制", exportSave: "下载 JSON",
+      firstScore: "首次得分 {s}", fillAria: "填写答案", submit: "提交",
+      fillRight: "<b>对了。</b>", fillWrong: "<b>不对。参考答案：{a}。</b>", fillFirst: "（第一次写的是「{v}」）",
+      fillHint: "没认出这个答案，这次不算。写成数字或算式就行，比如 0.5、-1/2、2^-20、ln5；几个数用逗号隔开，比如 (1, -0.5)。",
+      undo: "手滑了，这题重新算", undoArmed: "确定清掉这题的记录？再点一次", undoTitle: "清掉这道题的作答记录，下一次作答算作第一次", cancel: "取消",
+      mRight: "✓ 选对了", mMissed: "漏选", mWrong: "✗ 不该选", mSkip: "不选，对", multiHint: "可以选多个，选好后点提交",
+      reselect: "重新选", scoreNow: "这次得分 {s}（满分 1）", multiAns: "<b>正确答案：{a}。</b>",
+      right: "正确答案", leadRight: "<b>第一次就选对了。</b>", leadWrong: "<b>第一次选了 {a}，正确答案是 {b}。</b>", moreOpts: "（还可以点其他选项，看它为什么不对）",
+      optRight: "这个是对的。", optWrong: "这个不对，看下面的解释。",
+      tMulti: "多选", tFill: "填空", tCard: "看答案", tSA: "简答",
+      reveal: "看答案", answer: "<b>答案</b>",
+      clearPractice: "清空练习记录", clearArmed: "确定清空？再点一次",
+      practiceBar: "已答 <b>{d}</b> / {n} · 首次得分 <b>{s}</b>", pctParen: "（{p}%）",
+      byLec: "按讲看正确率（按第一次作答算，全部范围）", noRecords: "还没有作答记录。", thLec: "讲", thScore: "得分", thPct: "正确率",
+      emptyScope: "这个范围暂时没有题。",
+      step: "第 {i} 步 · {p} 分", saBadge: "首次得分 {s} / {m}", saFixed: "（改对后 {f}）", optional: "选做 · 不计总分", optNote: "<b>不考推导：</b>",
+      stepAria: "第 {i} 步的结果", tries: "不对{n}。改一下再核对，或者点「看答案」。", triesN: "（已经试了 {k} 次）",
+      check: "核对", peek: "看答案", peekPaper: "写在纸上了，直接看答案", selfPeek: "写好了，看答案",
+      stepRight: "<b>对了。</b>", fixedAfter: "（错了 {n} 次后改对）", stepWrong: "<b>不对。</b>", sol: "标准答案：",
+      iRight: "我写对了", iWrong: "没写对", selfJudge: "对照标准答案自己判一下",
+      redoStep: "改这一步，再做一次", override: "我觉得我写对了，算我对",
+      redoSA: "重做这道题", saTotal: "这道题首次得分 {s} / {m}", saTotalFixed: "，改对后 {f} / {m}", saNote: "<b>小结：</b>",
+      saBar: "已开始 <b>{a}</b> / {n} 道", saBarScore: " · 首次得分 <b>{s}</b> / {m}",
+      secTitle: "本节练习", secMeta: "{n} 道题 · 已做 {d}", secPct: " · 第一次作答正确率 {p}%", secSA: " · 简答 {a} / {b}",
+      close: "收起", start: "开始做题", resume: "接着做（还剩 {n} 题）", allDone: "全做完了，再看看",
+      secSub: "简答 · 要写步骤", nextSec: "下一节 →", toMock: "去模拟考试 →",
+      noAnswer: "没作答", noPick: "没选",
+      notePractice: "练习第一次没做对，当时答的是 {a}", noteMock: "第 {k} 套模考做错", notePick: "，当时答的是 {a}",
+      noteFlag: "第 {k} 套模考标记过", noteFlagOk: "，当时做对了",
+      tagWrong: "错过", tagFlag: "🚩 标记过", tagOk: "重做对了", clearRedo: "清掉重做记录，再做一次",
+      bookBar: "错题本 <b>{n}</b> 道（错过 {w} · 标记过 {f}）· 还没重做对 <b>{l}</b> 道",
+      fTodo: "还没重做对", fWrong: "只看错过的", fFlag: "只看标记过的", fAll: "全部",
+      bookEmptyF: "这一类没有题了。", bookEmpty: "还没有错题。练习题第一次做错、模考交卷后做错或标记过的题，都会自动收进来。",
+      score: "得分 {s}", flag: "🚩 标记", flagged: "🚩 已标记", flagTitle: "标记这道题，方便回头快速找到（再点一次取消）",
+      correct: "<b>答对了。</b>", refAns: "<b>参考答案：{a}。</b>",
+      youRight: "✓ 你选了，对", youWrong: "✗ 你选了，错", mockRight: "答对了。", mockWrong: "正确答案是 {a}。", mockMulti: "本题得分 {s}。",
+      card: "答题卡", qn: "第 {i} 题", qOk: " · 对", qBad: " · 错", qAns: " · 已答", qUnans: " · 未答", qFlg: " · 标记了",
+      legendDone: '<span class="qn ok sw"></span>对 <span class="qn bad sw"></span>错 <span class="qn flg sw"></span>标记过 · 点数字跳到那题',
+      legendLive: '<span class="qn ans sw"></span>已答 <span class="qn sw"></span>未答 <span class="qn flg sw"></span>标记了 · 点数字跳到那题',
+      flagHintStrip: "不确定的题点题卡右上角的 <b>🚩 标记</b>，这里会列出题号，点题号直接跳过去；交卷后也保留。",
+      flagList: "<b>🚩 标记了 {n} 题：</b>", nextFlag: "跳到下一个标记", clearFlags: "清除全部标记", clearFlagsArmed: "确定清除？",
+      redraw: "再抽一套", redrawArmed: "这套还没交，确定换一套？",
+      mockBar: "模拟考试 · 已作答 <b>{a}</b> / {n}", fresh: " · 题库里还有 {u} 道没抽到过",
+      limitAria: "限时", limitMin: "限时 {m} 分钟", noLimit: "不限时，只计用时", startTimer: "开始计时",
+      submitAll: "交卷", submitLeft: "交卷（还有 {n} 题没答）", submitArmed: "还有 {n} 题没答，确定交卷？",
+      submitted: "已交卷 · 得分 <b>{s}</b> / {m}（{p}%）", usedSuffix: " · 用时 {u}",
+      report: "成绩单", prevPaper: "上一套：{p}%", outOf: "{s} / {m} 题", wrongList: "<b>没拿满分的题：</b>", allRight: "全对。",
+      weakest: "这套里最弱的是 <b>{u}</b>，回去看这一讲，再到「练习题」里选这一讲练一遍。",
+      autoSubmit: "<b>时间到，自动交卷。</b>", used: "用时 {u}", limitNote: "（限时 {m} 分钟）", noLimitNote: "（没有限时）",
+      flaggedList: "<b>🚩 标记过的题：</b>", flagCal: "标记的 {n} 题里错了 {w} 题；没标记的题里还错了 {u} 题",
+      flagCalBad: "，说明有些题你以为会其实不会，这类更要回头看。", flagCalGood: "，判断自己哪里不确定的感觉还挺准。",
+      history: "历次模拟考试汇总（共 {n} 套）", recent: "最近几套的总分：",
+      mockPart: "{no}、{title}（{n} 题）", nums: ["一", "二", "三", "四", "五", "六"],
+      remain: "剩余", usedLbl: "已用",
+      catTitle: { tf: "判断题", single: "单选题", multi: "多选题", fill: "填空题" },
+      catDesc: { tf: "True / False。", single: "选一个最合适的。", multi: "可以选多个，按部分给分。", fill: "填最后的结果。数值按大小判对，分数、小数都行。" },
+      catShort: { tf: "判断", single: "单选", multi: "多选", fill: "填空" },
+      railK: "本节小节", railPrac: "本节练习 ↓"
+    },
+    en: {
+      partNo: "Practice", title: "Practice and exams",
+      intro: "Practice questions and mock exam questions never overlap. Your answers are saved in this browser and shared with the practice box at the end of each section.",
+      tabPractice: "Practice", tabSA: "Short answer", tabMock: "Mock exam", tabBook: "Mistakes", tabBookN: "Mistakes ({n})", tabsAria: "Choose a bank",
+      scope: "Scope", scopeAll: "All ({n})", scopeLec: "{lec} ({n})", loading: "Loading",
+      hintPractice: "You see right or wrong and an explanation right away, and you can keep clicking other options to see why they are wrong. Multi-select questions need a Submit and earn partial credit; fill-ins ignore case and spaces, and numbers are compared by value. Scores count your first try.",
+      hintSA: "Each question is split into steps. Work on paper, type the result and press Check, or reveal the model answer and mark yourself. Points are given per step.",
+      hintMock: "Each paper is drawn at random from the mock pool in proportion to the lectures: {parts}. Answers stay hidden until you hand in; then you get a score report by lecture with an explanation for every option. New papers prefer questions you have not seen.",
+      hintTimer: "<b>Timer:</b> pick a limit and press Start. The countdown sits in the bar above and the paper is handed in when it reaches zero.",
+      hintFlag: "<b>Flags:</b> press 🚩 Flag on any question you are unsure about. Flagged numbers are listed below the bar for quick jumps, and the report compares flagged and unflagged mistakes.",
+      hintBook: "Collects practice questions you missed on the first try, mock questions you got wrong, and mock questions you flagged. Each card says how it got here and what you answered. Redoing a question here never changes its first-try score; once you get it right it is marked as mastered.",
+      partSep: ", ", partN: "{n} {name}",
+      export: "Export progress", exportHint: "Give this to Claude (paste it or save it as a file). It reads your weak spots and writes new targeted questions.", exportCopy: "Copy", exportCopied: "Copied", exportSave: "Download JSON",
+      firstScore: "First try {s}", fillAria: "Your answer", submit: "Submit",
+      fillRight: "<b>Correct.</b>", fillWrong: "<b>Not quite. Answer: {a}.</b>", fillFirst: " (first try: “{v}”)",
+      fillHint: "Could not read that answer, so it was not recorded. Type a number or an expression such as 0.5, -1/2, 2^-20 or ln5; separate several numbers with commas, e.g. (1, -0.5).",
+      undo: "Misclick: reset this question", undoArmed: "Clear this question's record? Click again", undoTitle: "Clear this question's record so the next answer counts as the first", cancel: "Cancel",
+      mRight: "✓ correct pick", mMissed: "missed", mWrong: "✗ should not pick", mSkip: "not picked, right", multiHint: "Pick all that apply, then submit",
+      reselect: "Try again", scoreNow: "This try {s} (out of 1)", multiAns: "<b>Answer: {a}.</b>",
+      right: "answer", leadRight: "<b>Right on the first try.</b>", leadWrong: "<b>First pick was {a}; the answer is {b}.</b>", moreOpts: " (click the other options to see why they are wrong)",
+      optRight: "This one is correct.", optWrong: "This one is wrong; see the explanation below.",
+      tMulti: "multi", tFill: "fill-in", tCard: "flashcard", tSA: "short answer",
+      reveal: "Show answer", answer: "<b>Answer</b>",
+      clearPractice: "Clear practice record", clearArmed: "Clear everything? Click again",
+      practiceBar: "Answered <b>{d}</b> / {n} · first-try score <b>{s}</b>", pctParen: " ({p}%)",
+      byLec: "First-try accuracy by lecture (all questions)", noRecords: "No answers yet.", thLec: "Lecture", thScore: "Score", thPct: "Accuracy",
+      emptyScope: "No questions in this scope yet.",
+      step: "Step {i} · {p} pt", saBadge: "First try {s} / {m}", saFixed: " (after fixes {f})", optional: "optional · not counted", optNote: "<b>Not on the exam:</b> ",
+      stepAria: "Result of step {i}", tries: "Not right{n}. Edit and check again, or reveal the answer.", triesN: " ({k} tries so far)",
+      check: "Check", peek: "Show answer", peekPaper: "Done on paper, show answer", selfPeek: "Done, show answer",
+      stepRight: "<b>Correct.</b>", fixedAfter: " (fixed after {n} wrong tries)", stepWrong: "<b>Not right.</b>", sol: "Model answer: ",
+      iRight: "I got it", iWrong: "I missed it", selfJudge: "Compare with the model answer and mark yourself",
+      redoStep: "Redo this step", override: "My answer is right, count it",
+      redoSA: "Redo this question", saTotal: "First-try score {s} / {m}", saTotalFixed: ", after fixes {f} / {m}", saNote: "<b>Summary:</b> ",
+      saBar: "Started <b>{a}</b> / {n}", saBarScore: " · first-try score <b>{s}</b> / {m}",
+      secTitle: "Practice for this section", secMeta: "{n} questions · {d} done", secPct: " · first-try accuracy {p}%", secSA: " · short answer {a} / {b}",
+      close: "Close", start: "Start", resume: "Continue ({n} left)", allDone: "All done, review",
+      secSub: "Short answer · show your steps", nextSec: "Next section →", toMock: "Go to the mock exam →",
+      noAnswer: "no answer", noPick: "nothing picked",
+      notePractice: "Missed on the first practice try; you answered {a}", noteMock: "Wrong on mock paper {k}", notePick: "; you answered {a}",
+      noteFlag: "Flagged on mock paper {k}", noteFlagOk: ", answered correctly",
+      tagWrong: "missed", tagFlag: "🚩 flagged", tagOk: "mastered", clearRedo: "Clear the redo and try again",
+      bookBar: "<b>{n}</b> questions (missed {w} · flagged {f}) · <b>{l}</b> not yet mastered",
+      fTodo: "Not mastered", fWrong: "Missed", fFlag: "Flagged", fAll: "All",
+      bookEmptyF: "Nothing left in this view.", bookEmpty: "No mistakes yet. First-try practice misses and wrong or flagged mock questions land here automatically.",
+      score: "Score {s}", flag: "🚩 Flag", flagged: "🚩 Flagged", flagTitle: "Flag this question to find it again quickly (click again to remove)",
+      correct: "<b>Correct.</b>", refAns: "<b>Answer: {a}.</b>",
+      youRight: "✓ your pick, right", youWrong: "✗ your pick, wrong", mockRight: "Correct.", mockWrong: "The answer is {a}.", mockMulti: "Score {s}.",
+      card: "Answer sheet", qn: "Question {i}", qOk: " · right", qBad: " · wrong", qAns: " · answered", qUnans: " · blank", qFlg: " · flagged",
+      legendDone: '<span class="qn ok sw"></span>right <span class="qn bad sw"></span>wrong <span class="qn flg sw"></span>flagged · tap a number to jump',
+      legendLive: '<span class="qn ans sw"></span>answered <span class="qn sw"></span>blank <span class="qn flg sw"></span>flagged · tap a number to jump',
+      flagHintStrip: "Press <b>🚩 Flag</b> on a question you are unsure about; its number shows up here for a quick jump, and flags stay after you hand in.",
+      flagList: "<b>🚩 {n} flagged:</b> ", nextFlag: "Next flag", clearFlags: "Clear all flags", clearFlagsArmed: "Clear them?",
+      redraw: "New paper", redrawArmed: "This paper is not handed in. Switch anyway?",
+      mockBar: "Mock exam · answered <b>{a}</b> / {n}", fresh: " · {u} questions in the pool not drawn yet",
+      limitAria: "Time limit", limitMin: "{m} minutes", noLimit: "No limit, just time me", startTimer: "Start",
+      submitAll: "Hand in", submitLeft: "Hand in ({n} blank)", submitArmed: "{n} still blank. Hand in anyway?",
+      submitted: "Handed in · score <b>{s}</b> / {m} ({p}%)", usedSuffix: " · time {u}",
+      report: "Score report", prevPaper: "Previous paper: {p}%", outOf: "{s} / {m}", wrongList: "<b>Not full marks:</b> ", allRight: "All correct.",
+      weakest: "Your weakest lecture on this paper is <b>{u}</b>. Reread it, then practice that lecture in the Practice tab.",
+      autoSubmit: "<b>Time ran out; the paper was handed in.</b> ", used: "Time {u}", limitNote: " (limit {m} min)", noLimitNote: " (no limit)",
+      flaggedList: "<b>🚩 Flagged:</b> ", flagCal: "You got {w} of your {n} flagged questions wrong and {u} unflagged ones wrong",
+      flagCalBad: ", so some questions you felt sure about need another look.", flagCalGood: ", so your sense of what you are unsure about is fairly accurate.",
+      history: "All mock papers ({n})", recent: "Recent totals: ",
+      mockPart: "Part {no}. {title} ({n})", nums: ["1", "2", "3", "4", "5", "6"],
+      remain: "Left", usedLbl: "Used",
+      catTitle: { tf: "True / False", single: "Multiple choice", multi: "Multiple select", fill: "Fill in" },
+      catDesc: { tf: "True or false.", single: "Pick the best answer.", multi: "Pick all that apply; partial credit.", fill: "Type the final result. Numbers are compared by value; fractions and decimals both work." },
+      catShort: { tf: "true/false", single: "multiple choice", multi: "multiple select", fill: "fill-in" },
+      railK: "In this section", railPrac: "Section practice ↓"
+    }
+  };
+  var S = STR[CFG.lang] || STR.zh;
+  function t(k, v) {
+    var s = S[k] != null ? S[k] : STR.zh[k];
+    if (s == null) return k;
+    return v ? String(s).replace(/\{(\w+)\}/g, function (m, n) { return v[n] != null ? v[n] : m; }) : s;
+  }
+
+  /* ================= data ================= */
+  var L = ["A", "B", "C", "D", "E", "F", "G", "H"];
+  var TF_LABELS = CFG.tfLabels || ["True", "False"];
+  function seeded(str) {
+    var h = 2166136261;
+    for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return function () { h += 0x6D2B79F5; var x = h; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+  }
+  function seededOrder(seed, n) {
+    var rnd = seeded(seed), idx = [];
+    for (var k = 0; k < n; k++) idx.push(k);
+    for (var i = n - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)); var x = idx[i]; idx[i] = idx[j]; idx[j] = x; }
+    return idx;
+  }
+  /* answers are stored by original option index; only the display order is shuffled, with a seed from the
+     question id so the order is stable across reloads. True/false keeps True first. */
+  var ORDER = {};
+  function displayOrder(q) {
+    if (ORDER[q.id]) return ORDER[q.id];
+    var n = q.opts.length;
+    ORDER[q.id] = (q.cat === "tf" || q.fixed || n < 3) ? seededOrder("", n).sort(function (a, b) { return a - b; }) : seededOrder(KEY + ":" + q.id, n);
+    return ORDER[q.id];
+  }
+  function letterOf(q, i) { return L[displayOrder(q).indexOf(i)]; }
+
+  function prep(bank, name) {
+    bank = bank || {};
+    var b = { key: name, groups: bank.groups || [], items: bank.items || [], gmap: {}, imap: {} };
+    b.groups.forEach(function (g) { b.gmap[g.id] = g; });
+    b.items.forEach(function (q) {
+      var g = b.gmap[q.g] || {};
+      if (!q.type) q.type = "single";
+      if (q.type === "tf" && !q.opts) q.opts = [{}, {}];
+      if (q.opts) q.opts = q.opts.map(function (x, i) {
+        var o = typeof x === "string" ? { t: x } : x;
+        if (q.type === "tf" && o.t == null) o.t = TF_LABELS[i];
+        return o;
+      });
+      if (q.type === "single" && q.opts && q.opts.length === 2 && q.opts[0].t === TF_LABELS[0] && q.opts[1].t === TF_LABELS[1]) q.type = "tf";
+      q.cat = q.type;
+      q.lec = q.lec || g.lec || "";
+      q.sec = q.sec || g.sec || "";
+      b.imap[q.id] = q;
+    });
+    return b;
+  }
+  var BANKS = { practice: prep(DATA.practice, "practice"), mock: prep(DATA.mock, "mock") };
+  BANKS.mock.items = BANKS.mock.items.filter(function (q) { return q.type !== "card"; });
+  var SAD = DATA.short || {}, SA_GROUPS = SAD.groups || [], SA = SAD.items || [], SAG = {};
+  SA_GROUPS.forEach(function (x) { SAG[x.id] = x; });
+  SA.forEach(function (s) {
+    var gr = SAG[s.k] || {}, pg = BANKS.practice.gmap[gr.g] || {};
+    s.kind = s.kind || gr.kind || "";
+    s.lec = s.lec || gr.lec || pg.lec || "";
+    s.sec = s.sec || gr.sec || pg.sec || "";
+  });
+
+  var LECS = (CFG.lectures || []).slice();
+  [BANKS.practice, BANKS.mock].forEach(function (b) { b.items.forEach(function (q) { if (q.lec && LECS.indexOf(q.lec) < 0) LECS.push(q.lec); }); });
+  SA.forEach(function (s) { if (s.lec && LECS.indexOf(s.lec) < 0) LECS.push(s.lec); });
+
+  var MCFG = CFG.mock || {};
+  var MOCK_SECTIONS = (MCFG.sections || [{ cat: "tf", n: 10 }, { cat: "single", n: 10 }, { cat: "multi", n: 5 }, { cat: "fill", n: 5 }]).filter(function (x) { return x.n > 0; });
+  var WEIGHTS = MCFG.weights || null;
+  var MINUTES = (MCFG.minutes || [45, 0]).map(function (m) { return typeof m === "number" ? { m: m } : m; });
+  var DEF_MIN = MCFG.defaultMinutes != null ? MCFG.defaultMinutes : MINUTES[0].m;
+
+  /* ================= storage: localStorage first, mirrored to the artifact db ================= */
+  function blankPractice() { return { v: 1, scope: "all", ans: {}, sa: {}, redo: {}, updatedAt: "" }; }
+  function blankMock() { return { v: 1, paper: [], draft: {}, flags: {}, seen: {}, pcount: 0, submitted: false, result: null, history: [], timer: { limit: DEF_MIN, startedAt: "" }, updatedAt: "" }; }
+  function fix(key, raw) {
+    var st = key === "practice" ? blankPractice() : blankMock();
+    if (raw && typeof raw === "object" && raw.v === 1) Object.keys(raw).forEach(function (k) { st[k] = raw[k]; });
+    if (key === "mock") {
+      st.paper = (st.paper || []).filter(function (id) { return BANKS.mock.imap[id]; });
+      st.draft = st.draft || {}; st.history = st.history || []; st.flags = st.flags || {}; st.seen = st.seen || {}; st.pcount = st.pcount || 0;
+      if (!st.timer || typeof st.timer !== "object") st.timer = { limit: DEF_MIN, startedAt: "" };
+    } else { st.ans = st.ans || {}; st.sa = st.sa || {}; st.redo = st.redo || {}; }
+    return st;
+  }
+  function lsGet(k) { try { return localStorage.getItem(KEY + ":" + k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(KEY + ":" + k, v); } catch (e) {} }
+  function readLocal(key) { try { var v = lsGet(key); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+  function writeLocal(key, st) { lsSet(key, JSON.stringify(st)); }
+
+  var dbp = (window.claude && window.claude.use) ? window.claude.use("db").catch(function () { return null; }) : Promise.resolve(null);
+  var dbTimers = {}, dbBusy = {}, dbAgain = {};
+  function pushDb(key) {
+    clearTimeout(dbTimers[key]);
+    dbTimers[key] = setTimeout(function () {
+      dbp.then(function (db) {
+        if (!db) return;
+        if (dbBusy[key]) { dbAgain[key] = true; return; }
+        dbBusy[key] = true;
+        var doc = key === "report" ? buildReport() : { v: 1, state: JSON.parse(JSON.stringify(STATE[key])), updatedAt: STATE[key].updatedAt };
+        db.doc("progress/" + key).set(doc)
+          .catch(function () {})
+          .then(function () { dbBusy[key] = false; if (dbAgain[key]) { dbAgain[key] = false; pushDb(key); } });
+      });
+    }, key === "report" ? 2500 : 900);
+  }
+  var STATE = {};
+  function save(key) {
+    var st = STATE[key];
+    st.updatedAt = new Date().toISOString();
+    writeLocal(key, st);
+    pushDb(key); pushDb("report");
+  }
+  function hasData(key, st) {
+    if (!st) return false;
+    if (key === "practice") return Object.keys(st.ans || {}).length > 0 || Object.keys(st.sa || {}).length > 0;
+    return (st.paper || []).length > 0 || (st.history || []).length > 0;
+  }
+  function syncFromDb(key) {
+    dbp.then(function (db) {
+      if (!db) return;
+      db.doc("progress/" + key).get().then(function (snap) {
+        var local = STATE[key];
+        if (!snap.exists) { if (hasData(key, local)) pushDb(key); return; }
+        var d = snap.data() || {};
+        var remote = fix(key, d.state);
+        if (!hasData(key, local) || (remote.updatedAt && remote.updatedAt > (local.updatedAt || ""))) {
+          if (hasData(key, remote)) { STATE[key] = remote; writeLocal(key, remote); render(key); }
+        } else if (JSON.stringify(remote) !== JSON.stringify(local)) {
+          pushDb(key);
+        }
+      }).catch(function () {});
+    });
+  }
+
+  /* ================= scoring ================= */
+  function norm(s) {
+    return String(s == null ? "" : s).toLowerCase()
+      .replace(/[−–—]/g, "-").replace(/[，、]/g, ",").replace(/[×]/g, "x")
+      .replace(/[`'"“”‘’()\[\]（）_]/g, "").replace(/\s+/g, "").replace(/[。.;；,，]+$/, "");
+  }
+  /* Numeric answers are compared by value, not by spelling: what was typed is evaluated (fractions, powers, logs,
+     superscripts, vectors, "v3 = 5.42") and matched against the reference within rounding. */
+  var SUPD = { "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9", "⁻": "-" };
+  function evalExpr(src) {
+    var s = String(src).toLowerCase()
+      .replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+/g, function (m) { return "^(" + m.split("").map(function (c) { return SUPD[c]; }).join("") + ")"; })
+      .replace(/[−–—]/g, "-").replace(/\*\*/g, "^").replace(/[×·*]/g, "*").replace(/÷/g, "/").replace(/√/g, "sqrt")
+      .replace(/[（［【{]/g, "(").replace(/[）］】}]/g, ")").replace(/\s+/g, "");
+    var i = 0;
+    function fail() { throw new Error("parse"); }
+    function expr() { var v = term(); while (s[i] === "+" || s[i] === "-") { var o = s[i++], x = term(); v = o === "+" ? v + x : v - x; } return v; }
+    function term() {
+      var v = unary();
+      for (;;) {
+        if (s[i] === "*" || s[i] === "/") { var o = s[i++], x = unary(); v = o === "*" ? v * x : v / x; }
+        else if (s[i] === "(" || /[a-z\d.]/.test(s[i] || "")) v *= unary();
+        else return v;
+      }
+    }
+    function unary() { if (s[i] === "-") { i++; return -unary(); } if (s[i] === "+") { i++; return unary(); } return power(); }
+    function power() { var b = atom(); if (s[i] === "^") { i++; return Math.pow(b, unary()); } return b; }
+    function atom() {
+      if (s[i] === "(" || s[i] === "[") { i++; var v = expr(); if (s[i] === ")" || s[i] === "]") i++; else fail(); return pc(v); }
+      var m = s.slice(i).match(/^(\d+\.?\d*|\.\d+)(e[-+]?\d+)?/);
+      if (m) { i += m[0].length; return pc(parseFloat(m[0])); }
+      var fn = s.slice(i).match(/^(sqrt|ln|log|exp|pi|e)/);
+      if (!fn) fail();
+      i += fn[0].length;
+      if (fn[1] === "pi") return Math.PI;
+      if (fn[1] === "e") return Math.E;
+      var a = power();
+      return fn[1] === "sqrt" ? Math.sqrt(a) : fn[1] === "exp" ? Math.exp(a) : Math.log(a);
+    }
+    function pc(v) { if (s[i] === "%") { i++; return v / 100; } return v; }
+    try { var v = expr(); return i === s.length && isFinite(v) ? v : null; } catch (e) { return null; }
+  }
+  function splitTop(s) {
+    var out = [], depth = 0, cur = "";
+    for (var k = 0; k < s.length; k++) {
+      var c = s[k];
+      if (c === "(" || c === "[") depth++;
+      if (c === ")" || c === "]") depth--;
+      if (depth === 0 && /[,，、;；]/.test(c)) { out.push(cur); cur = ""; } else cur += c;
+    }
+    out.push(cur);
+    return out;
+  }
+  function numsOf(v, want) {
+    var s = String(v == null ? "" : v).trim().split(/[=≈]/).pop().replace(/^[~～]/, "").trim();
+    if (!s) return null;
+    var inner = s.replace(/^[(\[（［【{]/, "").replace(/[)\]）］】}]$/, "");
+    var parts = splitTop(inner);
+    if (parts.length === 1 && want > 1 && /\s/.test(inner.trim())) parts = inner.trim().split(/\s+/);
+    if (parts.length === 1) { var one = evalExpr(s); return one == null ? null : [one]; }
+    var vals = parts.map(evalExpr);
+    return vals.some(function (x) { return x == null; }) ? null : vals;
+  }
+  function approx(v, a) {
+    var d = Math.abs(v - a), m = Math.abs(a);
+    if (a === 0) return Math.abs(v) <= 0.0005;
+    if (m >= 0.1) return d <= 0.011 + 0.005 * m;
+    if (m >= 0.01) return d <= Math.max(0.0006, 0.03 * m);
+    return d <= 0.1 * m;
+  }
+  /* true / false, or null when the answer could not be read at all (then nothing is recorded) */
+  function fillCheck(q, v) {
+    var n = norm(v);
+    if (!n) return null;
+    var acc = q.accept || [];
+    if (acc.some(function (a) { return norm(a) === n; })) return true;
+    var ref = null;
+    for (var k = 0; k < acc.length && !ref; k++) ref = numsOf(acc[k], 1);
+    if (!ref) return false;
+    var got = numsOf(v, ref.length);
+    if (!got) return null;
+    if (got.length !== ref.length) return false;
+    return got.every(function (x, j) { return approx(x, ref[j]); });
+  }
+  function fillOk(q, v) { return fillCheck(q, v) === true; }
+  function scoreOf(q, sel) {
+    if (sel == null) return 0;
+    if (q.type === "single" || q.type === "tf") return sel === q.ans ? 1 : 0;
+    if (q.type === "fill") return fillOk(q, sel) ? 1 : 0;
+    if (q.type === "multi") {
+      if (!sel.length) return 0;
+      var K = q.ans.length, c = 0, w = 0;
+      sel.forEach(function (i) { if (q.ans.indexOf(i) >= 0) c++; else w++; });
+      return Math.max(0, (c - w) / Math.max(K, sel.length));
+    }
+    return 0;
+  }
+  function fmt(x) { return (Math.round(x * 100) / 100).toString(); }
+  function pct(s, m) { return m ? Math.round(s / m * 100) : 0; }
+  function scoreClass(x) { return x >= 0.999 ? "sc-full" : (x > 0 ? "sc-part" : "sc-zero"); }
+
+  /* ================= helpers ================= */
+  /* formulas: elements carry LaTeX in data-tex and plain-text fallback inside; MathJax (if it loads) swaps in SVG */
+  var texCss = false;
+  function renderTex(root) {
+    var MJ = window.MathJax;
+    if (!MJ || typeof MJ.tex2svg !== "function" || !root) return;
+    if (!texCss && typeof MJ.svgStylesheet === "function") { try { document.head.appendChild(MJ.svgStylesheet()); } catch (e) {} texCss = true; }
+    root.querySelectorAll("[data-tex]").forEach(function (e) {
+      if (e.getAttribute("data-done")) return;
+      try {
+        var out = MJ.tex2svg(e.getAttribute("data-tex"), { display: e.classList.contains("tex-d") });
+        if (out.querySelector("[data-mjx-error], merror")) return;
+        e.textContent = ""; e.appendChild(out); e.setAttribute("data-done", "1");
+      } catch (err) {}
+    });
+    fitTex();
+  }
+  /* an inline formula wider than its line gets its own scrollable line, so the page never scrolls sideways */
+  function fitTex() {
+    document.querySelectorAll(".m[data-done]").forEach(function (e) {
+      e.classList.remove("mwide");
+      var p = e.parentElement;
+      if (p && p.clientWidth && e.getBoundingClientRect().width > p.clientWidth - 2) e.classList.add("mwide");
+    });
+  }
+  var fitT;
+  window.addEventListener("resize", function () { clearTimeout(fitT); fitT = setTimeout(fitTex, 150); });
+  window.__renderTex = function () { renderTex(document.body); };
+  /* a button that asks once before acting: the first click arms it and shows Cancel, and it disarms by itself after 5 s */
+  function confirmBtn(label, armedLabel, onConfirm, cls, armedCls) {
+    var wrap = el("span", "confirm");
+    var b = el("button", cls, label); b.type = "button";
+    var x = el("button", "reset", t("cancel")); x.type = "button"; x.hidden = true;
+    var tm = null;
+    function disarm() { clearTimeout(tm); b.dataset.armed = ""; b.textContent = label; b.className = cls; x.hidden = true; }
+    b.addEventListener("click", function () {
+      if (b.dataset.armed !== "1") {
+        b.dataset.armed = "1"; b.textContent = armedLabel; if (armedCls) b.className = armedCls; x.hidden = false;
+        clearTimeout(tm); tm = setTimeout(disarm, 5000);
+        return;
+      }
+      clearTimeout(tm); onConfirm();
+    });
+    x.addEventListener("click", disarm);
+    wrap.appendChild(b); wrap.appendChild(x);
+    return wrap;
+  }
+  function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+  function plain(h) { var d = document.createElement("div"); d.innerHTML = String(h == null ? "" : h); return d.textContent.replace(/\s+/g, " ").trim(); }
+  function optWhy(q, i) {
+    var x = q.opts[i];
+    if (x && x.why) return x.why;
+    var correct = q.type === "multi" ? q.ans.indexOf(i) >= 0 : i === q.ans;
+    return correct ? t("optRight") : t("optWrong");
+  }
+  function typeTag(q) {
+    if (q.type === "multi") return '<span class="qtype multi">' + t("tMulti") + "</span>";
+    if (q.type === "fill") return '<span class="qtype fill">' + t("tFill") + "</span>";
+    if (q.type === "card") return '<span class="qtype">' + t("tCard") + "</span>";
+    return "";
+  }
+  function metaLine(q, badge) { return [q.lec, q.src].filter(Boolean).join(" · ") + typeTag(q) + (badge || ""); }
+  /* options are divs, not buttons, so their text can be selected with the mouse;
+     a drag that ends with text selected does not count as choosing the option */
+  function selecting() { var sl = window.getSelection ? window.getSelection() : null; return !!(sl && !sl.isCollapsed && String(sl).trim()); }
+  function optEl() {
+    var d = el("div", "opt");
+    d.setAttribute("role", "button"); d.tabIndex = 0;
+    var down = null;
+    d.addEventListener("mousedown", function (e) { down = [e.clientX, e.clientY]; });
+    d.addEventListener("click", function (e) {
+      var dragged = down && Math.abs(e.clientX - down[0]) + Math.abs(e.clientY - down[1]) > 6;
+      down = null;
+      if (dragged && selecting()) e.stopImmediatePropagation();
+    });
+    d.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); d.click(); } });
+    return d;
+  }
+  function optHtml(q, i, pos, label, exp, square) {
+    return '<span class="bub' + (square ? " sq" : "") + '">' + L[pos] + '</span><span class="obody"><span class="otext">' + q.opts[i].t +
+      (label ? '<span class="olabel">' + label + "</span>" : "") + "</span>" + exp + "</span>";
+  }
+  function expOf(q, i) { return '<span class="oexp">' + optWhy(q, i) + "</span>"; }
+
+  /* ================= practice bank ================= */
+  function firstScore(q, rec) { return (!rec || rec.first == null) ? null : scoreOf(q, rec.first); }
+  function practiceList() {
+    var st = STATE.practice;
+    return BANKS.practice.items.filter(function (q) { return st.scope === "all" || q.lec === st.scope; });
+  }
+
+  /* where: "p" practice center, "s" section box, "b" mistake notebook */
+  function practiceCard(q, num, where) {
+    where = where || "p";
+    var key = "practice", st = STATE[key];
+    /* the notebook redoes a question under its own record, so first-try scores stay as they were */
+    var store = where === "b" ? (st.redo = st.redo || {}) : st.ans;
+    var c = el("div", "q"); c.id = "q-" + where + "-" + q.id; c.setAttribute("data-num", num);
+    var badge = "", fs = q.type === "card" ? null : firstScore(q, store[q.id]);
+    if (fs != null) badge = '<span class="qscore ' + scoreClass(fs) + '">' + t("firstScore", { s: fmt(fs) }) + "</span>";
+    c.appendChild(el("p", "qmeta", metaLine(q, badge)));
+    c.appendChild(el("div", "qstem", num + ". " + q.stem));
+    function rerender() { refreshQ(q); return document.getElementById("q-" + where + "-" + q.id); }
+    /* a slip of the finger: wipe this question's record so the next answer counts as the first */
+    function undoBtn() {
+      var w = confirmBtn(t("undo"), t("undoArmed"), function () { delete store[q.id]; save(key); rerender(); }, "reset undo", "reset undo armed");
+      w.firstChild.title = t("undoTitle");
+      return w;
+    }
+
+    if (q.type === "card") {
+      var rec0 = store[q.id] || {};
+      var why0 = el("div", "why", t("answer") + " " + (q.answer || ""));
+      var btn0 = el("button", "reveal", t("reveal")); btn0.type = "button";
+      if (rec0.seen) btn0.hidden = true; else why0.hidden = true;
+      btn0.addEventListener("click", function () { store[q.id] = { seen: true }; save(key); rerender(); });
+      c.appendChild(btn0); c.appendChild(why0);
+      return c;
+    }
+
+    if (q.type === "fill") {
+      var recF = store[q.id] || {};
+      var row = el("div", "fillrow");
+      var inp = document.createElement("input");
+      inp.type = "text"; inp.id = "in-" + where + "-" + q.id; inp.value = recF.last != null ? recF.last : "";
+      inp.setAttribute("aria-label", t("fillAria")); inp.autocomplete = "off"; inp.spellcheck = false;
+      var sub = el("button", "btn", t("submit")); sub.type = "button";
+      row.appendChild(inp); row.appendChild(sub); c.appendChild(row);
+      var hintF = el("p", "fillhint"); hintF.hidden = true; c.appendChild(hintF);
+      var submitFill = function () {
+        var v = inp.value;
+        if (!norm(v)) return;
+        if (fillCheck(q, v) === null) { hintF.textContent = t("fillHint"); hintF.hidden = false; return; }
+        var r = store[q.id] || {};
+        if (r.first == null) r.first = v;
+        r.last = v; store[q.id] = r;
+        save(key); rerender();
+        var again = document.getElementById("in-" + where + "-" + q.id); if (again) again.focus();
+      };
+      sub.addEventListener("click", submitFill);
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") submitFill(); });
+      if (recF.last != null) {
+        var ok = fillOk(q, recF.last);
+        inp.className = ok ? "ok" : "bad";
+        var head = ok ? t("fillRight") : t("fillWrong", { a: q.answer || (q.accept || [])[0] });
+        if (recF.first != null && recF.first !== recF.last) head += t("fillFirst", { v: esc(recF.first) });
+        c.appendChild(el("div", "why", head + (q.why || "")));
+        if (!fillOk(q, recF.first)) { c.classList.add("missed"); var uf = el("div", "qfoot"); uf.appendChild(undoBtn()); c.appendChild(uf); }
+      }
+      return c;
+    }
+
+    var opts = el("div", "opts"); c.appendChild(opts);
+    var rec = store[q.id] || {};
+    if (q.type === "multi") {
+      var sel = rec.sel || [], submitted = !!rec.submitted;
+      displayOrder(q).forEach(function (i, pos) {
+        var bt = optEl();
+        var chosen = sel.indexOf(i) >= 0, isAns = q.ans.indexOf(i) >= 0, label = "", exp = "";
+        if (submitted) {
+          if (isAns && chosen) { bt.classList.add("right"); label = t("mRight"); }
+          else if (isAns) { bt.classList.add("missed"); label = t("mMissed"); }
+          else if (chosen) { bt.classList.add("wrong"); label = t("mWrong"); }
+          else { label = t("mSkip"); }
+          exp = expOf(q, i);
+        } else if (chosen) { bt.classList.add("sel"); }
+        bt.setAttribute("aria-pressed", chosen ? "true" : "false");
+        bt.innerHTML = optHtml(q, i, pos, label, exp, true);
+        if (!submitted) bt.addEventListener("click", function () {
+          var r = store[q.id] || {}, a = (r.sel || []).slice(), k = a.indexOf(i);
+          if (k >= 0) a.splice(k, 1); else a.push(i);
+          a.sort(); r.sel = a; store[q.id] = r; writeLocal(key, st); rerender();
+        });
+        opts.appendChild(bt);
+      });
+      var foot = el("div", "qfoot");
+      if (!submitted) {
+        var sb = el("button", "btn", t("submit")); sb.type = "button"; sb.disabled = !sel.length;
+        sb.addEventListener("click", function () {
+          var r = store[q.id] || {};
+          if (!(r.sel || []).length) return;
+          if (r.first == null) r.first = r.sel.slice();
+          r.submitted = true; store[q.id] = r; save(key); rerender();
+        });
+        foot.appendChild(sb);
+        foot.appendChild(el("span", "empty", t("multiHint")));
+      } else {
+        c.classList.add("done");
+        var sNow = scoreOf(q, sel), sFirst = scoreOf(q, rec.first);
+        if (sFirst < 0.999) c.classList.add("missed");
+        var again = el("button", "btn ghost", t("reselect")); again.type = "button";
+        again.addEventListener("click", function () { var r = store[q.id]; r.submitted = false; r.sel = []; save(key); rerender(); });
+        foot.appendChild(again);
+        foot.appendChild(el("span", "qscore " + scoreClass(sNow), t("scoreNow", { s: fmt(sNow) })));
+        if (sFirst < 0.999) foot.appendChild(undoBtn());
+      }
+      c.appendChild(foot);
+      if (submitted) c.appendChild(el("div", "why", t("multiAns", { a: q.ans.map(function (i) { return letterOf(q, i); }).sort().join(S === STR.zh ? "、" : ", ") }) + (q.why || "")));
+      return c;
+    }
+
+    var tried = rec.tried || [], answered = rec.first != null;
+    displayOrder(q).forEach(function (i, pos) {
+      var bt = optEl(), label = "", exp = "";
+      if (answered && i === q.ans) { bt.classList.add("right"); label = t("right"); exp = expOf(q, i); }
+      else if (tried.indexOf(i) >= 0) { bt.classList.add("wrong"); label = "✗"; exp = expOf(q, i); }
+      bt.innerHTML = optHtml(q, i, pos, label, exp, false);
+      bt.addEventListener("click", function () {
+        var r = store[q.id] || {};
+        if (r.first == null) r.first = i;
+        r.tried = r.tried || [];
+        if (r.tried.indexOf(i) < 0) r.tried.push(i);
+        store[q.id] = r; save(key); rerender();
+      });
+      opts.appendChild(bt);
+    });
+    if (answered) {
+      c.classList.add("done");
+      if (rec.first !== q.ans) c.classList.add("missed");
+      var lead = rec.first === q.ans ? t("leadRight") : t("leadWrong", { a: letterOf(q, rec.first), b: letterOf(q, q.ans) });
+      var shown = tried.filter(function (i) { return i !== q.ans; }).length + 1;
+      var tail = shown < q.opts.length ? ' <span class="empty">' + t("moreOpts") + "</span>" : "";
+      c.appendChild(el("div", "why", lead + (q.why || "") + tail));
+      if (rec.first !== q.ans) { var us = el("div", "qfoot"); us.appendChild(undoBtn()); c.appendChild(us); }
+    }
+    return c;
+  }
+
+  function refreshQ(q) {
+    ["p", "s", "b"].forEach(function (w) {
+      var old = document.getElementById("q-" + w + "-" + q.id);
+      if (!old) return;
+      var num = +old.getAttribute("data-num");
+      var n = w === "b" ? bookCard(q, num) : practiceCard(q, num, w);
+      old.replaceWith(n); renderTex(n);
+    });
+    updatePracticeBar(); updateSecHead(q.sec); updateBookBar();
+  }
+
+  function unitStats(list, scoreFn) {
+    var out = {};
+    LECS.forEach(function (u) { out[u] = { s: 0, m: 0 }; });
+    list.forEach(function (q) { var sc = scoreFn(q); if (sc == null || !out[q.lec]) return; out[q.lec].m++; out[q.lec].s += sc; });
+    return out;
+  }
+  function statsTable(us) {
+    var rows = LECS.filter(function (u) { return us[u] && us[u].m > 0; }).map(function (u) {
+      var x = us[u], p = pct(x.s, x.m);
+      var bar = '<div class="gbar"><span class="' + (p < 80 ? "low" : "") + '" style="width:' + p + '%"></span></div>';
+      return "<tr><td>" + u + '</td><td class="num">' + fmt(x.s) + " / " + x.m + '</td><td class="num">' + p + "%</td><td>" + bar + "</td></tr>";
+    }).join("");
+    return '<div class="tbl"><table class="gtable"><tr><th>' + t("thLec") + '</th><th class="num">' + t("thScore") + '</th><th class="num">' + t("thPct") + "</th><th></th></tr>" + rows + "</table></div>";
+  }
+
+  function updatePracticeBar() {
+    var st = STATE.practice, list = practiceList().filter(function (q) { return q.type !== "card"; });
+    var bar = document.getElementById("bar-practice"); if (!bar) return;
+    var info = bar.querySelector(".score"), acts = bar.querySelector(".acts");
+    acts.innerHTML = "";
+    var done = 0, s = 0;
+    list.forEach(function (q) { var f = firstScore(q, st.ans[q.id]); if (f != null) { done++; s += f; } });
+    info.innerHTML = t("practiceBar", { d: done, n: list.length, s: fmt(s) }) + (done ? t("pctParen", { p: pct(s, done) }) : "");
+    acts.appendChild(confirmBtn(t("clearPractice"), t("clearArmed"), function () { st.ans = {}; save("practice"); render("practice"); }, "reset", "reset armed"));
+    var box = document.getElementById("sum-practice");
+    var us = unitStats(BANKS.practice.items.filter(function (q) { return q.type !== "card"; }), function (q) { return firstScore(q, st.ans[q.id]); });
+    var any = LECS.some(function (u) { return us[u].m > 0; });
+    var open = box.querySelector("details") && box.querySelector("details").open;
+    box.innerHTML = '<details class="weak"' + (open ? " open" : "") + "><summary>" + t("byLec") + "</summary>" + (any ? statsTable(us) : '<p class="empty">' + t("noRecords") + "</p>") + "</details>";
+    box.hidden = false;
+  }
+
+  function renderPractice() {
+    var st = STATE.practice, root = document.getElementById("bank-practice"); if (!root) return;
+    var sel = document.getElementById("scope-practice"); if (sel) sel.value = st.scope;
+    root.innerHTML = "";
+    var list = practiceList(), num = 0;
+    if (!list.length) root.appendChild(el("p", "empty", t("emptyScope")));
+    BANKS.practice.groups.forEach(function (g) {
+      var qs = list.filter(function (q) { return q.g === g.id; });
+      if (!qs.length) return;
+      var box = el("div", "qgroup", "<h3>" + g.title + "</h3>" + (g.desc ? '<p class="qdesc">' + g.desc + "</p>" : ""));
+      qs.forEach(function (q) { num++; box.appendChild(practiceCard(q, num)); });
+      root.appendChild(box);
+    });
+    updatePracticeBar();
+    renderTex(root);
+  }
+
+  /* ================= short answer, step by step ================= */
+  function saRec(s) { return (STATE.practice.sa || {})[s.id] || {}; }
+  function saStarted(s) { var r = saRec(s); return Object.keys(r).some(function (k) { return r[k] && (r[k].shown || r[k].tries); }); }
+  /* a typed step is re-judged with the current checker, so older records benefit from looser matching too */
+  function stepOk(p, rec) {
+    if (!rec || !rec.shown) return null;
+    if (rec.fix) return true;
+    if (p.accept && rec.v != null && !rec.self) return fillOk(p, rec.v);
+    return rec.ok == null ? null : rec.ok;
+  }
+  function saScore(s) {
+    var r = saRec(s), sc = 0, mx = 0, fin = 0;
+    s.steps.forEach(function (p, i) {
+      var pts = p.pts || 1;
+      mx += pts;
+      if (stepOk(p, r[i]) === true) { fin += pts; if (!r[i].tries || (r[i].fix && r[i].tries <= 1)) sc += pts; }
+    });
+    return { s: sc, f: fin, m: mx };  /* s counts only steps right on the first try; f also counts steps fixed later */
+  }
+  function setStep(s, i, patch) {
+    var st = STATE.practice; st.sa = st.sa || {};
+    var r = st.sa[s.id] = st.sa[s.id] || {}, cur = r[i] || {};
+    Object.keys(patch).forEach(function (k) { cur[k] = patch[k]; });
+    r[i] = cur;
+    save("practice"); refreshSA(s);
+  }
+  function refreshSA(s) {
+    ["p", "s"].forEach(function (w) {
+      var old = document.getElementById("sa-" + w + "-" + s.id);
+      if (!old) return;
+      var n = saCard(s, +old.getAttribute("data-num"), w);
+      old.replaceWith(n); renderTex(n);
+    });
+    updateSABar(); updateSecHead(s.sec);
+  }
+  function saCard(s, num, where) {
+    var r = saRec(s), sc = saScore(s), started = saStarted(s);
+    var c = el("div", "q sa"); c.id = "sa-" + where + "-" + s.id; c.setAttribute("data-num", num);
+    var badge = started ? '<span class="qscore ' + scoreClass(sc.s / sc.m) + '">' + t("saBadge", { s: sc.s, m: sc.m }) + (sc.f > sc.s ? t("saFixed", { f: sc.f }) : "") + "</span>" : "";
+    c.appendChild(el("p", "qmeta", [s.lec, s.kind].filter(Boolean).join(" · ") + '<span class="qtype fill">' + t("tSA") + "</span>" + (s.opt ? '<span class="qtype">' + t("optional") + "</span>" : "") + badge));
+    if (s.opt) c.appendChild(el("div", "why", t("optNote") + s.opt));
+    c.appendChild(el("div", "qstem", num + ". " + s.stem));
+    s.steps.forEach(function (p, i) {
+      var rec = r[i] || {}, box = el("div", "sastep");
+      box.appendChild(el("p", "saask", "<b>" + t("step", { i: i + 1, p: p.pts || 1 }) + "</b>" + p.ask));
+      if (p.opts) {
+        /* shown in a fixed shuffled order (stored answers keep the original index); after answering, the other
+           options stay clickable to read why they are wrong, without touching the score */
+        var row = el("div", "opts"), order = seededOrder(KEY + ":" + s.id + ":" + i, p.opts.length);
+        var tried = rec.tried || (rec.shown && rec.v != null ? [rec.v] : []);
+        order.forEach(function (j, n) {
+          var b = optEl(), label = "", exp = "";
+          if (rec.shown && j === p.ans) { b.classList.add("right"); label = t("right"); }
+          else if (rec.shown && tried.indexOf(j) >= 0) { b.classList.add("wrong"); label = "✗"; if (p.ow && p.ow[j]) exp = '<span class="oexp">' + p.ow[j] + "</span>"; }
+          b.innerHTML = '<span class="bub">' + L[n] + '</span><span class="obody"><span class="otext">' + p.opts[j] + (label ? '<span class="olabel">' + label + "</span>" : "") + "</span>" + exp + "</span>";
+          b.addEventListener("click", function () {
+            if (!rec.shown) setStep(s, i, { v: j, ok: j === p.ans, shown: true, tried: [j] });
+            else if (tried.indexOf(j) < 0) setStep(s, i, { tried: tried.concat([j]) });
+          });
+          row.appendChild(b);
+        });
+        box.appendChild(row);
+      } else if (p.accept) {
+        var fr = el("div", "fillrow"), inp = document.createElement("input"), inId = "sa-in-" + where + "-" + s.id + "-" + i;
+        inp.type = "text"; inp.id = inId; inp.value = rec.v != null ? rec.v : ""; inp.autocomplete = "off"; inp.spellcheck = false;
+        inp.setAttribute("aria-label", t("stepAria", { i: i + 1 }));
+        fr.appendChild(inp);
+        if (rec.shown) {
+          inp.disabled = true;
+          if (rec.v != null && !rec.self) inp.className = stepOk(p, rec) ? "ok" : "bad";
+          box.appendChild(fr);
+        } else {
+          var msg = el("p", "fillhint");
+          if (rec.tries) { inp.className = "bad"; msg.textContent = t("tries", { n: rec.tries > 1 ? t("triesN", { k: rec.tries }) : "" }); }
+          else msg.hidden = true;
+          var chk = el("button", "btn", t("check")); chk.type = "button";
+          var go = function () {
+            var res = fillCheck(p, inp.value);
+            if (res === null) { if (norm(inp.value)) { msg.textContent = t("fillHint"); msg.hidden = false; } return; }
+            if (res) setStep(s, i, { v: inp.value, ok: true, shown: true });
+            else {
+              setStep(s, i, { v: inp.value, tries: (rec.tries || 0) + 1 });
+              var again = document.getElementById(inId); if (again) { again.focus(); again.select(); }
+            }
+          };
+          chk.addEventListener("click", go);
+          inp.addEventListener("keydown", function (e) { if (e.key === "Enter") go(); });
+          var peek = el("button", "btn ghost", rec.tries ? t("peek") : t("peekPaper")); peek.type = "button";
+          peek.addEventListener("click", function () {
+            if (rec.tries) setStep(s, i, { v: inp.value, ok: false, shown: true });
+            else setStep(s, i, { shown: true, self: true });
+          });
+          fr.appendChild(chk); fr.appendChild(peek);
+          box.appendChild(fr); box.appendChild(msg);
+        }
+      } else if (!rec.shown) {
+        var pk = el("button", "btn ghost", t("selfPeek")); pk.type = "button";
+        pk.addEventListener("click", function () { setStep(s, i, { shown: true, self: true }); });
+        box.appendChild(pk);
+      }
+      if (rec.shown) {
+        var okS = stepOk(p, rec);
+        var head = okS === true ? t("stepRight") + (rec.tries ? t("fixedAfter", { n: rec.tries }) : "") : (okS === false ? t("stepWrong") : "");
+        var triedN = p.opts ? (rec.tried || (rec.v != null ? [rec.v] : [])).filter(function (k) { return k !== p.ans; }).length + 1 : 0;
+        var more = p.opts && triedN < p.opts.length ? ' <span class="empty">' + t("moreOpts") + "</span>" : "";
+        box.appendChild(el("div", "why", head + t("sol") + p.sol + more));
+        var sf = el("div", "qfoot");
+        if (okS == null) {
+          var yes = el("button", "btn", t("iRight")), no = el("button", "btn ghost", t("iWrong")); yes.type = no.type = "button";
+          yes.addEventListener("click", function () { setStep(s, i, { ok: true }); });
+          no.addEventListener("click", function () { setStep(s, i, { ok: false }); });
+          sf.appendChild(yes); sf.appendChild(no); sf.appendChild(el("span", "empty", t("selfJudge")));
+        } else if (okS === false) {
+          /* reopen just this step, keeping what was typed so it can be edited */
+          var redo = el("button", "btn ghost", t("redoStep")); redo.type = "button";
+          redo.addEventListener("click", function () {
+            var r0 = STATE.practice.sa[s.id] || {};
+            if (p.accept && rec.v != null && !rec.self) r0[i] = { v: rec.v, tries: rec.tries || 1 }; else delete r0[i];
+            save("practice"); refreshSA(s);
+            var e = document.getElementById("sa-in-" + where + "-" + s.id + "-" + i); if (e) { e.focus(); e.select(); }
+          });
+          sf.appendChild(redo);
+          if (p.accept && rec.v != null && !rec.self) {
+            var fx = el("button", "reset", t("override")); fx.type = "button";
+            fx.addEventListener("click", function () { setStep(s, i, { ok: true, fix: true }); });
+            sf.appendChild(fx);
+          }
+        }
+        if (sf.childNodes.length) box.appendChild(sf);
+      }
+      c.appendChild(box);
+    });
+    if (started) {
+      var f = el("div", "qfoot"), rs = el("button", "btn ghost", t("redoSA")); rs.type = "button";
+      rs.addEventListener("click", function () { delete STATE.practice.sa[s.id]; save("practice"); refreshSA(s); });
+      f.appendChild(rs);
+      if (s.steps.every(function (p, i) { return stepOk(p, r[i]) != null; })) f.appendChild(el("span", "qscore " + scoreClass(sc.s / sc.m), t("saTotal", { s: sc.s, m: sc.m }) + (sc.f > sc.s ? t("saTotalFixed", { f: sc.f, m: sc.m }) : "")));
+      c.appendChild(f);
+      if (s.note && s.steps.every(function (p, i) { return r[i] && r[i].shown; })) c.appendChild(el("div", "why", t("saNote") + s.note));
+    }
+    return c;
+  }
+  function updateSABar() {
+    var bar = document.getElementById("bar-sa"); if (!bar) return;
+    var started = 0, sc = 0, mx = 0;
+    SA.forEach(function (x) { if (saStarted(x)) { started++; if (x.opt) return; var k = saScore(x); sc += k.s; mx += k.m; } });
+    bar.querySelector(".score").innerHTML = t("saBar", { a: started, n: SA.length }) + (started ? t("saBarScore", { s: sc, m: mx }) : "");
+  }
+  function renderSA() {
+    var root = document.getElementById("bank-sa"); if (!root) return;
+    root.innerHTML = "";
+    var num = 0;
+    SA_GROUPS.forEach(function (gr) {
+      var xs = SA.filter(function (x) { return x.k === gr.id; });
+      if (!xs.length) return;
+      var box = el("div", "qgroup", "<h3>" + (gr.title || gr.kind || "") + "</h3>" + (gr.desc ? '<p class="qdesc">' + gr.desc + "</p>" : ""));
+      xs.forEach(function (x) { num++; box.appendChild(saCard(x, num, "p")); });
+      root.appendChild(box);
+    });
+    updateSABar(); renderTex(root);
+  }
+
+  /* ================= section practice: a collapsible box at the end of each page section ================= */
+  var SECS = [];
+  function openMap() { try { return JSON.parse(lsGet("open") || "{}") || {}; } catch (e) { return {}; } }
+  function setOpen(id, v) { var o = openMap(); if (v) o[id] = 1; else delete o[id]; lsSet("open", JSON.stringify(o)); }
+  function secItems(id) { return BANKS.practice.items.filter(function (q) { return q.sec === id; }); }
+  function secSA(id) { return SA.filter(function (x) { return x.sec === id; }); }
+  function updateSecHead(id) {
+    var box = document.getElementById("sp-" + id); if (!id || !box || !box.querySelector(".sp-meta")) return;
+    var st = STATE.practice, qs = secItems(id), sas = secSA(id), done = 0, scored = 0, s = 0;
+    qs.forEach(function (q) {
+      if (q.type === "card") { if ((st.ans[q.id] || {}).seen) done++; return; }
+      var f = firstScore(q, st.ans[q.id]); if (f != null) { done++; scored++; s += f; }
+    });
+    var saDone = sas.filter(saStarted).length;
+    box.querySelector(".sp-meta").textContent = plain(t("secMeta", { n: qs.length, d: done }) + (scored ? t("secPct", { p: pct(s, scored) }) : "") + (sas.length ? t("secSA", { a: saDone, b: sas.length }) : ""));
+    var open = !!openMap()[id], left = qs.length - done + sas.length - saDone;
+    var bt = box.querySelector(".sp-toggle");
+    bt.textContent = open ? t("close") : (done + saDone === 0 ? t("start") : (left > 0 ? t("resume", { n: left }) : t("allDone")));
+    bt.className = "btn sp-toggle" + (open || !left ? " ghost" : "");
+    bt.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  function renderSecBox(id, k) {
+    var box = document.getElementById("sp-" + id); if (!box) return;
+    var open = !!openMap()[id];
+    box.innerHTML = '<div class="sp-head"><div class="sp-hl"><p class="sp-title">' + t("secTitle") + '</p><p class="sp-meta"></p></div><button type="button" class="btn sp-toggle"></button></div>';
+    box.querySelector(".sp-toggle").addEventListener("click", function () { setOpen(id, !openMap()[id]); renderSecBox(id, k); });
+    if (open) {
+      var body = el("div", "sp-body");
+      secItems(id).forEach(function (q, i) { body.appendChild(practiceCard(q, i + 1, "s")); });
+      var sas = secSA(id);
+      if (sas.length) {
+        body.appendChild(el("p", "sp-sub", t("secSub")));
+        sas.forEach(function (x, i) { body.appendChild(saCard(x, i + 1, "s")); });
+      }
+      var foot = el("div", "sp-foot");
+      var close = el("button", "btn ghost", t("close")); close.type = "button";
+      close.addEventListener("click", function () { setOpen(id, false); renderSecBox(id, k); box.scrollIntoView({ block: "start" }); });
+      foot.appendChild(close);
+      var nxt = SECS[k + 1], a = el("a", "btn", nxt ? t("nextSec") : t("toMock"));
+      a.href = "#" + (nxt || "practice");
+      foot.appendChild(a);
+      body.appendChild(foot);
+      box.appendChild(body);
+      renderTex(body);
+    }
+    updateSecHead(id);
+  }
+  function renderSecBoxes() { SECS.forEach(function (id, k) { renderSecBox(id, k); }); }
+  function buildSecBoxes() {
+    var want = {};
+    BANKS.practice.items.forEach(function (q) { if (q.sec) want[q.sec] = 1; });
+    SA.forEach(function (s) { if (s.sec) want[s.sec] = 1; });
+    SECS = [].slice.call(document.querySelectorAll("section[id]")).map(function (x) { return x.id; }).filter(function (id) { return want[id]; });
+    SECS.forEach(function (id) {
+      var sec = document.getElementById(id);
+      if (document.getElementById("sp-" + id)) return;
+      var box = el("div", "secprac"); box.id = "sp-" + id;
+      sec.appendChild(box);
+    });
+  }
+
+  /* ================= mistake notebook: first-try misses in practice, misses and flags from handed-in mock papers ================= */
+  var BOOK_FILTER = "todo";
+  function pickText(q, v) {
+    if (v == null || v === "") return t("noAnswer");
+    if (q.type === "fill") return "「" + esc(v) + "」";
+    if (Array.isArray(v)) return v.length ? v.map(function (i) { return letterOf(q, i); }).sort().join(", ") : t("noPick");
+    return q.opts && q.opts[v] ? letterOf(q, v) + " (" + plain(q.opts[v].t).slice(0, 40) + ")" : t("noAnswer");
+  }
+  function bookEntries() {
+    var out = {}, order = [];
+    function add(q, note, kind) {
+      if (!q) return;
+      if (!out[q.id]) { out[q.id] = { q: q, notes: [], wrong: false, flag: false }; order.push(q.id); }
+      var e = out[q.id];
+      if (e.notes.indexOf(note) < 0) e.notes.push(note);
+      if (kind === "wrong") e.wrong = true; else e.flag = true;
+    }
+    var ps = STATE.practice;
+    BANKS.practice.items.forEach(function (q) {
+      if (q.type === "card") return;
+      var r = ps.ans[q.id], f = firstScore(q, r);
+      if (f != null && f < 0.999) add(q, t("notePractice", { a: pickText(q, r.first) }), "wrong");
+    });
+    (STATE.mock.history || []).forEach(function (h, k) {
+      /* skip questions left blank, so an unfinished paper does not flood the notebook */
+      (h.wrong || []).forEach(function (id) {
+        if (h.picks && !(id in h.picks)) return;
+        var q = BANKS.mock.imap[id];
+        if (q) add(q, t("noteMock", { k: k + 1 }) + (h.picks ? t("notePick", { a: pickText(q, h.picks[id]) }) : ""), "wrong");
+      });
+      (h.flags || []).forEach(function (id) {
+        var wrongToo = (h.wrong || []).indexOf(id) >= 0;
+        if (wrongToo && h.picks && !(id in h.picks)) return;
+        add(BANKS.mock.imap[id], t("noteFlag", { k: k + 1 }) + (wrongToo ? "" : t("noteFlagOk")), "flag");
+      });
+    });
+    return order.map(function (id) { return out[id]; });
+  }
+  function mastered(q) { var r = (STATE.practice.redo || {})[q.id]; var f = firstScore(q, r); return f != null && f >= 0.999; }
+  function bookCard(q, num) {
+    var c = practiceCard(q, num, "b");
+    var e = (bookEntries().filter(function (x) { return x.q.id === q.id; })[0]) || { notes: [], wrong: false, flag: false };
+    var tags = (e.wrong ? '<span class="wbt bad">' + t("tagWrong") + "</span>" : "") + (e.flag ? '<span class="wbt flg">' + t("tagFlag") + "</span>" : "") + (mastered(q) ? '<span class="wbt ok">' + t("tagOk") + "</span>" : "");
+    var box = el("div", "wbk", tags + '<span class="wbn">' + e.notes.join(S === STR.zh ? "；" : "; ") + "</span>");
+    var r = (STATE.practice.redo || {})[q.id];
+    if (r) {
+      var again = el("button", "reset", t("clearRedo")); again.type = "button";
+      again.addEventListener("click", function () { delete STATE.practice.redo[q.id]; save("practice"); refreshQ(q); });
+      box.appendChild(again);
+    }
+    c.insertBefore(box, c.children[1]);
+    return c;
+  }
+  function updateBookBar() {
+    var bar = document.getElementById("bar-book"); if (!bar) return;
+    var all = bookEntries(), left = all.filter(function (x) { return !mastered(x.q); }).length;
+    var nw = all.filter(function (x) { return x.wrong; }).length, nf = all.filter(function (x) { return x.flag; }).length;
+    bar.querySelector(".score").innerHTML = t("bookBar", { n: all.length, w: nw, f: nf, l: left });
+    var tab = document.querySelector('[data-tab="book"]'); if (tab) tab.textContent = left ? t("tabBookN", { n: left }) : t("tabBook");
+  }
+  function renderBook() {
+    var root = document.getElementById("bank-book"), bar = document.getElementById("bar-book"); if (!root || !bar) return;
+    var acts = bar.querySelector(".acts"); acts.innerHTML = "";
+    var seg = el("div", "seg");
+    [["todo", t("fTodo")], ["wrong", t("fWrong")], ["flag", t("fFlag")], ["all", t("fAll")]].forEach(function (x) {
+      var b = el("button", "", x[1]); b.type = "button"; b.setAttribute("aria-pressed", BOOK_FILTER === x[0] ? "true" : "false");
+      b.addEventListener("click", function () { BOOK_FILTER = x[0]; renderBook(); });
+      seg.appendChild(b);
+    });
+    acts.appendChild(seg);
+    var list = bookEntries().filter(function (x) {
+      if (BOOK_FILTER === "todo") return !mastered(x.q);
+      if (BOOK_FILTER === "wrong") return x.wrong;
+      if (BOOK_FILTER === "flag") return x.flag;
+      return true;
+    });
+    root.innerHTML = "";
+    if (!list.length) root.appendChild(el("p", "empty", bookEntries().length ? t("bookEmptyF") : t("bookEmpty")));
+    list.forEach(function (x, i) { root.appendChild(bookCard(x.q, i + 1)); });
+    updateBookBar(); renderTex(root);
+  }
+
+  /* ================= mock exam ================= */
+  /* Each section of the paper takes its quota from the lectures in proportion to their pool size (or to
+     config.mock.weights), capped by what each lecture has. seen[id] = number of the last paper that used it;
+     never-used questions come first, then the ones used longest ago. */
+  function drawPaper(seen) {
+    var items = BANKS.mock.items, paper = [];
+    seen = seen || {};
+    function age(id) { return seen[id] == null ? -1 : seen[id]; }
+    MOCK_SECTIONS.forEach(function (sec) {
+      var byU = {}, N = 0, W = 0;
+      LECS.forEach(function (u) { byU[u] = []; });
+      items.forEach(function (q) { if (q.cat === sec.cat && byU[q.lec]) byU[q.lec].push(q.id); });
+      function wt(u) { return !byU[u].length ? 0 : (WEIGHTS ? (WEIGHTS[u] || 0) : byU[u].length); }
+      LECS.forEach(function (u) { N += byU[u].length; W += wt(u); });
+      var T = Math.min(sec.n, N);
+      if (!T || !W) return;
+      var quotas = LECS.map(function (u) { var ex = T * wt(u) / W; return { u: u, f: Math.min(Math.floor(ex), byU[u].length), r: ex - Math.floor(ex) }; });
+      var left = T - quotas.reduce(function (s, x) { return s + x.f; }, 0);
+      var ranked = shuffle(quotas.slice()).sort(function (a, b) { return b.r - a.r; });
+      for (var pass = 0; left > 0 && pass < 50; pass++) {
+        ranked.forEach(function (x) { if (left > 0 && x.f < byU[x.u].length && (pass > 0 || x.r > 0)) { x.f++; left--; } });
+      }
+      var picked = [];
+      quotas.forEach(function (x) {
+        var pool = shuffle(byU[x.u].slice());
+        pool.sort(function (a, b) { return age(a) - age(b); });
+        picked = picked.concat(pool.slice(0, x.f));
+      });
+      paper = paper.concat(shuffle(picked));
+    });
+    return paper;
+  }
+  function newPaper() {
+    var st = STATE.mock;
+    st.seen = st.seen || {}; st.pcount = st.pcount || 0;
+    (st.paper || []).forEach(function (id) { st.seen[id] = st.pcount; });
+    if ((st.paper || []).length) st.pcount++;
+    st.paper = drawPaper(st.seen); st.draft = {}; st.flags = {}; st.submitted = false; st.result = null;
+    st.timer = { limit: (st.timer && st.timer.limit != null) ? st.timer.limit : DEF_MIN, startedAt: "" };
+    save("mock");
+  }
+  function answeredDraft(d) { return d != null && d !== "" && !(Array.isArray(d) && !d.length); }
+
+  function mockCard(q, num) {
+    var key = "mock", st = STATE[key], locked = st.submitted;
+    var c = el("div", "q"); c.id = "q-m-" + q.id;
+    var badge = "";
+    if (locked) { var es = scoreOf(q, st.draft[q.id]); badge = '<span class="qscore ' + scoreClass(es) + '">' + t("score", { s: fmt(es) }) + "</span>"; }
+    var flagged = !!(st.flags && st.flags[q.id]);
+    if (flagged) c.classList.add("flagged");
+    var meta = el("p", "qmeta", '<span class="qmetatxt">' + q.lec + typeTag(q) + badge + "</span>");
+    var fb = el("button", "flagbtn" + (flagged ? " on" : ""), flagged ? t("flagged") : t("flag"));
+    fb.type = "button"; fb.title = t("flagTitle");
+    fb.setAttribute("aria-pressed", flagged ? "true" : "false");
+    fb.addEventListener("click", function () {
+      st.flags = st.flags || {};
+      if (st.flags[q.id]) delete st.flags[q.id]; else st.flags[q.id] = 1;
+      save(key); rerender();
+    });
+    meta.appendChild(fb);
+    c.appendChild(meta);
+    c.appendChild(el("div", "qstem", num + ". " + q.stem));
+    function rerender() { var n = mockCard(q, num); c.replaceWith(n); updateMockBar(); renderTex(n); }
+
+    if (q.type === "fill") {
+      var cur = st.draft[q.id] || "";
+      var row = el("div", "fillrow");
+      var inp = document.createElement("input");
+      inp.type = "text"; inp.id = "in-m-" + q.id; inp.value = cur;
+      inp.setAttribute("aria-label", t("fillAria")); inp.autocomplete = "off"; inp.spellcheck = false;
+      row.appendChild(inp); c.appendChild(row);
+      if (locked) {
+        inp.disabled = true;
+        var okE = fillOk(q, cur);
+        inp.className = okE ? "ok" : "bad";
+        c.appendChild(el("div", "why", (okE ? t("correct") : t("refAns", { a: q.answer || (q.accept || [])[0] })) + (q.why || "")));
+        if (!okE) c.classList.add("missed");
+      } else {
+        var tmr;
+        inp.addEventListener("input", function () {
+          st.draft[q.id] = inp.value;
+          clearTimeout(tmr); tmr = setTimeout(function () { save(key); updateMockBar(); }, 400);
+        });
+      }
+      return c;
+    }
+
+    var multi = q.type === "multi";
+    var opts = el("div", "opts"); c.appendChild(opts);
+    var dsel = st.draft[q.id];
+    displayOrder(q).forEach(function (i, pos) {
+      var bt = optEl();
+      var chosen = multi ? (dsel || []).indexOf(i) >= 0 : dsel === i, label = "", exp = "";
+      if (locked) {
+        var isAns = multi ? q.ans.indexOf(i) >= 0 : i === q.ans;
+        if (isAns && chosen) { bt.classList.add("right"); label = t("youRight"); }
+        else if (isAns) { bt.classList.add(multi ? "missed" : "right"); label = multi ? t("mMissed") : t("right"); }
+        else if (chosen) { bt.classList.add("wrong"); label = t("youWrong"); }
+        exp = expOf(q, i);
+      } else if (chosen) { bt.classList.add(multi ? "sel" : "picked"); }
+      bt.setAttribute("aria-pressed", chosen ? "true" : "false");
+      bt.innerHTML = optHtml(q, i, pos, label, exp, multi);
+      if (!locked) bt.addEventListener("click", function () {
+        if (multi) {
+          var a = (st.draft[q.id] || []).slice(), k = a.indexOf(i);
+          if (k >= 0) a.splice(k, 1); else a.push(i);
+          a.sort(); if (a.length) st.draft[q.id] = a; else delete st.draft[q.id];
+        } else st.draft[q.id] = i;
+        save(key); rerender();
+      });
+      opts.appendChild(bt);
+    });
+    if (locked) {
+      c.classList.add("done");
+      var s = scoreOf(q, dsel);
+      if (s < 0.999) c.classList.add("missed");
+      var head = s >= 0.999 ? t("mockRight") : (multi ? t("mockMulti", { s: fmt(s) }) : t("mockWrong", { a: letterOf(q, q.ans) }));
+      c.appendChild(el("div", "why", "<b>" + head + "</b>" + (q.why || "")));
+    }
+    return c;
+  }
+
+  var NAV_OPEN = false;
+  function jumpTo(id) {
+    var c = document.getElementById("q-m-" + id); if (!c) return;
+    var bar = document.getElementById("bar-mock");
+    var y = c.getBoundingClientRect().top + window.pageYOffset - (bar ? bar.getBoundingClientRect().height : 0) - 16;
+    try { window.scrollTo({ top: y, behavior: "instant" }); } catch (e) { window.scrollTo(0, y); }
+    c.classList.add("pulse"); setTimeout(function () { c.classList.remove("pulse"); }, 1200);
+  }
+  function paperNav(bar) {
+    var st = STATE.mock, nav = bar.querySelector(".pnav");
+    if (!nav) { nav = el("div", "pnav"); bar.appendChild(nav); }
+    nav.innerHTML = "";
+    if (!st.paper.length) { nav.hidden = true; return; }
+    nav.hidden = false;
+    var tg = el("button", "btn ghost small", t("card") + " " + (NAV_OPEN ? "▴" : "▾")); tg.type = "button";
+    tg.setAttribute("aria-expanded", NAV_OPEN ? "true" : "false");
+    tg.addEventListener("click", function () { NAV_OPEN = !NAV_OPEN; paperNav(bar); });
+    nav.appendChild(tg);
+    if (!NAV_OPEN) return;
+    var grid = el("div", "qgrid"), wrong = st.submitted && st.result ? st.result.wrong : [];
+    st.paper.forEach(function (id, i) {
+      var cls = "qn", tip = t("qn", { i: i + 1 }), fl = !!(st.flags && st.flags[id]);
+      if (st.submitted) { var ok = wrong.indexOf(id) < 0; cls += ok ? " ok" : " bad"; tip += ok ? t("qOk") : t("qBad"); }
+      else { var an = answeredDraft(st.draft[id]); if (an) cls += " ans"; tip += an ? t("qAns") : t("qUnans"); }
+      if (fl) { cls += " flg"; tip += t("qFlg"); }
+      var cb = el("button", cls, String(i + 1)); cb.type = "button"; cb.title = tip; cb.setAttribute("aria-label", tip);
+      cb.addEventListener("click", function () { NAV_OPEN = false; paperNav(bar); jumpTo(id); });
+      grid.appendChild(cb);
+    });
+    nav.appendChild(grid);
+    nav.appendChild(el("p", "legend", st.submitted ? t("legendDone") : t("legendLive")));
+  }
+
+  function flaggedIds() {
+    var st = STATE.mock, f = st.flags || {};
+    return st.paper.filter(function (id) { return f[id]; });
+  }
+  function jumpToNextFlag() {
+    var ids = flaggedIds(); if (!ids.length) return;
+    var cards = ids.map(function (id) { return document.getElementById("q-m-" + id); }).filter(Boolean);
+    var next = cards.filter(function (c) { return c.getBoundingClientRect().top > 90; })[0] || cards[0];
+    jumpTo(next.id.replace("q-m-", ""));
+  }
+  function renderFlagStrip() {
+    var st = STATE.mock, box = document.getElementById("flags-mock"); if (!box) return;
+    var ids = flaggedIds();
+    box.innerHTML = "";
+    if (!ids.length) { box.innerHTML = '<p class="flaghint">' + t("flagHintStrip") + "</p>"; box.hidden = false; return; }
+    var links = ids.map(function (id) {
+      var idx = st.paper.indexOf(id), q = BANKS.mock.imap[id], cls = "flaglink";
+      if (st.submitted) cls += scoreOf(q, st.draft[id]) >= 0.999 ? " ok" : " bad";
+      else if (!answeredDraft(st.draft[id])) cls += " blank";
+      return '<a class="' + cls + '" href="#q-m-' + id + '">' + t("qn", { i: idx + 1 }) + "</a>";
+    }).join(" ");
+    var p = el("p", "flaglist", t("flagList", { n: ids.length }) + links);
+    var nb = el("button", "btn ghost small", t("nextFlag")); nb.type = "button";
+    nb.addEventListener("click", jumpToNextFlag);
+    var cb = confirmBtn(t("clearFlags"), t("clearFlagsArmed"), function () { st.flags = {}; save("mock"); render("mock"); }, "btn ghost small", "btn warn small");
+    var acts2 = el("div", "flagacts"); acts2.appendChild(nb); acts2.appendChild(cb);
+    box.appendChild(p); box.appendChild(acts2); box.hidden = false;
+  }
+
+  function updateMockBar() {
+    var st = STATE.mock, bar = document.getElementById("bar-mock"); if (!bar) return;
+    var info = bar.querySelector(".score"), acts = bar.querySelector(".acts");
+    acts.innerHTML = "";
+    renderFlagStrip();
+    paperNav(bar);
+    var n = st.paper.length;
+    function drawNew() {
+      newPaper(); render("mock");
+      var top = document.getElementById("wrap-mock"); if (top) top.scrollIntoView({ block: "start" });
+    }
+    var started = !st.submitted && Object.keys(st.draft).some(function (k) { return answeredDraft(st.draft[k]); });
+    var redo;
+    if (started) redo = confirmBtn(t("redraw"), t("redrawArmed"), drawNew, "btn ghost", "btn warn");
+    else { redo = el("button", st.submitted ? "btn" : "btn ghost", t("redraw")); redo.type = "button"; redo.addEventListener("click", drawNew); }
+    if (!st.submitted) {
+      var a = st.paper.filter(function (id) { return answeredDraft(st.draft[id]); }).length;
+      var unseen = BANKS.mock.items.filter(function (q) { return st.seen[q.id] == null && st.paper.indexOf(q.id) < 0; }).length;
+      info.innerHTML = t("mockBar", { a: a, n: n }) + clockHtml() + '<span class="fresh">' + t("fresh", { u: unseen }) + "</span>";
+      if (!st.timer.startedAt) {
+        var lim = el("select", "limsel"); lim.setAttribute("aria-label", t("limitAria"));
+        MINUTES.forEach(function (x) { lim.appendChild(new Option(x.m ? t("limitMin", { m: x.m }) + (x.note ? (S === STR.zh ? "（" + x.note + "）" : " (" + x.note + ")") : "") : t("noLimit"), String(x.m))); });
+        lim.value = String(st.timer.limit);
+        lim.addEventListener("change", function () { st.timer.limit = +lim.value; save("mock"); });
+        var go = el("button", "btn", t("startTimer")); go.type = "button";
+        go.addEventListener("click", function () { st.timer.startedAt = new Date().toISOString(); save("mock"); updateMockBar(); });
+        acts.appendChild(lim); acts.appendChild(go);
+      }
+      var left = n - a, sb;
+      if (left) sb = confirmBtn(t("submitLeft", { n: left }), t("submitArmed", { n: left }), function () { submitMock(false); }, "btn", "btn warn");
+      else { sb = el("button", "btn", t("submitAll")); sb.type = "button"; sb.disabled = !n; sb.addEventListener("click", function () { submitMock(false); }); }
+      acts.appendChild(sb);
+      acts.appendChild(redo);
+    } else {
+      var r = st.result || { s: 0, m: 0 };
+      info.innerHTML = t("submitted", { s: fmt(r.s), m: r.m, p: pct(r.s, r.m) }) + (r.used != null ? t("usedSuffix", { u: mmss(r.used) }) : "");
+      acts.appendChild(redo);
+    }
+  }
+
+  function submitMock(auto) {
+    var st = STATE.mock, items = st.paper.map(function (id) { return BANKS.mock.imap[id]; });
+    var used = null, limit = st.timer.limit;
+    if (st.timer.startedAt) { used = Math.max(0, Math.round((Date.now() - Date.parse(st.timer.startedAt)) / 1000)); if (limit) used = Math.min(used, limit * 60); }
+    var s = 0, wrong = [];
+    var us = unitStats(items, function (q) { return scoreOf(q, st.draft[q.id]); });
+    items.forEach(function (q) { var sc = scoreOf(q, st.draft[q.id]); s += sc; if (sc < 0.999) wrong.push(q.id); });
+    var units = {};
+    LECS.forEach(function (u) { if (us[u].m) units[u] = { s: Math.round(us[u].s * 100) / 100, m: us[u].m }; });
+    var flags = flaggedIds(), picks = {};
+    wrong.concat(flags).forEach(function (id) { if (st.draft[id] != null) picks[id] = st.draft[id]; });
+    var res = { at: new Date().toISOString(), s: Math.round(s * 100) / 100, m: items.length, units: units, wrong: wrong, flags: flags, picks: picks, used: used, limit: used != null ? limit : null, auto: !!auto };
+    st.result = res; st.submitted = true;
+    st.history = (st.history || []).concat([res]).slice(-20);
+    save("mock"); render("mock");
+    var sum = document.getElementById("sum-mock"); if (sum) sum.scrollIntoView({ block: "start" });
+  }
+
+  function mockSummary() {
+    var st = STATE.mock, box = document.getElementById("sum-mock");
+    box.innerHTML = ""; box.hidden = true;
+    var hist = st.history || [];
+    if (st.submitted && st.result) {
+      var r = st.result, p = pct(r.s, r.m), us = {};
+      LECS.forEach(function (u) { us[u] = r.units[u] || { s: 0, m: 0 }; });
+      var prev = hist.filter(function (h) { return h.at !== r.at; }).slice(-1)[0];
+      var cmp = prev ? '<span class="sub">' + t("prevPaper", { p: pct(prev.s, prev.m) }) + "</span>" : "";
+      var wl = r.wrong.length ? r.wrong.map(function (id) { return '<a href="#q-m-' + id + '">' + t("qn", { i: st.paper.indexOf(id) + 1 }) + "</a>"; }).join(" ") : t("allRight");
+      var ranked = LECS.filter(function (u) { return us[u].m > 0; }).sort(function (x, y) { return pct(us[x].s, us[x].m) - pct(us[y].s, us[y].m); });
+      var weakest = ranked[0];
+      var tip = weakest && pct(us[weakest].s, us[weakest].m) < 80 ? '<p style="margin:8px 0 0">' + t("weakest", { u: weakest }) + "</p>" : "";
+      var tline = "";
+      if (r.used != null) tline = '<p class="timeline">' + (r.auto ? t("autoSubmit") : "") + t("used", { u: mmss(r.used) }) + (r.limit ? t("limitNote", { m: r.limit }) : t("noLimitNote")) + "</p>";
+      var fids = flaggedIds(), fline = "";
+      if (fids.length) {
+        var fwrong = fids.filter(function (id) { return r.wrong.indexOf(id) >= 0; }).length;
+        var unflaggedWrong = r.wrong.filter(function (id) { return fids.indexOf(id) < 0; }).length;
+        var fl = fids.map(function (id) {
+          var bad = r.wrong.indexOf(id) >= 0;
+          return '<a class="flaglink ' + (bad ? "bad" : "ok") + '" href="#q-m-' + id + '">' + t("qn", { i: st.paper.indexOf(id) + 1 }) + (bad ? " ✗" : " ✓") + "</a>";
+        }).join(" ");
+        fline = '<p class="wrongs">' + t("flaggedList") + fl + "</p>" +
+          '<p class="flagcal">' + t("flagCal", { n: fids.length, w: fwrong, u: unflaggedWrong }) + (unflaggedWrong > fwrong ? t("flagCalBad") : t("flagCalGood")) + "</p>";
+      }
+      box.innerHTML = '<div class="summary"><h3>' + t("report") + '</h3><div class="sumtop"><span class="big">' + p + '%</span><span class="sub">' + t("outOf", { s: fmt(r.s), m: r.m }) + "</span>" + cmp + "</div>" + tline + statsTable(us) + '<p class="wrongs">' + t("wrongList") + wl + "</p>" + fline + tip + "</div>";
+      box.hidden = false;
+    }
+    if (hist.length > 1) {
+      var agg = {};
+      LECS.forEach(function (u) { agg[u] = { s: 0, m: 0 }; });
+      hist.forEach(function (h) { Object.keys(h.units || {}).forEach(function (u) { if (agg[u]) { agg[u].s += h.units[u].s; agg[u].m += h.units[u].m; } }); });
+      var trend = hist.slice(-8).map(function (h) { return pct(h.s, h.m) + "%"; }).join(" → ");
+      box.appendChild(el("details", "weak", "<summary>" + t("history", { n: hist.length }) + '</summary><p class="empty" style="margin:8px 0 0">' + t("recent") + trend + "</p>" + statsTable(agg)));
+      box.hidden = false;
+    }
+  }
+
+  function renderMock() {
+    var st = STATE.mock, root = document.getElementById("bank-mock"); if (!root) return;
+    if (!st.paper.length) newPaper();
+    root.innerHTML = "";
+    var items = st.paper.map(function (id) { return BANKS.mock.imap[id]; });
+    var num = 0;
+    MOCK_SECTIONS.forEach(function (sec, ci) {
+      var qs = items.filter(function (q) { return q.cat === sec.cat; });
+      if (!qs.length) return;
+      var head = t("mockPart", { no: S.nums[ci] || ci + 1, title: sec.title || S.catTitle[sec.cat] || sec.cat, n: qs.length });
+      var box = el("div", "qgroup", "<h3>" + head + "</h3>" + '<p class="qdesc">' + (sec.desc || S.catDesc[sec.cat] || "") + "</p>");
+      qs.forEach(function (q) { num++; box.appendChild(mockCard(q, num)); });
+      root.appendChild(box);
+    });
+    mockSummary();
+    updateMockBar();
+    renderTex(root);
+  }
+
+  function mmss(sec) { sec = Math.max(0, Math.round(sec)); var m = Math.floor(sec / 60), x = sec % 60; return m + ":" + (x < 10 ? "0" : "") + x; }
+  function clockState() {
+    var tm = STATE.mock.timer;
+    if (!tm || !tm.startedAt) return null;
+    var e = (Date.now() - Date.parse(tm.startedAt)) / 1000;
+    return tm.limit ? { left: tm.limit * 60 - e, limit: tm.limit } : { used: e };
+  }
+  function clockText(c) {
+    if (c.limit) return t("remain") + ' <b class="clock' + (c.left < 300 ? " low" : "") + '">' + mmss(c.left) + "</b>";
+    return t("usedLbl") + ' <b class="clock">' + mmss(c.used) + "</b>";
+  }
+  function clockHtml() { var c = clockState(); return c ? ' · <span class="clockwrap">' + clockText(c) + "</span>" : ""; }
+  setInterval(function () {
+    var st = STATE.mock; if (!st || st.submitted) return;
+    var c = clockState(); if (!c) return;
+    if (c.limit && c.left <= 0) { submitMock(true); return; }
+    var w = document.querySelector("#bar-mock .clockwrap"); if (w) w.innerHTML = clockText(c);
+  }, 1000);
+
+  function render(key) { if (key === "practice") { renderPractice(); renderSA(); renderSecBoxes(); } else renderMock(); renderBook(); }
+
+  /* ================= progress report for Claude (export panel + db doc "progress/report") ================= */
+  function buildReport() {
+    var ps = STATE.practice, ms = STATE.mock, lec = {}, missed = [], sa = [];
+    LECS.forEach(function (u) { lec[u] = { answered: 0, firstScore: 0, total: 0 }; });
+    BANKS.practice.items.forEach(function (q) {
+      if (q.type === "card" || !lec[q.lec]) return;
+      lec[q.lec].total++;
+      var r = ps.ans[q.id], f = firstScore(q, r);
+      if (f == null) return;
+      lec[q.lec].answered++; lec[q.lec].firstScore = Math.round((lec[q.lec].firstScore + f) * 100) / 100;
+      if (f < 0.999) missed.push({ id: q.id, lec: q.lec, group: (BANKS.practice.gmap[q.g] || {}).title || q.g, type: q.type, stem: plain(q.stem).slice(0, 240), firstAnswer: plain(pickText(q, r.first)), correct: q.type === "fill" ? plain(q.answer || (q.accept || [])[0]) : plain(pickText(q, q.ans)), redoneRight: mastered(q) });
+    });
+    SA.forEach(function (s) {
+      if (!saStarted(s)) return;
+      var k = saScore(s), r = saRec(s);
+      sa.push({ id: s.id, lec: s.lec, kind: s.kind, firstScore: k.s, afterFixes: k.f, max: k.m, missedSteps: s.steps.map(function (p, i) { return stepOk(p, r[i]) === true && !(r[i] || {}).tries ? null : i + 1; }).filter(Boolean) });
+    });
+    var hist = ms.history || [], agg = {};
+    hist.forEach(function (h) { Object.keys(h.units || {}).forEach(function (u) { agg[u] = agg[u] || { s: 0, m: 0 }; agg[u].s += h.units[u].s; agg[u].m += h.units[u].m; }); });
+    var last = hist[hist.length - 1];
+    return {
+      kind: "study-guide-report", v: 1, course: CFG.title || "", key: KEY, at: new Date().toISOString(),
+      practice: { byLecture: lec, missed: missed },
+      shortAnswer: sa,
+      mock: {
+        papers: hist.length, recent: hist.slice(-8).map(function (h) { return pct(h.s, h.m); }), byLecture: agg,
+        last: last ? { at: last.at, score: last.s, max: last.m, usedSec: last.used, wrong: (last.wrong || []).map(function (id) {
+          var q = BANKS.mock.imap[id]; if (!q) return { id: id };
+          return { id: id, lec: q.lec, type: q.type, stem: plain(q.stem).slice(0, 240), answered: last.picks && id in last.picks ? plain(pickText(q, last.picks[id])) : null, flagged: (last.flags || []).indexOf(id) >= 0 };
+        }), flaggedButRight: (last.flags || []).filter(function (id) { return (last.wrong || []).indexOf(id) < 0; }) } : null
+      }
+    };
+  }
+  function exportPanel(host) {
+    var wrap = el("div", "export"), btn = el("button", "reset", t("export")); btn.type = "button";
+    var panel = el("div", "export-panel"); panel.hidden = true;
+    btn.addEventListener("click", function () {
+      panel.hidden = !panel.hidden;
+      if (panel.hidden) return;
+      var json = JSON.stringify({ report: buildReport(), state: { practice: STATE.practice, mock: STATE.mock } }, null, 1);
+      panel.innerHTML = "";
+      panel.appendChild(el("p", "modehint", t("exportHint")));
+      var ta = document.createElement("textarea"); ta.readOnly = true; ta.value = json; ta.rows = 6; ta.setAttribute("aria-label", t("export"));
+      panel.appendChild(ta);
+      var row = el("div", "qfoot");
+      var cp = el("button", "btn", t("exportCopy")); cp.type = "button";
+      cp.addEventListener("click", function () {
+        function done() { cp.textContent = t("exportCopied"); setTimeout(function () { cp.textContent = t("exportCopy"); }, 1500); }
+        try { navigator.clipboard.writeText(json).then(done, function () { ta.select(); document.execCommand("copy"); done(); }); }
+        catch (e) { ta.select(); try { document.execCommand("copy"); done(); } catch (e2) {} }
+      });
+      var dl = el("a", "btn ghost", t("exportSave"));
+      dl.href = "data:application/json;charset=utf-8," + encodeURIComponent(json);
+      dl.download = KEY + "-progress.json";
+      row.appendChild(cp); row.appendChild(dl);
+      panel.appendChild(row);
+    });
+    wrap.appendChild(btn); wrap.appendChild(panel);
+    host.appendChild(wrap);
+  }
+
+  /* ================= practice center markup ================= */
+  function buildCenter() {
+    var sec = document.getElementById("practice"); if (!sec) return;
+    var tabs = [["practice", t("tabPractice")]];
+    if (SA.length) tabs.push(["sa", t("tabSA")]);
+    if (BANKS.mock.items.length) tabs.push(["mock", t("tabMock")]);
+    tabs.push(["book", t("tabBook")]);
+    var parts = MOCK_SECTIONS.map(function (x) { return t("partN", { n: x.n, name: x.short || S.catShort[x.cat] || x.cat }); }).join(t("partSep"));
+    function bar(id) { return '<div class="bank-bar" id="bar-' + id + '"><p class="score">' + t("loading") + '</p><div class="acts"></div></div>'; }
+    var h = '<p class="part-no">' + t("partNo") + "</p><h2>" + t("title") + '</h2><p class="part-src">' + (CFG.practiceIntro || t("intro")) + "</p>" +
+      '<div class="pc-controls"><div class="seg" role="group" aria-label="' + t("tabsAria") + '">' +
+      tabs.map(function (x, i) { return '<button type="button" data-tab="' + x[0] + '" aria-pressed="' + (i ? "false" : "true") + '">' + x[1] + "</button>"; }).join("") +
+      '</div><span id="export-host"></span></div>' +
+      '<div class="bankwrap" id="wrap-practice"><div class="pc-controls"><label for="scope-practice">' + t("scope") + ' <select id="scope-practice"></select></label></div>' +
+      '<p class="modehint">' + t("hintPractice") + "</p>" + bar("practice") + '<div id="sum-practice" hidden></div><div id="bank-practice"></div></div>';
+    if (SA.length) h += '<div class="bankwrap" id="wrap-sa" hidden><p class="modehint">' + (CFG.shortIntro || t("hintSA")) + "</p>" + bar("sa") + '<div id="bank-sa"></div></div>';
+    if (BANKS.mock.items.length) h += '<div class="bankwrap" id="wrap-mock" hidden><p class="modehint">' + t("hintMock", { parts: parts }) + (MCFG.note ? " " + MCFG.note : "") + "</p>" +
+      '<p class="modehint">' + t("hintTimer") + '</p><p class="modehint">' + t("hintFlag") + "</p>" + bar("mock") +
+      '<div class="flagbar" id="flags-mock" hidden></div><div id="sum-mock" hidden></div><div id="bank-mock"></div></div>';
+    h += '<div class="bankwrap" id="wrap-book" hidden><p class="modehint">' + t("hintBook") + "</p>" + bar("book") + '<div id="bank-book"></div></div>';
+    sec.innerHTML = h;
+    exportPanel(document.getElementById("export-host"));
+  }
+
+  /* Scroll position: highlight the current section in the left contents; on wide screens list its topics in the right rail. */
+  function initSpy() {
+    var parts = [].slice.call(document.querySelectorAll("main > header[id], main > section[id]"));
+    var links = {};
+    document.querySelectorAll(".toc a[href^='#']").forEach(function (a) { links[a.getAttribute("href").slice(1)] = a; });
+    var rail = document.querySelector(".rail"), curPart = null, curTopic = null, items = {}, ticking = false;
+    function buildRail(part) {
+      items = {}; if (!rail) return;
+      rail.innerHTML = "";
+      var topics = part ? [].slice.call(part.querySelectorAll("article.topic[id]")) : [];
+      if (!topics.length) { rail.hidden = true; return; }
+      rail.hidden = false;
+      var h2 = part.querySelector("h2"), no = part.querySelector(".part-no");
+      rail.appendChild(el("p", "rail-k", t("railK")));
+      var tt = el("p", "rail-t"); tt.textContent = (no ? no.textContent.replace(/\s+/g, " ").trim() + " · " : "") + (h2 ? h2.textContent : ""); rail.appendChild(tt);
+      var ol = el("ol");
+      topics.forEach(function (tp) {
+        var h3 = tp.querySelector("h3"); if (!h3) return;
+        var m = h3.textContent.match(/^(\d+\.\d+)\s*(.*)$/);
+        var a = el("a"); a.href = "#" + tp.id;
+        if (m) { a.appendChild(el("span", "n", m[1])); a.appendChild(document.createTextNode(m[2])); } else a.textContent = h3.textContent;
+        items[tp.id] = a;
+        var li = el("li"); li.appendChild(a); ol.appendChild(li);
+      });
+      rail.appendChild(ol);
+      var sp = part.querySelector(".secprac[id]");
+      if (sp) { var pa = el("a", "prac", t("railPrac")); pa.href = "#" + sp.id; rail.appendChild(pa); }
+    }
+    function update() {
+      ticking = false;
+      var line = window.innerHeight * 0.3, p = null, tp = null;
+      for (var i = 0; i < parts.length; i++) { if (parts[i].getBoundingClientRect().top <= line) p = parts[i]; else break; }
+      if (!p) p = parts[0];
+      if (p !== curPart) {
+        if (curPart && links[curPart.id]) links[curPart.id].classList.remove("on");
+        curPart = p; curTopic = null;
+        if (p && links[p.id]) links[p.id].classList.add("on");
+        buildRail(p);
+      }
+      if (p) {
+        var tps = p.querySelectorAll("article.topic[id]");
+        for (var j = 0; j < tps.length; j++) { if (tps[j].getBoundingClientRect().top <= line) tp = tps[j]; else break; }
+      }
+      var tid = tp ? tp.id : null;
+      if (tid !== curTopic) {
+        if (curTopic && items[curTopic]) items[curTopic].classList.remove("on");
+        curTopic = tid;
+        if (tid && items[tid]) items[tid].classList.add("on");
+      }
+    }
+    function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    update();
+  }
+
+  function boot() {
+    ["practice", "mock"].forEach(function (key) { STATE[key] = fix(key, readLocal(key)); });
+    buildCenter();
+    buildSecBoxes();
+    var sel = document.getElementById("scope-practice");
+    if (sel && !sel.options.length) {
+      var P = BANKS.practice.items;
+      sel.appendChild(new Option(t("scopeAll", { n: P.length }), "all"));
+      LECS.forEach(function (u) {
+        var n = P.filter(function (q) { return q.lec === u; }).length;
+        if (n) sel.appendChild(new Option(t("scopeLec", { lec: u, n: n }), u));
+      });
+      sel.addEventListener("change", function () { STATE.practice.scope = sel.value; save("practice"); renderPractice(); });
+    }
+    render("practice"); if (BANKS.mock.items.length) render("mock");
+    syncFromDb("practice"); if (BANKS.mock.items.length) syncFromDb("mock");
+    document.querySelectorAll("[data-tab]").forEach(function (tb) {
+      tb.addEventListener("click", function () {
+        var which = tb.getAttribute("data-tab");
+        document.querySelectorAll("[data-tab]").forEach(function (x) { x.setAttribute("aria-pressed", x === tb ? "true" : "false"); });
+        document.querySelectorAll(".bankwrap").forEach(function (w) { w.hidden = w.id !== "wrap-" + which; });
+        if (which === "book") renderBook();
+        lsSet("tab", which);
+      });
+    });
+    var tab = lsGet("tab");
+    if (tab) { var tb = document.querySelector('[data-tab="' + tab + '"]'); if (tb) tb.click(); }
+    renderTex(document.body);
+    initSpy();
+  }
+
+  window.StudyGuide = { t: t, el: el, renderTex: function (root) { renderTex(root || document.body); }, report: function () { return buildReport(); } };
+  boot();
+})();
+
+</script>
+
+</body>
+</html>
