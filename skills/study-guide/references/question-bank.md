@@ -19,7 +19,7 @@
 | `mock.json` | measure: exam conditions, nothing shown until hand-in | about 2× what one paper draws per type |
 | `short.json` | rehearse the exam's long questions one step at a time | 2–4 per short-answer type |
 
-The mock pool is **separate**. If a mock question is a practice question in disguise, the mock score measures memory. Write mock questions about the same concepts with different scenarios and numbers. The build warns about stems repeated word for word, but catching near-copies is up to you.
+The mock pool is **separate**. If a mock question is a practice question in disguise, the mock score measures memory. Write mock questions about the same concepts in a different scenario, not the same sentence with new numbers. The build warns when a mock stem matches a practice stem except for numbers or a word or two, but other kinds of near-copy are still up to you to catch.
 
 If the course publishes official practice questions, the practice bank may include them, but only with the student's agreement and labelled with `src`. Never include the sample exam the student is saving for a timed run. Never publish verbatim course material (questions, slide text) in a public page.
 
@@ -83,7 +83,8 @@ New papers prefer questions not drawn before, so the pool should hold at least t
 - (W) the right answer is the single longest option in at most about 30% of single-choice questions;
 - (W) multi-select questions don't all have the same number of correct answers;
 - (W) true/false answers are between 30% and 70% True;
-- (W) no mock stem repeats a practice stem;
+- (W) no letter is the shown correct answer in more than 40% of single-choice questions. The engine shuffles options per question with a fixed seed, so a small bank can still come out lopsided. The warning suggests a `"show"` letter for a few questions. `show` moves the answer on screen without touching the stored options, so it is safe even for questions students have already answered;
+- (W) no mock stem is a practice stem with only numbers or a word or two changed;
 - (W) each mock section's pool can fill the paper, ideally twice over.
 
 Check these yourself:

@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: measures-sample-exam-unseen
+expected_outcome: |
+  exam-format.md reports the sample's structure (14 questions: 12 four-option multiple choice and 2 short answer; questions 5–8 share one scenario, which question 13 also uses) without revealing any question or scenario content, and the agent avoids reading the question text itself.
+context:
+  scaffold_script: place-files.sh

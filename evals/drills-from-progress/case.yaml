@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: drills-from-progress
+expected_outcome: |
+  Names the real weak spots (reversing conditional probabilities / base-rate neglect in L2, and variance under scaling in L3; L1 is fine), adds new practice questions targeting them with new ids and per-option explanations without repeating the missed questions, keeps existing ids and options unchanged so saved progress stays valid, and rebuilds the page.
+context:
+  scaffold_script: place-files.sh

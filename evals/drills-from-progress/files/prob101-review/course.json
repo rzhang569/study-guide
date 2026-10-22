@@ -1,0 +1,18 @@
+{
+  "title": "PROB 101 Midterm review (demo)",
+  "lang": "en",
+  "storageKey": "demo-prob101-mt1",
+  "lectures": ["L1", "L2", "L3"],
+  "mock": {
+    "sections": [
+      { "cat": "tf", "n": 4 },
+      { "cat": "single", "n": 4 },
+      { "cat": "multi", "n": 1 },
+      { "cat": "fill", "n": 2 }
+    ],
+    "minutes": [{ "m": 15, "note": "suggested" }, { "m": 30, "note": "real exam pace" }, 0],
+    "defaultMinutes": 15,
+    "note": "The real exam also has two short-answer questions; practice those in the Short answer tab."
+  },
+  "footer": "Demo course for the <a href='https://github.com/rzhang569/study-guide'>study-guide</a> Agent Skill. PROB 101 is fictional; references such as “L2 p.4” show the citation format a real course page uses."
+}

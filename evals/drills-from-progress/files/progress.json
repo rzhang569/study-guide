@@ -1,0 +1,472 @@
+{
+ "report": {
+  "kind": "study-guide-report",
+  "v": 1,
+  "course": "PROB 101 Midterm review (demo)",
+  "key": "demo-prob101-mt1",
+  "at": "2026-10-22T05:40:15.892Z",
+  "practice": {
+   "byLecture": {
+    "L1": {
+     "answered": 6,
+     "firstScore": 6,
+     "total": 7
+    },
+    "L2": {
+     "answered": 7,
+     "firstScore": 3,
+     "total": 8
+    },
+    "L3": {
+     "answered": 5,
+     "firstScore": 3.25,
+     "total": 8
+    }
+   },
+   "missed": [
+    {
+     "id": "p2-3",
+     "lec": "L2",
+     "group": "L2 · Conditioning and Bayes",
+     "type": "tf",
+     "stem": "If A and B are disjoint and both have positive probability, then A and B are independent.",
+     "firstAnswer": "A (True)",
+     "correct": "B (False)",
+     "redoneRight": false
+    },
+    {
+     "id": "p2-4",
+     "lec": "L2",
+     "group": "L2 · Conditioning and Bayes",
+     "type": "single",
+     "stem": "A disease affects 1% of people. A test detects 90% of cases and gives a false positive for 5% of healthy people. You test positive. Which is closest to P(disease | positive)?",
+     "firstAnswer": "A (About 90%)",
+     "correct": "C (About 15%)",
+     "redoneRight": false
+    },
+    {
+     "id": "p2-7",
+     "lec": "L2",
+     "group": "L2 · Conditioning and Bayes",
+     "type": "tf",
+     "stem": "If P(A) = P(B) > 0, then P(A | B) = P(B | A).",
+     "firstAnswer": "B (False)",
+     "correct": "A (True)",
+     "redoneRight": false
+    },
+    {
+     "id": "p2-8",
+     "lec": "L2",
+     "group": "L2 · Conditioning and Bayes",
+     "type": "fill",
+     "stem": "Same factories as above (A: 60% of parts, 2% defective; B: 40%, 5% defective). A part is defective. What is P(it came from B)?",
+     "firstAnswer": "“0.02”",
+     "correct": "0.02 / 0.032 = 0.625",
+     "redoneRight": false
+    },
+    {
+     "id": "p3-5",
+     "lec": "L3",
+     "group": "L3 · Expectation and variance",
+     "type": "multi",
+     "stem": "Which hold for any random variables X, Y and constants a, b?",
+     "firstAnswer": "C, D, F",
+     "correct": "A, C, E, F",
+     "redoneRight": false
+    },
+    {
+     "id": "p3-7",
+     "lec": "L3",
+     "group": "L3 · Expectation and variance",
+     "type": "single",
+     "stem": "Var(X) = 4. What is Var(3X − 2)?",
+     "firstAnswer": "B (12)",
+     "correct": "D (36)",
+     "redoneRight": false
+    }
+   ]
+  },
+  "shortAnswer": [
+   {
+    "id": "sa-a1",
+    "lec": "L2",
+    "kind": "Bayes' rule",
+    "firstScore": 6,
+    "afterFixes": 6,
+    "max": 10,
+    "missedSteps": [
+     3,
+     4
+    ]
+   },
+   {
+    "id": "sa-b1",
+    "lec": "L3",
+    "kind": "Expectation and variance",
+    "firstScore": 7,
+    "afterFixes": 7,
+    "max": 10,
+    "missedSteps": [
+     4
+    ]
+   }
+  ],
+  "mock": {
+   "papers": 1,
+   "recent": [
+    64
+   ],
+   "byLecture": {
+    "L1": {
+     "s": 4,
+     "m": 4
+    },
+    "L2": {
+     "s": 1,
+     "m": 3
+    },
+    "L3": {
+     "s": 2,
+     "m": 4
+    }
+   },
+   "last": {
+    "at": "2026-10-21T20:00:00.000Z",
+    "score": 7,
+    "max": 11,
+    "usedSec": 640,
+    "wrong": [
+     {
+      "id": "m2-3",
+      "lec": "L2",
+      "type": "tf",
+      "stem": "A positive result on a test that is right 99% of the time means you have the condition with probability 99%.",
+      "answered": "A (True)",
+      "flagged": false
+     },
+     {
+      "id": "m2-5",
+      "lec": "L2",
+      "type": "single",
+      "stem": "20% of emails are spam. A filter flags 95% of spam and 10% of normal email. An email is flagged. Which is closest to P(spam | flagged)?",
+      "answered": "A (95%)",
+      "flagged": true
+     },
+     {
+      "id": "m3-6",
+      "lec": "L3",
+      "type": "single",
+      "stem": "E[X] = 2 and E[X^2] = 13. What is Var(X)?",
+      "answered": "A (11)",
+      "flagged": false
+     },
+     {
+      "id": "m3-9",
+      "lec": "L3",
+      "type": "fill",
+      "stem": "Var(X) = 2.5. What is Var(2X + 7)?",
+      "answered": "“5”",
+      "flagged": false
+     }
+    ],
+    "flaggedButRight": [
+     "m1-4"
+    ]
+   }
+  }
+ },
+ "state": {
+  "practice": {
+   "v": 1,
+   "scope": "all",
+   "ans": {
+    "p1-1": {
+     "first": 0,
+     "tried": [
+      0
+     ]
+    },
+    "p1-2": {
+     "first": 1,
+     "tried": [
+      1
+     ]
+    },
+    "p1-4": {
+     "first": 0,
+     "tried": [
+      0
+     ]
+    },
+    "p1-6": {
+     "first": 0,
+     "tried": [
+      0
+     ]
+    },
+    "p1-3": {
+     "first": "0.518",
+     "last": "0.518"
+    },
+    "p1-5": {
+     "first": [
+      0,
+      1,
+      3
+     ],
+     "sel": [
+      0,
+      1,
+      3
+     ],
+     "submitted": true
+    },
+    "p2-1": {
+     "first": 0,
+     "tried": [
+      0
+     ]
+    },
+    "p2-2": {
+     "first": "0.3",
+     "last": "0.3"
+    },
+    "p2-6": {
+     "first": 0,
+     "tried": [
+      0
+     ]
+    },
+    "p2-3": {
+     "first": 0,
+     "tried": [
+      0,
+      1
+     ]
+    },
+    "p2-4": {
+     "first": 1,
+     "tried": [
+      1,
+      0
+     ]
+    },
+    "p2-7": {
+     "first": 1,
+     "tried": [
+      1,
+      0
+     ]
+    },
+    "p2-8": {
+     "first": "0.02",
+     "last": "0.625"
+    },
+    "p3-1": {
+     "first": 0,
+     "tried": [
+      0
+     ]
+    },
+    "p3-3": {
+     "first": "0.7",
+     "last": "0.7"
+    },
+    "p3-4": {
+     "first": 0,
+     "tried": [
+      0
+     ]
+    },
+    "p3-7": {
+     "first": 1,
+     "tried": [
+      1,
+      0
+     ]
+    },
+    "p3-5": {
+     "first": [
+      0,
+      1,
+      3
+     ],
+     "sel": [
+      0,
+      1,
+      3
+     ],
+     "submitted": true
+    }
+   },
+   "sa": {
+    "sa-a1": {
+     "0": {
+      "v": "0.019",
+      "ok": true,
+      "shown": true
+     },
+     "1": {
+      "v": "0.098",
+      "ok": true,
+      "shown": true
+     },
+     "2": {
+      "v": "0.019",
+      "tries": 1,
+      "ok": false,
+      "shown": true
+     }
+    },
+    "sa-b1": {
+     "0": {
+      "v": "1.1",
+      "ok": true,
+      "shown": true
+     },
+     "1": {
+      "v": "1.7",
+      "ok": true,
+      "shown": true
+     },
+     "2": {
+      "v": "0.49",
+      "ok": true,
+      "shown": true
+     },
+     "3": {
+      "v": "-0.98",
+      "tries": 1,
+      "ok": false,
+      "shown": true
+     }
+    }
+   },
+   "redo": {},
+   "updatedAt": "2026-10-21T20:00:00.000Z"
+  },
+  "mock": {
+   "v": 1,
+   "paper": [
+    "m1-1",
+    "m1-4",
+    "m2-3",
+    "m3-2",
+    "m1-6",
+    "m2-5",
+    "m3-6",
+    "m3-4",
+    "m2-7",
+    "m1-8",
+    "m3-9"
+   ],
+   "draft": {
+    "m1-1": 0,
+    "m1-4": 0,
+    "m2-3": 0,
+    "m3-2": 0,
+    "m1-6": 0,
+    "m2-5": 1,
+    "m3-6": 1,
+    "m3-4": 0,
+    "m2-7": [
+     0
+    ],
+    "m1-8": "15",
+    "m3-9": "5"
+   },
+   "flags": {
+    "m2-5": 1,
+    "m1-4": 1
+   },
+   "seen": {},
+   "pcount": 0,
+   "submitted": true,
+   "result": {
+    "at": "2026-10-21T20:00:00.000Z",
+    "s": 7,
+    "m": 11,
+    "units": {
+     "L1": {
+      "s": 4,
+      "m": 4
+     },
+     "L2": {
+      "s": 1,
+      "m": 3
+     },
+     "L3": {
+      "s": 2,
+      "m": 4
+     }
+    },
+    "wrong": [
+     "m2-3",
+     "m2-5",
+     "m3-6",
+     "m3-9"
+    ],
+    "flags": [
+     "m1-4",
+     "m2-5"
+    ],
+    "picks": {
+     "m2-3": 0,
+     "m2-5": 1,
+     "m3-6": 1,
+     "m3-9": "5",
+     "m1-4": 0
+    },
+    "used": 640,
+    "limit": 15,
+    "auto": false
+   },
+   "history": [
+    {
+     "at": "2026-10-21T20:00:00.000Z",
+     "s": 7,
+     "m": 11,
+     "units": {
+      "L1": {
+       "s": 4,
+       "m": 4
+      },
+      "L2": {
+       "s": 1,
+       "m": 3
+      },
+      "L3": {
+       "s": 2,
+       "m": 4
+      }
+     },
+     "wrong": [
+      "m2-3",
+      "m2-5",
+      "m3-6",
+      "m3-9"
+     ],
+     "flags": [
+      "m1-4",
+      "m2-5"
+     ],
+     "picks": {
+      "m2-3": 0,
+      "m2-5": 1,
+      "m3-6": 1,
+      "m3-9": "5",
+      "m1-4": 0
+     },
+     "used": 640,
+     "limit": 15,
+     "auto": false
+    }
+   ],
+   "timer": {
+    "limit": 15,
+    "startedAt": "2026-10-21T19:40:00.000Z"
+   },
+   "updatedAt": "2026-10-21T20:00:00.000Z"
+  }
+ }
+}

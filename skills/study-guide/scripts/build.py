@@ -17,6 +17,7 @@ Errors stop the build. Warnings are the question-bank audits from references/que
 Standard library only.
 """
 import argparse
+import difflib
 import html
 import json
 import re
@@ -34,6 +35,7 @@ UI = {
 }
 TYPES = {"single", "tf", "multi", "fill", "card"}
 CATS = {"single", "tf", "multi", "fill"}
+LETTERS = "ABCDEFGH"
 DEFAULT_SECTIONS = [{"cat": "tf", "n": 10}, {"cat": "single", "n": 10}, {"cat": "multi", "n": 5}, {"cat": "fill", "n": 5}]  # same as engine.js
 FONTS = ("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600"
          "&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700"
@@ -181,6 +183,8 @@ def check_bank(name, bank, rep, ids, lectures, sec_ids):
                 rep.err(f"{where}: multi 'ans' must be a list of distinct option indexes 0..{n - 1}")
         elif not isinstance(ans, int) or isinstance(ans, bool) or not 0 <= ans < n:
             rep.err(f"{where}: 'ans' must be an option index 0..{n - 1}")
+        if q.get("show") is not None and (t != "single" or str(q["show"]).upper() not in LETTERS[:n] or len(str(q["show"])) != 1):
+            rep.err(f"{where}: 'show' must be one letter A..{LETTERS[n - 1]} on a single-choice question")
         for o in opts:
             if isinstance(o, dict) and t != "tf" and not o.get("t"):
                 rep.err(f"{where}: an option has no text 't'")
@@ -253,6 +257,88 @@ def audit(name, items, rep):
             rep.warn(f"{name}: {true_share:.0%} of true/false answers are True; keep it between 30% and 70%")
 
 
+def _utf16_units(s):
+    for ch in s:
+        c = ord(ch)
+        if c > 0xFFFF:
+            c -= 0x10000
+            yield 0xD800 + (c >> 10)
+            yield 0xDC00 + (c & 0x3FF)
+        else:
+            yield c
+
+
+def seeded_order(seed, n):
+    """The engine's display order for n options (engine.js seeded/seededOrder), so the build can see
+    which letter each correct answer is shown as. order[position] = stored option index."""
+    M = 0xFFFFFFFF
+    h = 2166136261
+    for unit in _utf16_units(seed):
+        h = ((h ^ unit) * 16777619) & M
+
+    def rnd():
+        nonlocal h
+        h = (h + 0x6D2B79F5) & M
+        x = ((h ^ (h >> 15)) * (h | 1)) & M
+        x = (x ^ ((x + (((x ^ (x >> 7)) * (x | 61)) & M)) & M)) & M
+        return ((x ^ (x >> 14)) & M) / 4294967296
+
+    idx = list(range(n))
+    for i in range(n - 1, 0, -1):
+        j = int(rnd() * (i + 1))
+        idx[i], idx[j] = idx[j], idx[i]
+    return idx
+
+
+def display_order(q, key):
+    """engine.js displayOrder for a single-choice question: seeded shuffle, then "show" moves the answer."""
+    order = seeded_order(f"{key}:{q['id']}", len(q["opts"]))
+    show = str(q.get("show") or "").upper()
+    if show and show in LETTERS[:len(order)]:
+        order = [i for i in order if i != q["ans"]]
+        order.insert(LETTERS.index(show), q["ans"])
+    return order
+
+
+def letter_audit(name, items, key, rep):
+    """Warn when the correct answer is shown as the same letter too often. The engine shuffles options per
+    question, so a small bank can still come out lopsided (e.g. 8 of 15 answers shown as D)."""
+    singles = [q for q in items if q.get("type", "single") == "single" and isinstance(q.get("opts"), list)
+               and len(q["opts"]) >= 3 and not q.get("fixed") and isinstance(q.get("ans"), int) and 0 <= q["ans"] < len(q["opts"])]
+    if len(singles) < 8:
+        return
+    letters = LETTERS
+    shown, counts = {}, {}
+    for q in singles:
+        pos = display_order(q, key).index(q["ans"])
+        shown[q["id"]] = pos
+        counts[pos] = counts.get(pos, 0) + 1
+    top_pos = max(counts, key=counts.get)
+    top, n = counts[top_pos], len(singles)
+    if top / n <= 0.4:
+        return
+    width = max(len(q["opts"]) for q in singles)
+    dist = ", ".join(f"{letters[p]} {counts.get(p, 0)}" for p in range(width))
+    need = top - int(0.35 * n)
+    tips = []
+    for q in singles:
+        if shown[q["id"]] != top_pos or q.get("show") or len(tips) >= min(need, 6):
+            continue
+        target = min((p for p in range(len(q["opts"])) if p != top_pos), key=lambda p: counts.get(p, 0))
+        counts[target] = counts.get(target, 0) + 1
+        tips.append(f'{q["id"]}: "show": "{letters[target]}"')
+    rep.warn(f"{name}: the correct answer is shown as {letters[top_pos]} in {top}/{n} single-choice questions "
+             f"(shown letters: {dist}). Add a \"show\" letter to move the answer on screen; it never changes stored "
+             f"options, so saved answers stay valid: " + "; ".join(tips))
+
+
+def stem_tokens(h):
+    """A stem as words and math symbols, with every number replaced by #, to catch questions that only swap
+    the numbers or a word or two. Symbols stay: "P(A ∪ B)" and "P(A ∩ B)" are different tokens."""
+    t = re.sub(r"\d+(?:[.,]\d+)?", "#", text_of(h).lower())
+    return re.findall(r"[^\W\d_]+|#|[^\s\w#]", t)
+
+
 def check(course):
     rep = Report()
     cfg = load_json(course / "course.json", rep, required=True) or {}
@@ -280,10 +366,22 @@ def check(course):
     audit("practice", p_items, rep)
     audit("mock", m_items, rep)
 
-    p_stems = {text_of(q.get("stem")).lower() for q in p_items}
-    same = [q["id"] for q in m_items if text_of(q.get("stem")).lower() in p_stems]
-    if same:
-        rep.warn(f"mock: {len(same)} question(s) repeat a practice stem word for word ({', '.join(same[:5])}); the mock pool should be its own questions")
+    key = cfg.get("storageKey") or "study-guide"
+    letter_audit("practice", p_items, key, rep)
+    letter_audit("mock", m_items, key, rep)
+
+    # a mock question that is a practice question with new numbers or a few words changed measures memory
+    p_toks = [(q.get("id"), stem_tokens(q.get("stem"))) for q in p_items]
+    near = []
+    for q in m_items:
+        a = stem_tokens(q.get("stem"))
+        for pid, b in p_toks:
+            if a == b or (min(len(a), len(b)) >= 6 and difflib.SequenceMatcher(None, a, b).ratio() >= 0.9):
+                near.append(f"{q.get('id')} ~ {pid}")
+                break
+    if near:
+        rep.warn(f"mock: {len(near)} question(s) look like practice questions with only numbers or a word or two changed "
+                 f"({', '.join(near[:6])}); if so, write a new scenario so the mock measures understanding, not memory")
 
     mcfg = cfg.get("mock") or {}
     if m_items:

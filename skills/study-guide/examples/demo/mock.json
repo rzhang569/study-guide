@@ -35,15 +35,15 @@
         { "t": "C(52, 5) − 48", "why": "Counts the hands that do <b>not</b> contain all four aces." }
       ],
       "ans": 0, "why": "Fix what must be there, then count the free choices." },
-    { "g": "m1", "id": "m1-6", "type": "single",
-      "stem": "P(A) = 0.6, P(B) = 0.5 and P(A ∪ B) = 0.9. What is P(A ∩ B)?",
+    { "g": "m1", "id": "m1-10", "type": "single",
+      "stem": "In a dorm, 60% of students take French, 50% take Spanish, and 90% take at least one of the two. What fraction take both?",
       "opts": [
-        { "t": "0.2", "why": "0.6 + 0.5 − 0.9, inclusion–exclusion solved for the overlap." },
-        { "t": "0.3", "why": "0.6 · 0.5 assumes independence, which nothing here says." },
-        { "t": "0.4", "why": "0.9 − 0.5 is P(A but not B)." },
-        { "t": "1.1", "why": "0.6 + 0.5 is not a probability at all." }
+        { "t": "0.2", "why": "0.6 + 0.5 − 0.9: inclusion–exclusion solved for the overlap." },
+        { "t": "0.3", "why": "0.6 · 0.5 assumes the two choices are independent, which nothing here says." },
+        { "t": "0.4", "why": "0.9 − 0.5 is the fraction taking French but not Spanish." },
+        { "t": "1.1", "why": "0.6 + 0.5 counts the overlap twice and is not even a probability." }
       ],
-      "ans": 0, "why": "Rearrange P(A ∪ B) = P(A) + P(B) − P(A ∩ B)." },
+      "ans": 0, "why": "\u201cAt least one\u201d is the union, so rearrange P(F ∪ S) = P(F) + P(S) − P(F ∩ S)." },
     { "g": "m1", "id": "m1-7", "type": "multi",
       "stem": "Which lists of outcomes are equally likely?",
       "opts": [
@@ -74,7 +74,7 @@
       "stem": "A positive result on a test that is right 99% of the time means you have the condition with probability 99%.",
       "opts": [{ "why": "The mix-up: reading P(+ | condition) as P(condition | +)." }, { "why": "Corrected: P(condition | +) also depends on the base rate. For a rare condition it can be far below 99%." }],
       "ans": 1 },
-    { "g": "m2", "id": "m2-4", "type": "single",
+    { "g": "m2", "id": "m2-4", "type": "single", "show": "A",
       "stem": "Two cards are drawn from a shuffled deck without replacement. What is P(both are aces)?",
       "opts": [
         { "t": "(4/52) · (3/51)", "why": "First ace 4/52; given that, 3 aces remain among 51 cards." },
@@ -83,7 +83,7 @@
         { "t": "2 · (4/52)", "why": "Doubles a single-draw probability, which is not how &ldquo;and&rdquo; works." }
       ],
       "ans": 0, "why": "Multiplication rule: P(A ∩ B) = P(A) P(B | A)." },
-    { "g": "m2", "id": "m2-5", "type": "single",
+    { "g": "m2", "id": "m2-5", "type": "single", "show": "D",
       "stem": "20% of emails are spam. A filter flags 95% of spam and 10% of normal email. An email is flagged. Which is closest to P(spam | flagged)?",
       "opts": [
         { "t": "About 70%", "why": "0.19 / (0.19 + 0.08) ≈ 0.70." },
@@ -163,13 +163,13 @@
         { "t": "P(X = 1) = 0.7", "why": "Wrong: P(X = 1) = p = 0.3." }
       ],
       "ans": [0, 1], "why": "For 0/1 variables, X<sup>2</sup> = X is the shortcut." },
-    { "g": "m3", "id": "m3-8", "type": "fill",
-      "stem": "X takes the values 1, 2, 3 with probabilities 0.2, 0.5, 0.3. What is E[X]?",
-      "accept": ["2.1", "21/10"], "answer": "0.2 + 1.0 + 0.9 = 2.1",
-      "why": "Multiply each value by its probability and add." },
-    { "g": "m3", "id": "m3-9", "type": "fill",
-      "stem": "Var(X) = 2.5. What is Var(2X + 7)?",
-      "accept": ["10"], "answer": "2<sup>2</sup> · 2.5 = 10",
-      "why": "Square the scale, drop the shift." }
+    { "g": "m3", "id": "m3-10", "type": "fill",
+      "stem": "A raffle ticket wins $10 with probability 0.1, wins $2 with probability 0.3, and wins nothing otherwise. What are the expected winnings per ticket, in dollars?",
+      "accept": ["1.6", "8/5"], "answer": "10 · 0.1 + 2 · 0.3 + 0 · 0.6 = 1.6",
+      "why": "Multiply each payout by its probability and add; the \u201cnothing\u201d outcome contributes 0." },
+    { "g": "m3", "id": "m3-11", "type": "fill",
+      "stem": "A city's daily temperature C (in °C) has Var(C) = 4. In Fahrenheit, F = 1.8C + 32. What is Var(F)?",
+      "accept": ["12.96"], "answer": "1.8<sup>2</sup> · 4 = 3.24 · 4 = 12.96",
+      "why": "Var(aX + b) = a<sup>2</sup> Var(X): square the 1.8, and the + 32 shift drops out." }
   ]
 }

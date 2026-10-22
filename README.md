@@ -6,8 +6,8 @@ An [Agent Skill](https://agentskills.io) that turns a course's slides and notes 
 
 > **Status: v0.1.0, early release.** Feedback and issues are welcome.
 >
-> - **Tested:** building pages; using them locally in a browser; the Export progress → paste to Claude loop; installing the Claude Code plugin from GitHub.
-> - **Experimental, not yet tested end to end:** uploading to claude.ai; automatic progress sync when the page runs as a Claude artifact; other agents.
+> - **Tested:** building pages; using them locally in a browser; the Export progress → paste to Claude loop; installing the Claude Code plugin from GitHub; a small with/without-skill comparison of an earlier version (see [Evaluation](#evaluation)).
+> - **Experimental, not yet tested end to end:** uploading to claude.ai; automatic progress sync when the page runs as a Claude artifact; other agents; whether Claude picks the skill on its own in a normal conversation.
 
 ![Notes: each topic has a one-line lead, a formula, a worked figure and a plain-language box](docs/notes.png)
 
@@ -32,7 +32,7 @@ The demo course in [`skills/study-guide/examples/demo`](skills/study-guide/examp
 - **Claude does the research.** It reads the course schedule, syllabus and posted quiz results, and looks for patterns. An example: "checkpoint quiz questions come right after a specific slide".
 - **The mock exam is calibrated without spoilers.** `count_exam.py` measures a sample exam's size and structure without printing any question, so you can still save the real sample for one timed run.
 - **The loop closes.** The page keeps a compact progress report. Copy it out with the **Export progress** button and paste it to Claude, which turns it into targeted drills and rewrites the explanations you misread. When the page runs as a Claude artifact it also tries to sync the report automatically (experimental).
-- **The question banks are audited.** The build warns when the correct answer is usually the longest option, when every multi-select has the same number of answers, when true/false leans one way, or when mock questions copy practice questions.
+- **The question banks are audited.** The build warns when the correct answer is usually the longest option, when one letter is the shown answer too often, when every multi-select has the same number of answers, when true/false leans one way, or when a mock question looks like a practice question with new numbers. Warnings point at problems; the author still has to fix them.
 
 ## Install
 
@@ -91,7 +91,28 @@ skills/study-guide/
   assets/                engine.js (the page's logic), page.css
   scripts/               build.py (check + build), count_exam.py (spoiler-free exam measurement)
   examples/demo/         a complete small course and its built page
+evals/                   test cases (prompts, fictional inputs, graders) and results
+tests/                   regression tests (python3 -m unittest discover -s tests)
 ```
+
+## Evaluation
+
+[`evals/`](evals) holds three test cases with fictional inputs: building a page from slides, describing a sample exam without reading it, and writing drills from a progress export. In a first round (2026-10-22), each case ran once with the skill and once without it on claude-opus-5-5, and independent agents graded the results. This round tested an earlier version of the skill (commit `e980bb9`):
+
+| | With the skill | Without the skill |
+|---|---|---|
+| Assertions passed, as first written | 18/19 | 16/19 |
+| Same outputs, re-graded with the revised assertions | 16/20 | 15/20 |
+
+This is a small early check, not proof. It used one run per configuration and tested the version before the changes below. Under the revised assertions, the two configurations differ by a single assertion: whether every practice option is explained. They shared weaknesses:
+- mock questions that were practice questions with new numbers;
+- reading some question content while measuring a sample exam.
+
+Since then:
+- `count_exam.py` reports more of an exam's structure and has regression tests;
+- the build warns about lopsided answer letters and about number-swapped mock questions.
+
+These changes have not been re-evaluated yet. Details are in [`evals/README.md`](evals/README.md).
 
 ## License
 

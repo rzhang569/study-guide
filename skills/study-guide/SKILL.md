@@ -49,7 +49,18 @@ Students often want to save the official sample exam for one timed run. Then do 
 python3 <skill-dir>/scripts/count_exam.py sample_exam.pdf
 ```
 
-It prints the page count, question numbers, option-line counts and range headings such as "Questions 11–14". It never prints question text. Use the output to set the mock sections (types and counts) and the time limit. Ask before opening any sample or answer key. Even when the student allows reading it, use it only for calibration (structure, difficulty, style). Never copy its questions or scenarios into the page.
+The script never prints question, option or scenario text. It prints:
+
+- the number of pages and questions, and the options per question;
+- point values, the time limit and the cover instructions (calculator, notes);
+- part headings and question ranges that share a scenario ("Questions 11–14 …");
+- the numbers of questions that refer back to earlier material.
+
+Use the output to set the mock sections (types and counts) and the time limit. A question that refers back, such as a short answer reusing an earlier scenario, belongs with that scenario when you describe the exam's structure.
+
+If the script cannot tell you something, report it as unknown and ask the student to look at the cover page. Do not write your own probe that prints words or numbers from inside the questions. Even a stray "total" or "%" hints at a question's topic, and the numbers in an equation give the question away.
+
+Ask before opening any sample or answer key. Even when the student allows reading it, use it only for calibration (structure, difficulty, style). Never copy its questions or scenarios into the page.
 
 ## 3. Set up the course folder
 
@@ -86,7 +97,12 @@ There are three banks. `references/question-bank.md` has the rules and the audit
 python3 <skill-dir>/scripts/build.py <course-dir>
 ```
 
-Errors stop the build. Warnings are the bank audits; fix them unless you have a reason. For example, the correct answer may be the longest option in too many questions, or every multi-select may have the same number of answers. Then open `<course-dir>/review.html` in a browser and check:
+Errors stop the build. Warnings come from the question-bank checks; fix them unless you have a reason not to. They flag patterns such as:
+
+- the correct answer is the longest option in too many questions;
+- one letter is the shown answer too often;
+- every multi-select has the same number of answers;
+- a mock question is a practice question with new numbers. Then open `<course-dir>/review.html` in a browser and check:
 
 - the console shows no errors and formulas render;
 - answering a practice question, a short-answer step and a full mock paper works;
@@ -122,9 +138,10 @@ Records are keyed by `storageKey`, question `id` and **original option index**. 
 
 - keep the `storageKey` and existing ids;
 - don't reorder, insert or delete options in questions that have been answered (append a new question instead);
-- don't reuse an old id for a different question.
+- don't reuse an old id for a different question;
+- if a question's meaning or answer changes, give it a new id and remove the old one. Records for removed ids are ignored, not misread.
 
-The engine shuffles the order options are shown in with a seed from the id, so the stored indexes stay correct. Editing stems, explanations and section HTML is always safe.
+The engine shuffles the order options are shown in with a seed from the id, so the stored indexes stay correct. To change which letter an answer is shown as, set `"show"` (see `references/data-format.md`) instead of reordering options. Fixing typos or wording in stems and explanations is always safe, and so is editing section HTML.
 
 ## What students asked for
 

@@ -5,7 +5,7 @@
     { "id": "p3", "lec": "L3", "sec": "l3", "title": "L3 · Expectation and variance", "desc": "Weighted averages, linearity, how shifting and scaling change variance." }
   ],
   "items": [
-    { "g": "p1", "id": "p1-1", "type": "single", "src": "L1 p.8",
+    { "g": "p1", "id": "p1-1", "type": "single", "show": "B", "src": "L1 p.8",
       "stem": "Two fair dice are rolled. What is P(the sum is 7)?",
       "opts": [
         { "t": "1/6", "why": "Six of the 36 equally likely ordered pairs sum to 7: (1,6), (2,5), …, (6,1)." },
@@ -64,7 +64,7 @@
       "stem": "Write inclusion–exclusion for three events A, B, C.",
       "answer": "P(A ∪ B ∪ C) = P(A) + P(B) + P(C) − P(A ∩ B) − P(A ∩ C) − P(B ∩ C) + P(A ∩ B ∩ C). Add singles, subtract pairs, add the triple back." },
 
-    { "g": "p2", "id": "p2-1", "type": "single", "src": "L2 p.5",
+    { "g": "p2", "id": "p2-1", "type": "single", "show": "C", "src": "L2 p.5",
       "stem": "One fair die is rolled. What is P(6 | the roll is even)?",
       "opts": [
         { "t": "1/3", "why": "Given even, the world is {2, 4, 6}, and one of the three is a 6." },

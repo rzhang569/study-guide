@@ -178,9 +178,17 @@
   var ORDER = {};
   function displayOrder(q) {
     if (ORDER[q.id]) return ORDER[q.id];
-    var n = q.opts.length;
-    ORDER[q.id] = (q.cat === "tf" || q.fixed || n < 3) ? seededOrder("", n).sort(function (a, b) { return a - b; }) : seededOrder(KEY + ":" + q.id, n);
-    return ORDER[q.id];
+    var n = q.opts.length, order;
+    if (q.cat === "tf" || q.fixed || n < 3) order = seededOrder("", n).sort(function (a, b) { return a - b; });
+    else {
+      order = seededOrder(KEY + ":" + q.id, n);
+      /* "show": "B" puts a single-choice answer at that letter; it changes only the display, never the stored
+         indexes, so it can rebalance answer letters without breaking anyone's saved answers */
+      var at = q.type === "single" && q.show ? L.indexOf(String(q.show).toUpperCase()) : -1;
+      if (at >= 0 && at < n) { order = order.filter(function (i) { return i !== q.ans; }); order.splice(at, 0, q.ans); }
+    }
+    ORDER[q.id] = order;
+    return order;
   }
   function letterOf(q, i) { return L[displayOrder(q).indexOf(i)]; }
 
@@ -1241,7 +1249,9 @@
       LECS.forEach(function (u) { us[u] = r.units[u] || { s: 0, m: 0 }; });
       var prev = hist.filter(function (h) { return h.at !== r.at; }).slice(-1)[0];
       var cmp = prev ? '<span class="sub">' + t("prevPaper", { p: pct(prev.s, prev.m) }) + "</span>" : "";
-      var wl = r.wrong.length ? r.wrong.map(function (id) { return '<a href="#q-m-' + id + '">' + t("qn", { i: st.paper.indexOf(id) + 1 }) + "</a>"; }).join(" ") : t("allRight");
+      /* a question removed from the pool since this paper was handed in has no card to link to */
+      var wrongHere = r.wrong.filter(function (id) { return st.paper.indexOf(id) >= 0; });
+      var wl = wrongHere.length ? wrongHere.map(function (id) { return '<a href="#q-m-' + id + '">' + t("qn", { i: st.paper.indexOf(id) + 1 }) + "</a>"; }).join(" ") : (r.wrong.length ? "" : t("allRight"));
       var ranked = LECS.filter(function (u) { return us[u].m > 0; }).sort(function (x, y) { return pct(us[x].s, us[x].m) - pct(us[y].s, us[y].m); });
       var weakest = ranked[0];
       var tip = weakest && pct(us[weakest].s, us[weakest].m) < 80 ? '<p style="margin:8px 0 0">' + t("weakest", { u: weakest }) + "</p>" : "";
@@ -1258,7 +1268,7 @@
         fline = '<p class="wrongs">' + t("flaggedList") + fl + "</p>" +
           '<p class="flagcal">' + t("flagCal", { n: fids.length, w: fwrong, u: unflaggedWrong }) + (unflaggedWrong > fwrong ? t("flagCalBad") : t("flagCalGood")) + "</p>";
       }
-      box.innerHTML = '<div class="summary"><h3>' + t("report") + '</h3><div class="sumtop"><span class="big">' + p + '%</span><span class="sub">' + t("outOf", { s: fmt(r.s), m: r.m }) + "</span>" + cmp + "</div>" + tline + statsTable(us) + '<p class="wrongs">' + t("wrongList") + wl + "</p>" + fline + tip + "</div>";
+      box.innerHTML = '<div class="summary"><h3>' + t("report") + '</h3><div class="sumtop"><span class="big">' + p + '%</span><span class="sub">' + t("outOf", { s: fmt(r.s), m: r.m }) + "</span>" + cmp + "</div>" + tline + statsTable(us) + (wl ? '<p class="wrongs">' + t("wrongList") + wl + "</p>" : "") + fline + tip + "</div>";
       box.hidden = false;
     }
     if (hist.length > 1) {

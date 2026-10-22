@@ -1,0 +1,43 @@
+{
+  "groups": [
+    { "id": "a", "lec": "L2", "sec": "l2", "kind": "Bayes' rule", "title": "① Bayes&rsquo; rule (L2)", "desc": "Practice sheet Q4–Q5 type: compute each branch, add the branches that match the evidence, divide." },
+    { "id": "b", "lec": "L3", "sec": "l3", "kind": "Expectation and variance", "title": "② Expectation and variance (L3)", "desc": "Practice sheet Q6 type: from a small table to E[X], E[X²], Var(X), then a linear transform." }
+  ],
+  "items": [
+    { "k": "a", "id": "sa-a1",
+      "stem": "A condition affects 2% of people. A test detects 95% of cases and gives a false positive for 10% of healthy people. Find P(condition | positive). (10 points)",
+      "steps": [
+        { "ask": "P(positive and has the condition) = ?", "pts": 3, "accept": ["0.019"], "sol": "0.02 × 0.95 = 0.019" },
+        { "ask": "P(positive and healthy) = ?", "pts": 3, "accept": ["0.098"], "sol": "0.98 × 0.10 = 0.098" },
+        { "ask": "P(condition | positive) = ? (3 decimals or a fraction)", "pts": 3, "accept": ["0.162", "19/117"], "sol": "0.019 / (0.019 + 0.098) = 0.019 / 0.117 ≈ 0.162" },
+        { "ask": "Why is the answer so low when the test catches 95% of cases?", "pts": 1,
+          "opts": ["False positives from the large healthy group outnumber the true positives about 5 to 1", "The test is broken", "Sensitivity and the false-positive rate are the same number", "Because 0.95 × 0.10 is small"],
+          "ans": 0,
+          "ow": { "1": "Nothing is broken; the test behaves exactly as described.", "2": "They are different: 95% is P(+ | condition), 10% is P(+ | healthy).", "3": "0.95 × 0.10 mixes the two branches and is not part of the calculation." },
+          "sol": "Healthy people are 49 times as common, so 10% of them (0.098) swamps 95% of the sick (0.019)." }
+      ],
+      "note": "Bayes in three moves: a joint probability for each branch, add the branches that match the evidence, divide." },
+    { "k": "a", "id": "sa-a2",
+      "stem": "Urn I holds 3 red and 1 blue ball; urn II holds 1 red and 3 blue. Flip a fair coin to pick an urn, then draw one ball. It is red. Find P(urn I | red). (10 points)",
+      "steps": [
+        { "ask": "P(red) = ?", "pts": 4, "accept": ["0.5", "1/2"], "sol": "½ · ¾ + ½ · ¼ = ½" },
+        { "ask": "P(urn I | red) = ?", "pts": 4, "accept": ["0.75", "3/4"], "sol": "(½ · ¾) / ½ = ¾" },
+        { "ask": "In one sentence: why is the answer above 1/2?", "pts": 2, "sol": "Red is three times as likely from urn I (¾ vs ¼), so seeing red shifts belief toward urn I." }
+      ] },
+    { "k": "b", "id": "sa-b1",
+      "stem": "X takes the values 0, 1, 2 with probabilities 0.2, 0.5, 0.3. Find E[X], E[X²], Var(X) and Var(5 − 2X). (10 points)",
+      "steps": [
+        { "ask": "E[X] = ?", "pts": 2, "accept": ["1.1"], "sol": "0 · 0.2 + 1 · 0.5 + 2 · 0.3 = 1.1" },
+        { "ask": "E[X²] = ?", "pts": 2, "accept": ["1.7"], "sol": "0 · 0.2 + 1 · 0.5 + 4 · 0.3 = 1.7" },
+        { "ask": "Var(X) = ?", "pts": 3, "accept": ["0.49"], "sol": "1.7 − 1.1² = 1.7 − 1.21 = 0.49" },
+        { "ask": "Var(5 − 2X) = ?", "pts": 3, "accept": ["1.96"], "sol": "(−2)² · 0.49 = 1.96; the 5 drops out" }
+      ],
+      "note": "Var(aX + b) = a² Var(X): the sign of a disappears when you square it." },
+    { "k": "b", "id": "sa-b2", "opt": "The exam asks you to use Var(X) = E[X²] − (E[X])², not to derive it.",
+      "stem": "Show that Var(X) = E[X²] − (E[X])².",
+      "steps": [
+        { "ask": "Write μ = E[X] and expand (X − μ)².", "pts": 1, "sol": "X² − 2μX + μ²" },
+        { "ask": "Take expectations using linearity.", "pts": 1, "sol": "E[X²] − 2μ · E[X] + μ² = E[X²] − 2μ² + μ² = E[X²] − μ²" }
+      ] }
+  ]
+}

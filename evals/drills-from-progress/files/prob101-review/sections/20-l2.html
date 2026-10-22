@@ -1,0 +1,71 @@
+<section class="part" id="l2" data-toc="L2 Conditioning and Bayes">
+  <p class="part-no">Part 2 · L2</p>
+  <h2>Conditional probability and Bayes&rsquo; rule</h2>
+  <p class="part-src">Slides L2 p.1–30 · reading: notes ch. 2</p>
+
+  <div class="must"><p class="must-t">If this lecture feels abstract, the exam only needs these three moves</p>
+    <ol>
+      <li>Condition = shrink the world to what you know, then measure inside it.</li>
+      <li>Independent means knowing one event does not change the other&rsquo;s probability.</li>
+      <li>Bayes: work out both branches that lead to the evidence, then take the share of the branch you care about.</li>
+    </ol>
+  </div>
+
+  <p class="terms-title">Glossary</p>
+  <dl class="terms">
+    <div><dt>conditional probability</dt><dd><span class="m">P(A | B)</span>: probability of A once you know B happened</dd></div>
+    <div><dt>independent</dt><dd><span class="m">P(A ∩ B) = P(A) P(B)</span>; equivalently <span class="m">P(A | B) = P(A)</span></dd></div>
+    <div><dt>law of total probability</dt><dd>split by cases, weight each case by how common it is, add</dd></div>
+    <div><dt>prior / posterior</dt><dd>belief before / after seeing the evidence</dd></div>
+    <div><dt>base rate</dt><dd>how common the condition is in the population (the prior)</dd></div>
+  </dl>
+
+  <p class="terms-title">Everyday analogies</p>
+  <div class="tbl"><table>
+    <tr><th>Term</th><th>Think of it as</th></tr>
+    <tr><td>Conditioning on B</td><td>Only looking at the rows of a spreadsheet where column B says &ldquo;yes&rdquo;</td></tr>
+    <tr><td>Base rate</td><td>How many needles there are in the haystack before you start searching</td></tr>
+    <tr><td>False positive</td><td>A smoke alarm going off for toast</td></tr>
+  </table></div>
+
+  <article class="topic" id="l2-cond">
+    <div class="topic-head"><h3>2.1 Conditional probability</h3><span class="pri p3">core</span></div>
+    <p class="src">L2 p.4–8</p>
+    <p class="lead"><b>In one line</b>Knowing B happened shrinks the sample space to B; <span class="m">P(A | B)</span> is the share of B that is also A.</p>
+    <div class="fx"><span class="tex-d" data-tex="P(A\mid B)=\frac{P(A\cap B)}{P(B)},\qquad P(B)>0">P(A | B) = P(A ∩ B) / P(B), with P(B) &gt; 0</span></div>
+    <div class="eg"><b>Example</b>One fair die. Given the roll is even, the world is {2, 4, 6}; one of those is a 6, so P(6 | even) = 1/3 (L2 p.5).</div>
+    <div class="plain"><b>In plain words</b>Filter first, then count. Out of the even rolls, what fraction are sixes?</div>
+  </article>
+
+  <article class="topic" id="l2-indep">
+    <div class="topic-head"><h3>2.2 Independence</h3><span class="pri p2">likely</span></div>
+    <p class="src">L2 p.10–14</p>
+    <p class="lead"><b>In one line</b>A and B are independent when learning one tells you nothing about the other.</p>
+    <div class="trap"><b>Trap</b>Disjoint is not independent. If A and B cannot both happen and each has positive probability, learning A tells you B did <b>not</b> happen: <span class="m">P(B | A) = 0 ≠ P(B)</span>. That is strong dependence.</div>
+    <div class="eg"><b>Check it with numbers</b>Two fair coin flips. A = &ldquo;first is H&rdquo;, M = &ldquo;the two flips match&rdquo;. P(M) = 1/2 and P(M | A) = P(second is H) = 1/2, so A and M are independent even though both mention the first flip (L2 p.13).</div>
+  </article>
+
+  <article class="topic" id="l2-bayes">
+    <div class="topic-head"><h3>2.3 Total probability and Bayes&rsquo; rule</h3><span class="pri p3">core</span></div>
+    <p class="src">L2 p.18–30 · practice sheet Q4–Q5</p>
+    <p class="lead"><b>In one line</b>To reverse a conditional, count how often the evidence shows up on each branch, then take the share that comes from the branch you care about.</p>
+    <div class="fx"><span class="tex-d" data-tex="P(D\mid +)=\frac{P(+\mid D)\,P(D)}{P(+\mid D)\,P(D)+P(+\mid D^c)\,P(D^c)}">P(D | +) = P(+ | D) P(D) / [P(+ | D) P(D) + P(+ | Dᶜ) P(Dᶜ)]</span></div>
+    <figure>
+      <div class="dia"><svg viewBox="0 0 560 250" role="img" aria-label="Tree of 1000 people: 10 sick of whom 9 test positive, 990 healthy of whom about 50 test positive">
+        <rect class="node" x="200" y="14" width="160" height="40" rx="8"/><text x="280" y="40" text-anchor="middle" class="ttl">1000 people</text>
+        <line class="edge" x1="280" y1="54" x2="130" y2="96"/><line class="edge" x1="280" y1="54" x2="440" y2="96"/>
+        <rect class="node" x="30" y="96" width="200" height="40" rx="8"/><text x="130" y="122" text-anchor="middle">10 sick (1%)</text>
+        <rect class="node" x="330" y="96" width="220" height="40" rx="8"/><text x="440" y="122" text-anchor="middle">990 healthy (99%)</text>
+        <line class="edge" x1="130" y1="136" x2="62" y2="184"/><line class="edge" x1="130" y1="136" x2="176" y2="184"/>
+        <line class="edge" x1="440" y1="136" x2="382" y2="184"/><line class="edge" x1="440" y1="136" x2="498" y2="184"/>
+        <rect class="node hl" x="10" y="184" width="104" height="44" rx="8"/><text x="62" y="211" text-anchor="middle">9 test +</text>
+        <rect class="node ghost" x="124" y="184" width="104" height="44" rx="8"/><text x="176" y="211" text-anchor="middle" class="small">1 test −</text>
+        <rect class="node wn" x="330" y="184" width="104" height="44" rx="8"/><text x="382" y="211" text-anchor="middle">≈50 test +</text>
+        <rect class="node ghost" x="446" y="184" width="104" height="44" rx="8"/><text x="498" y="211" text-anchor="middle" class="small">940 test −</text>
+      </svg></div>
+      <figcaption>Disease in 1% of people, test catches 90% of cases, 5% false positives. Positives: 9 + 50 = 59, and only 9 of them are sick, so P(sick | +) = 9/59 ≈ 15% (L2 p.24).</figcaption>
+    </figure>
+    <div class="plain"><b>In plain words</b>The test is good, but healthy people outnumber sick people 99 to 1. Even a small false-alarm rate on that huge group produces more positives than the real cases do.</div>
+    <div class="trap"><b>Trap</b><span class="m">P(+ | D)</span> (how good the test is) is not <span class="m">P(D | + )</span> (what a positive means for you). Mixing them up is called base-rate neglect.</div>
+  </article>
+</section>

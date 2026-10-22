@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: builds-page-from-slides
+expected_outcome: |
+  An offline review site in econ150-review/ (opens by double-clicking, no server) covering both lectures with slide-page citations, practice questions that explain every option, a mock exam whose questions are not practice questions with new numbers and shaped like the real exam (multiple choice plus calculation questions, 50-minute timing), with correct answer keys.
+context:
+  scaffold_script: place-files.sh

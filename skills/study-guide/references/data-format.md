@@ -43,6 +43,8 @@ All files are UTF-8 JSON. Text fields that say HTML may contain inline markup (`
 
 `fixed: true` on a choice question keeps the authored option order (for options like "All of the above").
 
+`show: "B"` on a single-choice question puts its correct answer at that letter on screen; the other options keep their shuffled order. It changes only the display, never the stored option indexes, so use it to rebalance answer letters even after students have answered.
+
 ## short.json
 
 ```json
