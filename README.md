@@ -4,8 +4,8 @@ An [Agent Skill](https://agentskills.io) that turns a course's slides and notes 
 
 > **Status: v0.1.0, early release.** Feedback and issues are welcome.
 >
-> - **Tested:** building pages; using them locally in a browser; the Export progress → paste to Claude loop; installing the Claude Code plugin from a local folder.
-> - **Experimental, not yet tested end to end:** installing from GitHub; uploading to claude.ai; automatic progress sync when the page runs as a Claude artifact; other agents.
+> - **Tested:** building pages; using them locally in a browser; the Export progress → paste to Claude loop; installing the Claude Code plugin from GitHub.
+> - **Experimental, not yet tested end to end:** uploading to claude.ai; automatic progress sync when the page runs as a Claude artifact; other agents.
 
 ![Notes: each topic has a one-line lead, a formula, a worked figure and a plain-language box](docs/notes.png)
 
