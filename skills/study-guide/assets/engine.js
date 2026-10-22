@@ -440,7 +440,12 @@
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
-  function plain(h) { var d = document.createElement("div"); d.innerHTML = String(h == null ? "" : h); return d.textContent.replace(/\s+/g, " ").trim(); }
+  /* plain text for the progress report; superscripts and subscripts keep their meaning (x<sup>2</sup> -> x^2) */
+  function plain(h) {
+    var d = document.createElement("div");
+    d.innerHTML = String(h == null ? "" : h).replace(/<sup>(.*?)<\/sup>/g, "^$1").replace(/<sub>(.*?)<\/sub>/g, "_$1");
+    return d.textContent.replace(/\s+/g, " ").trim();
+  }
   function optWhy(q, i) {
     var x = q.opts[i];
     if (x && x.why) return x.why;
@@ -907,7 +912,7 @@
   var BOOK_FILTER = "todo";
   function pickText(q, v) {
     if (v == null || v === "") return t("noAnswer");
-    if (q.type === "fill") return "「" + esc(v) + "」";
+    if (q.type === "fill") return S === STR.zh ? "「" + esc(v) + "」" : "“" + esc(v) + "”";
     if (Array.isArray(v)) return v.length ? v.map(function (i) { return letterOf(q, i); }).sort().join(", ") : t("noPick");
     return q.opts && q.opts[v] ? letterOf(q, v) + " (" + plain(q.opts[v].t).slice(0, 40) + ")" : t("noAnswer");
   }
