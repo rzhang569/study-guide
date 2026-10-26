@@ -92,8 +92,21 @@ skills/study-guide/
   scripts/               build.py (check + build), count_exam.py (spoiler-free exam measurement)
   examples/demo/         a complete small course and its built page
 evals/                   test cases (prompts, fictional inputs, graders) and results
-tests/                   regression tests (python3 -m unittest discover -s tests)
+tests/                   Python and Node regression suites (see Tests)
 ```
+
+## Tests
+
+Run from the repository root (Python 3 and Node.js 20+; no npm dependencies):
+
+```bash
+python3 -m unittest -v
+node --test
+```
+
+The suites cover course validation/builds, grading, timers, saved progress, and the
+Export progress contract. See [the rule audit and test notes](tests/README.md).
+The existing PDF test skips when its optional `pypdf` dependency is unavailable.
 
 ## Evaluation
 

@@ -70,14 +70,23 @@ def text_of(h):
 
 
 def load_json(path, rep, required=False):
+    def reject_constant(value):
+        raise ValueError(f"non-JSON numeric constant {value}")
+
     if not path.exists():
         if required:
             rep.err(f"{path.name} is missing")
         return None
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        return json.loads(path.read_text(encoding="utf-8"), parse_constant=reject_constant)
+    except UnicodeDecodeError:
+        rep.err(f"{path.name}: must be UTF-8 JSON")
+        return None
     except json.JSONDecodeError as e:
         rep.err(f"{path.name}: invalid JSON at line {e.lineno} col {e.colno}: {e.msg}")
+        return None
+    except ValueError as e:
+        rep.err(f"{path.name}: invalid JSON: {e}")
         return None
 
 
@@ -149,6 +158,8 @@ def check_bank(name, bank, rep, ids, lectures, sec_ids):
         ids[qid] = name
         if q.get("g") not in gmap:
             rep.err(f"{where}: group {q.get('g')!r} is not defined")
+        if lectures and q.get("lec") and q["lec"] not in lectures:
+            rep.err(f"{where}: lec {q['lec']!r} is not in course.json lectures")
         t = q.get("type", "single")
         if t not in TYPES:
             rep.err(f"{where}: unknown type {t!r}")
@@ -179,12 +190,12 @@ def check_bank(name, bank, rep, ids, lectures, sec_ids):
         n = len(opts)
         ans = q.get("ans")
         if t == "multi":
-            if not isinstance(ans, list) or not ans or len(set(ans)) != len(ans) or any(not isinstance(a, int) or not 0 <= a < n for a in ans):
+            if not isinstance(ans, list) or not ans or any(type(a) is not int or not 0 <= a < n for a in ans) or len(set(ans)) != len(ans):
                 rep.err(f"{where}: multi 'ans' must be a list of distinct option indexes 0..{n - 1}")
         elif not isinstance(ans, int) or isinstance(ans, bool) or not 0 <= ans < n:
             rep.err(f"{where}: 'ans' must be an option index 0..{n - 1}")
         if q.get("show") is not None and (t != "single" or str(q["show"]).upper() not in LETTERS[:n] or len(str(q["show"])) != 1):
-            rep.err(f"{where}: 'show' must be one letter A..{LETTERS[n - 1]} on a single-choice question")
+            rep.err(f"{where}: 'show' must be one letter A..{LETTERS[min(n, len(LETTERS)) - 1]} on a single-choice question")
         for o in opts:
             if isinstance(o, dict) and t != "tf" and not o.get("t"):
                 rep.err(f"{where}: an option has no text 't'")
@@ -194,7 +205,14 @@ def check_bank(name, bank, rep, ids, lectures, sec_ids):
 def check_short(short, rep, ids, lectures, sec_ids, practice_groups):
     if short is None:
         return
-    gmap = {g.get("id"): g for g in short.get("groups", [])}
+    gmap = {}
+    for g in short.get("groups", []):
+        gid = g.get("id")
+        if not gid:
+            rep.err("short: a group has no id")
+        elif gid in gmap:
+            rep.err(f"short: duplicate group id {gid!r}")
+        gmap[gid] = g
     for g in gmap.values():
         if g.get("sec") and sec_ids is not None and g["sec"] not in sec_ids:
             rep.warn(f"short group {g.get('id')!r} points at missing section {g['sec']!r}")
@@ -213,6 +231,10 @@ def check_short(short, rep, ids, lectures, sec_ids, practice_groups):
         ids[sid] = "short"
         if s.get("k") not in gmap:
             rep.err(f"{where}: group {s.get('k')!r} is not defined")
+        if not s.get("stem"):
+            rep.err(f"{where}: empty stem")
+        if lectures and s.get("lec") and s["lec"] not in lectures:
+            rep.err(f"{where}: lec {s['lec']!r} is not in course.json lectures")
         steps = s.get("steps") or []
         if not steps:
             rep.err(f"{where}: needs steps")
@@ -220,7 +242,7 @@ def check_short(short, rep, ids, lectures, sec_ids, practice_groups):
             if not p.get("ask") or not p.get("sol"):
                 rep.err(f"{where} step {i}: needs 'ask' and 'sol'")
             if p.get("opts") is not None:
-                if not isinstance(p.get("ans"), int) or not 0 <= p["ans"] < len(p["opts"]):
+                if type(p.get("ans")) is not int or not 0 <= p["ans"] < len(p["opts"]):
                     rep.err(f"{where} step {i}: 'ans' must index into 'opts'")
             elif p.get("accept") is not None and (not isinstance(p["accept"], list) or not p["accept"]):
                 rep.err(f"{where} step {i}: 'accept' must be a non-empty list")
@@ -339,13 +361,103 @@ def stem_tokens(h):
     return re.findall(r"[^\W\d_]+|#|[^\s\w#]", t)
 
 
+def check_shapes(cfg, banks, rep):
+    """Reject malformed JSON shapes before semantic checks index into them."""
+    def fields(obj, names, kind, where):
+        for key in names:
+            if key in obj and not isinstance(obj[key], kind):
+                rep.err(f"{where}: '{key}' must be {kind.__name__}")
+
+    fields(cfg, ("title", "storageKey", "lang", "practiceIntro", "shortIntro", "footer"), str, "course.json")
+    if "lectures" in cfg and (not isinstance(cfg["lectures"], list) or
+                              any(not isinstance(x, str) for x in cfg["lectures"])):
+        rep.err("course.json: lectures must be a list of strings")
+    if "tfLabels" in cfg and (not isinstance(cfg["tfLabels"], list) or len(cfg["tfLabels"]) != 2 or
+                              any(not isinstance(x, str) for x in cfg["tfLabels"])):
+        rep.err("course.json: tfLabels must contain two strings")
+    if "mock" in cfg:
+        mc = cfg["mock"]
+        if not isinstance(mc, dict):
+            rep.err("course.json: mock must be an object")
+        else:
+            fields(mc, ("note",), str, "course.json mock")
+            if "sections" in mc:
+                sections = mc["sections"]
+                if not isinstance(sections, list) or any(not isinstance(x, dict) for x in sections):
+                    rep.err("course.json: mock.sections must be a list of objects")
+                else:
+                    for sec in sections:
+                        if not isinstance(sec.get("cat"), str) or sec["cat"] not in CATS:
+                            rep.err(f"course.json: mock section cat {sec.get('cat')!r} must be one of {sorted(CATS)}")
+                        if type(sec.get("n")) is not int or sec["n"] < 0:
+                            rep.err("course.json: mock section n must be a non-negative integer")
+                        fields(sec, ("title", "desc", "short"), str, "course.json mock section")
+            def minutes(x):
+                return type(x) in (int, float) and 0 <= x < float("inf")
+            if "minutes" in mc:
+                values = mc["minutes"]
+                if not isinstance(values, list) or not values or any(
+                    not minutes(x.get("m") if isinstance(x, dict) else x) for x in values):
+                    rep.err("course.json: mock.minutes must be a non-empty list of non-negative limits (numbers or objects with m)")
+                elif any(isinstance(x, dict) and "note" in x and not isinstance(x["note"], str) for x in values):
+                    rep.err("course.json: mock.minutes note must be a string")
+            if "defaultMinutes" in mc and not minutes(mc["defaultMinutes"]):
+                rep.err("course.json: mock.defaultMinutes must be a non-negative number")
+            if "weights" in mc and (not isinstance(mc["weights"], dict) or any(
+                not minutes(x) for x in mc["weights"].values())):
+                rep.err("course.json: mock.weights must map lecture labels to non-negative numbers")
+    for name, bank in banks.items():
+        if bank is None:
+            continue
+        for field in ("groups", "items"):
+            rows = bank.get(field, [])
+            if not isinstance(rows, list) or any(not isinstance(x, dict) for x in rows):
+                rep.err(f"{name}.json: {field} must be a list of objects")
+                continue
+            for row in rows:
+                where = f"{name} {field} {row.get('id')!r}"
+                fields(row, ("id", "g", "k", "lec", "sec", "type", "stem", "answer", "title", "desc", "kind", "note", "opt", "why"), str, where)
+                if "fixed" in row and type(row["fixed"]) is not bool:
+                    rep.err(f"{where}: fixed must be a boolean")
+                if "opts" in row and isinstance(row["opts"], list):
+                    if any(not isinstance(x, (dict, str)) for x in row["opts"]):
+                        rep.err(f"{where}: each option must be text or an object")
+                    for opt in row["opts"]:
+                        if isinstance(opt, dict):
+                            fields(opt, ("t", "why"), str, where + " option")
+                if name == "short" and field == "items":
+                    steps = row.get("steps", [])
+                    if not isinstance(steps, list) or any(not isinstance(x, dict) for x in steps):
+                        rep.err(f"{where}: steps must be a list of objects")
+                        continue
+                    for step in steps:
+                        fields(step, ("ask", "sol"), str, where + " step")
+                        if "pts" in step and (type(step["pts"]) not in (int, float) or not 0 < step["pts"] < float("inf")):
+                            rep.err(f"{where}: step pts must be a positive number")
+                        if "opts" in step and (not isinstance(step["opts"], list) or len(step["opts"]) < 2 or any(not isinstance(x, str) for x in step["opts"])):
+                            rep.err(f"{where}: step opts must contain at least two text options")
+    return not rep.errors
+
+
 def check(course):
     rep = Report()
-    cfg = load_json(course / "course.json", rep, required=True) or {}
+    cfg = load_json(course / "course.json", rep, required=True)
     practice = load_json(course / "practice.json", rep, required=True)
     mock = load_json(course / "mock.json", rep)
     short = load_json(course / "short.json", rep)
+    # Missing optional banks are fine; a present JSON null/scalar is not a bank.
+    banks = {"practice": practice, "mock": mock, "short": short}
+    if not isinstance(cfg, dict):
+        rep.err("course.json must be an object")
+        cfg = {}
+    for name, bank in banks.items():
+        if not isinstance(bank, dict) and (bank is not None or (course / (name + ".json")).exists()):
+            rep.err(f"{name}.json must be an object")
+            banks[name] = None
+    practice, mock, short = banks["practice"], banks["mock"], banks["short"]
     sections = read_sections(course)
+    if not check_shapes(cfg, banks, rep):
+        return rep, cfg, practice, mock, short, sections
     if not sections:
         rep.err("sections/ has no .html files")
     body = "\n".join(s for _, s in sections)
@@ -407,7 +519,7 @@ def check(course):
                 rep.warn(f"mock: section {cat!r} draws {n} from a pool of {len(pool)}; about 2x lets repeat papers differ")
             weights = mcfg.get("weights")
             if weights:
-                missing = sorted({gl.get(q.get("g")) for q in pool} - set(weights))
+                missing = sorted({q.get("lec") or gl.get(q.get("g")) for q in pool} - set(weights), key=str)
                 if missing:
                     rep.warn(f"mock: weights give no share to {missing}; their {cat!r} questions will never be drawn")
     return rep, cfg, practice, mock, short, sections
@@ -476,6 +588,9 @@ def build(course, out):
 
 
 def init(course):
+    if course.exists() and not course.is_dir():
+        print(f"{course} is not a folder")
+        return 1
     if course.exists() and any(course.iterdir()):
         print(f"{course} is not empty; pick a new folder.")
         return 1

@@ -1,0 +1,529 @@
+"""Small, fictional courses only; all writes and CLI output live in TemporaryDirectory."""
+import contextlib
+import importlib.util
+import io
+import json
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / 'skills/study-guide/scripts/build.py'
+spec = importlib.util.spec_from_file_location('study_build', SCRIPT)
+b = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(b)
+DEMO = b.EXAMPLE
+
+
+def choice(qid='q1', **kw):
+    return dict({'id': qid, 'g': 'g', 'stem': 'Pick a value.', 'opts': [
+        {'t': 'one', 'why': 'First value.'}, {'t': 'two', 'why': 'Second value.'}], 'ans': 0}, **kw)
+
+
+def fixture():
+    return {'course': {'title': 'Fictional test', 'storageKey': 'test.exam-1_0', 'lectures': ['L1']},
+            'practice': {'groups': [{'id': 'g', 'lec': 'L1', 'sec': 'l1', 'title': 'Values'}],
+                         'items': [choice()]},
+            'mock': {'groups': [{'id': 'm', 'lec': 'L1'}],
+                     'items': [choice('m1', g='m', stem='Select the other value.')]},
+            'short': {'groups': [{'id': 's', 'g': 'g', 'kind': 'Values'}],
+                      'items': [{'id': 's1', 'k': 's', 'stem': 'Work in steps.', 'steps': [
+                          {'ask': 'Value?', 'pts': 2, 'accept': ['1'], 'sol': 'one'},
+                          {'ask': 'Pick?', 'pts': 1, 'opts': ['one', 'two'], 'ans': 0, 'sol': 'one'},
+                          {'ask': 'Explain?', 'pts': 3, 'sol': 'A self check.'}]}]}}
+
+
+class CourseCase(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.course = Path(self.tmp.name) / 'course'
+        self.course.mkdir()
+        (self.course / 'sections').mkdir()
+        (self.course / 'sections/10-main.html').write_text(
+            '<section id="l1"><h2>Test &amp; values</h2></section>', encoding='utf-8')
+        self.data = fixture()
+
+    def write(self):
+        for name in ('course', 'practice', 'mock', 'short'):
+            p = self.course / (name + '.json')
+            if name in self.data:
+                p.write_text(json.dumps(self.data[name], ensure_ascii=False), encoding='utf-8')
+            elif p.exists():
+                p.unlink()
+
+    def check(self):
+        self.write()
+        return b.check(self.course)[0]
+
+    def invalid(self, word):
+        rep = self.check()
+        self.assertTrue(rep.errors, f'expected error containing {word!r}')
+        self.assertIn(word, '\n'.join(rep.errors))
+        # A diagnostic must also stop output and preserve any previous build.
+        out = self.course / 'review.html'
+        out.write_text('previous output', encoding='utf-8')
+        with contextlib.redirect_stdout(io.StringIO()) as log:
+            self.assertEqual(b.build(self.course, out), 1)
+        self.assertIn('error:', log.getvalue())
+        self.assertNotIn('Traceback', log.getvalue())
+        self.assertEqual(out.read_text(), 'previous output')
+
+    def cli(self, *args):
+        return subprocess.run([sys.executable, str(SCRIPT), *map(str, args)], cwd=ROOT,
+                              capture_output=True, text=True)
+
+
+class DataRules(CourseCase):
+    def test_minimal_course_and_default_language(self):
+        self.data = {'course': {'title': '小测试', 'storageKey': 'x'},
+                     'practice': {'groups': [], 'items': []}}
+        self.assertEqual(self.check().errors, [])
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(b.build(self.course, self.course / 'review.html'), 0)
+        self.assertIn('<html lang="zh-CN">', (self.course / 'review.html').read_text())
+
+    def test_missing_required_files_and_empty_sections(self):
+        self.write()
+        for name in ('course.json', 'practice.json'):
+            with self.subTest(name=name):
+                old = (self.course / name).read_bytes()
+                (self.course / name).unlink()
+                self.assertIn(name + ' is missing', b.check(self.course)[0].errors)
+                (self.course / name).write_bytes(old)
+        (self.course / 'sections/10-main.html').unlink()
+        self.invalid('sections/')
+
+    def test_invalid_json_reports_filename_line_column(self):
+        self.write()
+        for name in self.data:
+            with self.subTest(name=name):
+                p = self.course / (name + '.json')
+                old = p.read_bytes()
+                p.write_text('{\n  "bad": }')
+                self.assertRegex('\n'.join(b.check(self.course)[0].errors),
+                                 name + r'.json: invalid JSON at line 2 col \d+')
+                p.write_bytes(old)
+
+    def test_required_config_fields(self):
+        for field in ('title', 'storageKey'):
+            for value in (None, '', 4, [], {}):
+                with self.subTest(field=field, value=value):
+                    self.data = fixture()
+                    self.data['course'][field] = value
+                    self.invalid(field)
+            self.data = fixture()
+            del self.data['course'][field]
+            self.invalid(field)
+
+    def test_config_types(self):
+        cases = [('lang', 'fr'), ('lang', []), ('storageKey', 'with space'),
+                 ('storageKey', '中文'), ('lectures', 'L1'), ('lectures', [3]),
+                 ('tfLabels', ['yes']), ('tfLabels', [True, False]),
+                 ('practiceIntro', []), ('shortIntro', 1), ('footer', {})]
+        for field, value in cases:
+            with self.subTest(field=field, value=value):
+                self.data = fixture()
+                self.data['course'][field] = value
+                self.invalid(field)
+
+    def test_root_and_container_types(self):
+        for name in ('course', 'practice', 'mock', 'short'):
+            for value in ([], 'bad', 3, None):
+                with self.subTest(name=name, value=value):
+                    self.data = fixture()
+                    self.data[name] = value
+                    self.invalid(name + '.json')
+        for bank in ('practice', 'mock', 'short'):
+            for field in ('groups', 'items'):
+                for value in (None, {}, 'bad', [None], [3]):
+                    with self.subTest(bank=bank, field=field, value=value):
+                        self.data = fixture()
+                        self.data[bank][field] = value
+                        self.invalid(field)
+
+    def test_group_ids_references_and_overrides(self):
+        for bank in ('practice', 'mock', 'short'):
+            for value in ('', None, 5, []):
+                with self.subTest(bank=bank, id=value):
+                    self.data = fixture()
+                    self.data[bank]['groups'][0]['id'] = value
+                    self.invalid('id')
+            self.data = fixture()
+            self.data[bank]['groups'] *= 2
+            self.invalid('duplicate group id')
+            self.data = fixture()
+            self.data[bank]['groups'][0]['lec'] = 'L9'
+            self.invalid('lectures')
+            self.data = fixture()
+            item = self.data[bank]['items'][0]
+            item['k' if bank == 'short' else 'g'] = 'missing'
+            self.invalid('not defined')
+        for bank in ('practice', 'mock'):
+            self.data = fixture()
+            self.data[bank]['items'][0]['lec'] = 'L9'
+            self.invalid('lectures')
+        self.data = fixture()
+        self.data['short']['groups'][0]['g'] = 'missing'
+        self.invalid('links practice group')
+
+    def test_missing_sections_are_warnings(self):
+        for bank in ('practice', 'short'):
+            with self.subTest(bank=bank):
+                self.data = fixture()
+                self.data[bank]['groups'][0]['sec'] = 'missing'
+                rep = self.check()
+                self.assertEqual(rep.errors, [])
+                self.assertIn('missing', '\n'.join(rep.warnings))
+
+    def test_global_question_ids(self):
+        for bank in ('practice', 'mock', 'short'):
+            for value in ('', None, 2, []):
+                with self.subTest(bank=bank, id=value):
+                    self.data = fixture()
+                    self.data[bank]['items'][0]['id'] = value
+                    self.invalid('id')
+            self.data = fixture()
+            self.data[bank]['items'] *= 2
+            self.invalid('id already used')
+        for left, right in (('practice', 'mock'), ('practice', 'short'), ('mock', 'short')):
+            self.data = fixture()
+            self.data[right]['items'][0]['id'] = self.data[left]['items'][0]['id']
+            self.invalid('id already used')
+
+    def test_question_types_stems_options_answers(self):
+        for bank in ('practice', 'mock'):
+            cases = [({'type': 'essay'}, 'unknown type'), ({'stem': ''}, 'stem'),
+                     ({'opts': None}, 'options'), ({'opts': []}, 'options'),
+                     ({'opts': ['one']}, 'options'), ({'opts': ['x'] * 9}, 'options'),
+                     ({'opts': [{}, {'t': 'two'}]}, "text 't'"),
+                     ({'opts': [4, 'two']}, 'option'),
+                     ({'type': 'tf', 'opts': [{}, {}, {}]}, 'exactly 2'),
+                     ({'type': 'fill', 'accept': []}, 'accept'),
+                     ({'type': 'fill', 'accept': '1'}, 'accept'),
+                     ({'type': 'card', 'answer': ''}, 'answer')]
+            for patch, message in cases:
+                with self.subTest(bank=bank, patch=patch):
+                    self.data = fixture()
+                    self.data[bank]['items'][0].update(patch)
+                    self.invalid(message)
+            for typ in ('single', 'tf', 'multi'):
+                bad = (None, -1, 2, 0.5, True, '0') if typ != 'multi' else (
+                    None, [], 0, [0, 0], [-1], [2], [True], ['0'], [[0]])
+                for ans in bad:
+                    with self.subTest(bank=bank, type=typ, ans=ans):
+                        self.data = fixture()
+                        self.data[bank]['items'][0].update(type=typ, ans=ans)
+                        self.invalid('ans')
+
+    def test_valid_question_kinds_and_html(self):
+        self.data['practice']['items'] = [choice('a'), choice('b', type='tf', opts=[{}, {}]),
+            choice('c', type='multi', ans=[0, 1]),
+            {'id': 'd', 'g': 'g', 'type': 'fill', 'stem': '<b>数值</b>', 'accept': ['1/2', 0.5], 'answer': '½'},
+            {'id': 'e', 'g': 'g', 'type': 'card', 'stem': 'Recall.', 'answer': '<sup>2</sup>'}]
+        self.data['practice']['items'][0]['opts'] = ['one', 'two']
+        self.assertEqual(self.check().errors, [])
+        self.data['practice']['items'][1].pop('opts')
+        self.assertEqual(self.check().errors, [])
+
+    def test_show_and_fixed(self):
+        for patch in ({'show': 'Z'}, {'show': 'AB'}, {'show': 0},
+                      {'type': 'multi', 'ans': [0], 'show': 'B'}, {'fixed': 'false'}):
+            with self.subTest(patch=patch):
+                self.data = fixture()
+                self.data['practice']['items'][0].update(patch)
+                self.invalid('fixed' if 'fixed' in patch else 'show')
+        self.data = fixture()
+        self.data['practice']['items'][0].update(show='b', fixed=True)
+        self.assertEqual(self.check().errors, [])
+
+    def test_short_steps(self):
+        for patch, message in [({'steps': []}, 'steps'), ({'steps': 'bad'}, 'steps'),
+                               ({'steps': [None]}, 'steps')]:
+            self.data = fixture()
+            self.data['short']['items'][0].update(patch)
+            self.invalid(message)
+        for patch, message in [({'ask': ''}, 'ask'), ({'sol': ''}, 'sol'),
+                               ({'accept': []}, 'accept'), ({'accept': '1'}, 'accept'),
+                               ({'pts': -1}, 'pts'), ({'pts': '2'}, 'pts')]:
+            self.data = fixture()
+            self.data['short']['items'][0]['steps'][0].update(patch)
+            self.invalid(message)
+        for ans in (None, -1, 2, True, '0', 0.5):
+            self.data = fixture()
+            self.data['short']['items'][0]['steps'][1]['ans'] = ans
+            self.invalid('ans')
+
+    def test_mock_configuration_even_without_pool(self):
+        cases = [({'sections': [{'cat': 'essay', 'n': 1}]}, 'cat'),
+                 ({'sections': 'bad'}, 'sections'), ({'sections': [None]}, 'sections'),
+                 ({'sections': [{'cat': 'tf', 'n': -1}]}, 'n'),
+                 ({'sections': [{'cat': 'tf', 'n': True}]}, 'n'),
+                 ({'sections': [{'cat': 'tf', 'n': '2'}]}, 'n'),
+                 ({'minutes': []}, 'minutes'), ({'minutes': ['45']}, 'minutes'),
+                 ({'minutes': [-1]}, 'minutes'), ({'minutes': [True]}, 'minutes'),
+                 ({'minutes': [{}]}, 'minutes'), ({'defaultMinutes': -1}, 'defaultMinutes'),
+                 ({'weights': {'L1': -1}}, 'weights'), ({'weights': {'L1': '2'}}, 'weights'),
+                 ({'note': []}, 'note')]
+        for cfg, message in cases:
+            for has_pool in (True, False):
+                with self.subTest(cfg=cfg, pool=has_pool):
+                    self.data = fixture()
+                    if not has_pool:
+                        del self.data['mock']
+                    self.data['course']['mock'] = cfg
+                    self.invalid(message)
+
+    def test_mock_pool_and_citation_policies(self):
+        # Citations are optional metadata, not parsed slide references.
+        for src in (None, '', 'Fictional L1 p.2', '<b>Source</b>'):
+            self.data['practice']['items'][0]['src'] = src
+            self.assertEqual(self.check().errors, [])
+        self.data['course']['mock'] = {'sections': [{'cat': 'single', 'n': 2}], 'weights': {'L2': 1}}
+        warnings = '\n'.join(self.check().warnings)
+        self.assertIn('wants 2 questions but the pool has 1', warnings)
+        self.assertIn('weights give no share', warnings)
+        self.data['course']['mock']['sections'][0]['n'] = 1
+        self.assertIn('about 2x', '\n'.join(self.check().warnings))
+
+    def test_documented_ambiguities_remain_characterized(self):
+        # The reference says practice-only cards and fill answer HTML, but the engine
+        # explicitly skips mock cards and falls back to accept[0]; don't choose policy here.
+        self.data['mock']['items'] = [{'id': 'mc', 'g': 'm', 'type': 'card', 'stem': 'Recall', 'answer': 'one'}]
+        self.data['practice']['items'] = [{'id': 'f', 'g': 'g', 'type': 'fill', 'stem': 'Value?', 'accept': ['1']}]
+        rep = self.check()
+        self.assertEqual(rep.errors, [])
+        self.assertIn('flashcards are skipped', '\n'.join(rep.warnings))
+        self.data = fixture()
+        self.data['course']['mock'] = {'sections': []}
+        self.assertIn("section 'tf' wants 10", '\n'.join(self.check().warnings))
+
+
+class BuildOutput(CourseCase):
+    def test_embeds_assets_data_sorted_sections_and_escapes_script_close(self):
+        self.data['course'].update(title='<Fictional & title>', footer='<b>footer</b>', lang='en')
+        self.data['practice']['items'][0]['stem'] = '“数值” </script><script>bad()</script>'
+        (self.course / 'sections/00-first.html').write_text('<header id="exam">FIRST</header>')
+        (self.course / 'extra.css').write_text('/* extra css */')
+        (self.course / 'extra.js').write_text('/* extra js */')
+        self.write()
+        out = self.course / 'review.html'
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(b.build(self.course, out), 0)
+        page = out.read_text(encoding='utf-8')
+        self.assertIn((b.ASSETS / 'engine.js').read_text(), page)
+        self.assertIn((b.ASSETS / 'page.css').read_text(), page)
+        self.assertIn('/* extra css */', page)
+        self.assertIn('/* extra js */', page)
+        self.assertIn('<title>&lt;Fictional &amp; title&gt;</title>', page)
+        self.assertIn('<footer><b>footer</b></footer>', page)
+        self.assertLess(page.index('FIRST'), page.index('<section id="l1">'))
+        self.assertEqual(page.count('id="practice"'), 1)
+        self.assertNotRegex(page, r'(?:src|href)="(?:[^"\n]*/)?(?:engine.js|page.css)"')
+        blob = re.search(r'window.STUDY_DATA = (.*?);</script>', page).group(1)
+        self.assertNotIn('</script>', blob)
+        self.assertEqual(json.loads(blob), dict(config=self.data['course'],
+            **{k: self.data[k] for k in ('practice', 'mock', 'short')}))
+        self.assertNotIn('tex-svg-full', page)
+        self.data['practice']['items'][0]['stem'] = "<span data-tex='x'>x</span>"
+        self.write()
+        with contextlib.redirect_stdout(io.StringIO()):
+            b.build(self.course, out)
+        self.assertIn('tex-svg-full', out.read_text())
+
+    def test_existing_practice_anchor_is_not_duplicated(self):
+        (self.course / 'sections/90-practice.html').write_text('<section id="practice"></section>')
+        self.write()
+        self.assertEqual(self.cli(self.course).returncode, 0)
+        self.assertEqual((self.course / 'review.html').read_text().count('id="practice"'), 1)
+
+    def test_cli_check_output_missing_folder_and_no_write_on_error(self):
+        self.write()
+        checked = self.cli(self.course, '--check')
+        self.assertEqual(checked.returncode, 0, checked.stdout + checked.stderr)
+        self.assertFalse((self.course / 'review.html').exists())
+        out = self.course / 'custom.html'
+        built = self.cli(self.course, '--out', out)
+        self.assertEqual(built.returncode, 0, built.stdout + built.stderr)
+        self.assertTrue(out.exists())
+        self.assertEqual(self.cli(self.course / 'absent').returncode, 1)
+        self.data['course']['title'] = ''
+        self.write()
+        bad = self.cli(self.course)
+        self.assertEqual(bad.returncode, 1)
+        self.assertIn('nothing written', bad.stdout)
+        self.assertFalse((self.course / 'review.html').exists())
+
+    def test_init_new_empty_and_refuses_nonempty(self):
+        for target in (self.course / 'new', self.course / 'empty'):
+            if target.name == 'empty':
+                target.mkdir()
+            result = self.cli('--init', target)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertFalse((target / 'review.html').exists())
+            for source in DEMO.rglob('*'):
+                if source.is_file() and source.name != 'review.html':
+                    self.assertEqual((target / source.relative_to(DEMO)).read_bytes(), source.read_bytes())
+            before = (target / 'course.json').read_bytes()
+            self.assertEqual(self.cli('--init', target).returncode, 1)
+            self.assertEqual((target / 'course.json').read_bytes(), before)
+            self.assertEqual(self.cli(target, '--check').returncode, 0)
+
+    def test_init_refuses_a_file_without_traceback(self):
+        target = self.course / 'existing-file'
+        target.write_text('keep me')
+        result = self.cli('--init', target)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('not a folder', result.stdout)
+        self.assertNotIn('Traceback', result.stderr)
+        self.assertEqual(target.read_text(), 'keep me')
+
+    def test_demo_build_is_identical_twice_without_modifying_demo(self):
+        target = self.course / 'demo-copy'
+        shutil.copytree(DEMO, target)
+        for _ in range(2):
+            built = self.cli(target)
+            self.assertEqual(built.returncode, 0, built.stdout + built.stderr)
+            contents = (target / 'review.html').read_bytes()
+            if _ == 0:
+                first = contents
+            else:
+                self.assertEqual(first, contents)
+
+    def test_toc_labels_markers_and_skip(self):
+        entries = b.toc_entries('<header id="exam"></header><section id="x"><h2>A &amp; B</h2></section>'
+            '<section id="y" data-toc="Custom" data-n="!"></section>'
+            '<section id="hidden" data-toc-skip></section><section id="practice"></section>', b.UI['en'])
+        self.assertEqual(entries, [('exam', '0', 'Exam info'), ('x', '1', 'A &amp; B'),
+                                   ('y', '!', 'Custom'), ('practice', '?', 'Practice and exams')])
+
+
+class Audits(unittest.TestCase):
+    def test_warning_patterns_and_small_bank_thresholds(self):
+        scenarios = [([choice(str(i), opts=[{'t': 'long correct'}, {'t': 'x'}]) for i in range(6)], 'single longest'),
+                     ([choice(str(i), type='multi', ans=[0]) for i in range(4)], 'exactly 1 correct'),
+                     ([choice(str(i), type='tf') for i in range(6)], 'true/false'),
+                     ([choice('x', opts=['x', 'y'])], "lack a 'why'")]
+        for items, expected in scenarios:
+            rep = b.Report()
+            b.audit('test', items, rep)
+            self.assertIn(expected, '\n'.join(rep.warnings))
+        rep = b.Report()
+        b.audit('test', scenarios[0][0][:5], rep)
+        self.assertNotIn('single longest', '\n'.join(rep.warnings))
+
+    def test_number_swapped_stems_and_math_symbols(self):
+        self.assertEqual(b.stem_tokens('<b>Roll 3 dice</b>'), b.stem_tokens('Roll 9 dice'))
+        self.assertNotEqual(b.stem_tokens('P(A ∪ B)'), b.stem_tokens('P(A ∩ B)'))
+        data = fixture()
+        with tempfile.TemporaryDirectory() as tmp:
+            course = Path(tmp)
+            (course / 'sections').mkdir()
+            (course / 'sections/10.html').write_text('<section id="l1"></section>')
+            data['practice']['items'][0]['stem'] = 'Roll 3 dice and count the even outcomes.'
+            data['mock']['items'][0]['stem'] = 'Roll 9 dice and count the even outcomes.'
+            for name, bank in data.items():
+                (course / (name + '.json')).write_text(json.dumps(bank))
+            self.assertIn('m1 ~ q1', '\n'.join(b.check(course)[0].warnings))
+
+    def test_letter_warning_and_fixed_exclusion(self):
+        items = [choice(str(i), opts=['one', 'two', 'three', 'four'], show='B') for i in range(8)]
+        rep = b.Report()
+        b.letter_audit('practice', items, 'test', rep)
+        self.assertIn('shown as B in 8/8', '\n'.join(rep.warnings))
+        for q in items:
+            q['fixed'] = True
+        rep = b.Report()
+        b.letter_audit('practice', items, 'test', rep)
+        self.assertEqual(rep.warnings, [])
+
+class EdgeCases(CourseCase):
+    def test_non_json_numeric_constants_are_rejected(self):
+        self.write()
+        for token in ('NaN', 'Infinity', '-Infinity'):
+            with self.subTest(token=token):
+                (self.course / 'course.json').write_text(
+                    '{"title":"test", "storageKey":"test", "extra":' + token + '}')
+                self.assertIn('invalid JSON', '\n'.join(b.check(self.course)[0].errors))
+
+    def test_non_utf8_json_has_a_clear_diagnostic(self):
+        self.write()
+        (self.course / 'practice.json').write_bytes(b'{"bad": "\xff"}')
+        self.assertIn('UTF-8', '\n'.join(b.check(self.course)[0].errors))
+
+    def test_unhashable_mock_category_and_oversized_show_do_not_crash(self):
+        self.data['course']['mock'] = {'sections': [{'cat': [], 'n': 1}]}
+        self.invalid('cat')
+        self.data = fixture()
+        self.data['practice']['items'][0].update(opts=['value'] * 9, show='Z')
+        self.invalid('at most 8')
+
+    def test_short_stem_and_item_lecture_override(self):
+        self.data['short']['items'][0]['stem'] = ''
+        self.invalid('stem')
+        self.data = fixture()
+        self.data['short']['items'][0]['lec'] = 'L9'
+        self.invalid('lectures')
+
+    def test_documented_optional_config_values_embed_without_loss(self):
+        self.data['course'].update(lang='en', tfLabels=['是', '否'],
+            practiceIntro='<b>Practice</b>', shortIntro='<i>Steps</i>', footer='<p>Fictional source</p>',
+            mock={'sections': [{'cat': 'single', 'n': 0, 'title': 'Part', 'desc': '<b>Choose</b>', 'short': 'choice'}],
+                  'weights': {'L1': 0.5}, 'minutes': [0, {'m': 2.5, 'note': 'test'}],
+                  'defaultMinutes': 2.5, 'note': '<i>Intro</i>'})
+        self.assertEqual(self.check().errors, [])
+        self.assertEqual(self.cli(self.course).returncode, 0)
+        blob = re.search(r'window.STUDY_DATA = (.*?);</script>', (self.course / 'review.html').read_text()).group(1)
+        self.assertEqual(json.loads(blob)['config'], self.data['course'])
+
+    def test_short_option_shapes_and_optional_metadata_types(self):
+        for value in (None, {}, 'bad', [], [1, 2]):
+            with self.subTest(opts=value):
+                self.data = fixture()
+                self.data['short']['items'][0]['steps'][1]['opts'] = value
+                self.invalid('opts')
+        for where, key in [('group', 'desc'), ('item', 'stem'), ('item', 'answer'), ('option', 'why')]:
+            self.data = fixture()
+            row = (self.data['practice']['groups'][0] if where == 'group' else
+                   self.data['practice']['items'][0]['opts'][0] if where == 'option' else
+                   self.data['practice']['items'][0])
+            row[key] = []
+            self.invalid(key)
+
+    def test_mock_weight_audit_uses_item_lecture_overrides(self):
+        self.data['course']['lectures'].append('L2')
+        self.data['course']['mock'] = {'sections': [{'cat': 'single', 'n': 1}], 'weights': {'L2': 1}}
+        self.data['mock']['items'][0]['lec'] = 'L2'
+        rep = self.check()
+        self.assertEqual(rep.errors, [])
+        self.assertNotIn('weights give no share', '\n'.join(rep.warnings))
+
+    def test_missing_lecture_labels_do_not_crash_weight_audit(self):
+        self.data['course']['lectures'].append('L2')
+        self.data['course']['mock'] = {'sections': [{'cat': 'single', 'n': 2}], 'weights': {'L1': 1}}
+        del self.data['mock']['groups'][0]['lec']
+        self.data['mock']['groups'].append({'id': 'm2', 'lec': 'L2'})
+        self.data['mock']['items'].append(choice('m2-q', g='m2', stem='A second value.'))
+        rep = self.check()
+        self.assertIn('weights give no share', '\n'.join(rep.warnings))
+
+    def test_explicit_mock_object_types_and_section_metadata(self):
+        for value in (None, [], 'mock'):
+            self.data = fixture()
+            self.data['course']['mock'] = value
+            self.invalid('mock')
+        for config, message in [({'sections': [{'cat': 'tf'}]}, 'n'),
+                                ({'sections': [{'cat': 'tf', 'n': 1, 'title': 3}]}, 'title'),
+                                ({'minutes': [{'m': 1, 'note': []}]}, 'note'),
+                                ({'weights': []}, 'weights')]:
+            self.data = fixture()
+            self.data['course']['mock'] = config
+            self.invalid(message)
+
+
+if __name__ == '__main__':
+    unittest.main()

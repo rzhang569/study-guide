@@ -351,7 +351,7 @@
     return out;
   }
   function numsOf(v, want) {
-    var s = String(v == null ? "" : v).trim().split(/[=≈]/).pop().replace(/^[~～]/, "").trim();
+    var s = String(v == null ? "" : v).replace(/[`'"“”‘’]/g, "").trim().split(/[=≈]/).pop().replace(/^[~～]/, "").trim();
     if (!s) return null;
     var inner = s.replace(/^[(\[（［【{]/, "").replace(/[)\]）］】}]$/, "");
     var parts = splitTop(inner);
@@ -372,14 +372,18 @@
     var n = norm(v);
     if (!n) return null;
     var acc = q.accept || [];
-    if (acc.some(function (a) { return norm(a) === n; })) return true;
-    var ref = null;
-    for (var k = 0; k < acc.length && !ref; k++) ref = numsOf(acc[k], 1);
-    if (!ref) return false;
-    var got = numsOf(v, ref.length);
-    if (!got) return null;
-    if (got.length !== ref.length) return false;
-    return got.every(function (x, j) { return approx(x, ref[j]); });
+    /* Text normalization removes brackets, so numeric expressions must be evaluated first:
+       (1+2)*3 and 1+2*3 have the same normalized text but different values. */
+    if (acc.some(function (a) { return norm(a) === n && !numsOf(a, 1); })) return true;
+    var refs = acc.map(function (a) { return numsOf(a, 1); }).filter(Boolean), readable = false;
+    if (!refs.length) return false;
+    var matched = refs.some(function (ref) {
+      var got = numsOf(v, ref.length);
+      if (!got) return false;
+      readable = true;
+      return got.length === ref.length && got.every(function (x, j) { return approx(x, ref[j]); });
+    });
+    return matched ? true : (readable ? false : null);
   }
   function fillOk(q, v) { return fillCheck(q, v) === true; }
   function scoreOf(q, sel) {
@@ -1011,14 +1015,14 @@
       LECS.forEach(function (u) { byU[u] = []; });
       items.forEach(function (q) { if (q.cat === sec.cat && byU[q.lec]) byU[q.lec].push(q.id); });
       function wt(u) { return !byU[u].length ? 0 : (WEIGHTS ? (WEIGHTS[u] || 0) : byU[u].length); }
-      LECS.forEach(function (u) { N += byU[u].length; W += wt(u); });
+      LECS.forEach(function (u) { if (wt(u) > 0) N += byU[u].length; W += wt(u); });
       var T = Math.min(sec.n, N);
       if (!T || !W) return;
       var quotas = LECS.map(function (u) { var ex = T * wt(u) / W; return { u: u, f: Math.min(Math.floor(ex), byU[u].length), r: ex - Math.floor(ex) }; });
       var left = T - quotas.reduce(function (s, x) { return s + x.f; }, 0);
       var ranked = shuffle(quotas.slice()).sort(function (a, b) { return b.r - a.r; });
-      for (var pass = 0; left > 0 && pass < 50; pass++) {
-        ranked.forEach(function (x) { if (left > 0 && x.f < byU[x.u].length && (pass > 0 || x.r > 0)) { x.f++; left--; } });
+      for (var pass = 0; left > 0 && pass < T; pass++) {
+        ranked.forEach(function (x) { if (left > 0 && wt(x.u) > 0 && x.f < byU[x.u].length && (pass > 0 || x.r > 0)) { x.f++; left--; } });
       }
       var picked = [];
       quotas.forEach(function (x) {
@@ -1330,9 +1334,10 @@
       lec[q.lec].total++;
       var r = ps.ans[q.id], f = firstScore(q, r);
       if (f == null) return;
-      lec[q.lec].answered++; lec[q.lec].firstScore = Math.round((lec[q.lec].firstScore + f) * 100) / 100;
+      lec[q.lec].answered++; lec[q.lec].firstScore += f;
       if (f < 0.999) missed.push({ id: q.id, lec: q.lec, group: (BANKS.practice.gmap[q.g] || {}).title || q.g, type: q.type, stem: plain(q.stem).slice(0, 240), firstAnswer: plain(pickText(q, r.first)), correct: q.type === "fill" ? plain(q.answer || (q.accept || [])[0]) : plain(pickText(q, q.ans)), redoneRight: mastered(q) });
     });
+    LECS.forEach(function (u) { lec[u].firstScore = Math.round(lec[u].firstScore * 100) / 100; });
     SA.forEach(function (s) {
       if (!saStarted(s)) return;
       var k = saScore(s), r = saRec(s);
