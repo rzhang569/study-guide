@@ -95,7 +95,7 @@ function load({data = fixture(), storage = new Map(), failStorage = false, code 
     'firstScore', 'displayOrder', 'letterOf', 'seededOrder', 'saScore', 'stepOk', 'saStarted', 'setStep',
     'practiceCard', 'saCard', 'updateSABar', 'mockCard', 'drawPaper', 'newPaper', 'submitMock', 'answeredDraft',
     'clockState', 'mmss', 'save', 'bookEntries', 'mastered', 'exportPanel', 'plain', 'setOpen', 'openMap',
-    'STR', 'mockBook', 'bookCard', 'updatePracticeBar', 'updateMockBar'];
+    'STR', 'mockBook', 'bookCard', 'updatePracticeBar', 'updateMockBar', 'pickText', 'practiceList'];
   const end = '  boot();\n})();';
   if (instrument) {
     if (!code.includes(end)) throw Error('engine boot marker changed; update test instrumentation');
