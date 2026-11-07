@@ -200,12 +200,12 @@ def check_bank(name, bank, rep, ids, lectures, sec_ids):
             rep.err(f"{name}: group {gid!r} has lec {g['lec']!r}, which is not in course.json lectures")
         if g.get("sec") and sec_ids is not None and g["sec"] not in sec_ids:
             rep.warn(f"{name}: group {gid!r} points at section {g['sec']!r}, but no <section id=\"{g['sec']}\"> exists, so its practice box will not show")
-    for q in items:
+    def check_item(q):
         qid = q.get("id")
         where = f"{name} item {qid!r}"
         if not qid:
             rep.err(f"{name}: an item has no id (stem: {text_of(q.get('stem'))[:50]!r})")
-            continue
+            return
         if qid in ids:
             rep.err(f"{where}: id already used in {ids[qid]} (ids must be unique across all banks)")
         ids[qid] = name
@@ -218,26 +218,28 @@ def check_bank(name, bank, rep, ids, lectures, sec_ids):
         t = q.get("type", "single")
         if t not in TYPES:
             rep.err(f"{where}: unknown type {t!r}")
-            continue
-        if not q.get("stem"):
+            return
+        if not isinstance(q.get("stem"), str):
+            rep.err(f"{where}: stem must be text" if q.get("stem") else f"{where}: empty stem")
+        elif not q["stem"].strip():
             rep.err(f"{where}: empty stem")
         if t == "card":
             if name == "mock":
                 rep.warn(f"{where}: flashcards are skipped in the mock exam")
             if not q.get("answer"):
                 rep.err(f"{where}: card needs 'answer'")
-            continue
+            return
         if t == "fill":
             acc = q.get("accept")
             if not isinstance(acc, list) or not acc:
                 rep.err(f"{where}: fill-in needs a non-empty 'accept' list")
-            continue
+            return
         opts = q.get("opts")
         if t == "tf" and opts is None:
             opts = [{}, {}]
         if not isinstance(opts, list) or len(opts) < 2:
             rep.err(f"{where}: needs at least 2 options")
-            continue
+            return
         if len(opts) > 8:
             rep.err(f"{where}: at most 8 options")
         if t == "tf" and len(opts) != 2:
@@ -254,7 +256,15 @@ def check_bank(name, bank, rep, ids, lectures, sec_ids):
         for o in opts:
             if isinstance(o, dict) and t != "tf" and not o.get("t"):
                 rep.err(f"{where}: an option has no text 't'")
-    return items
+
+    # the audits and letter checks index into options and answers, so they only see items that passed these checks
+    good = []
+    for q in items:
+        before = len(rep.errors)
+        check_item(q)
+        if len(rep.errors) == before:
+            good.append(q)
+    return good
 
 
 def check_short(short, rep, ids, lectures, sec_ids, practice_groups):

@@ -303,6 +303,33 @@ class CommandLine(unittest.TestCase):
             self.assertIn("could not read broken.pdf as a PDF", result.stderr)
             self.assertNotIn("Traceback", result.stderr)
 
+    @unittest.skipUnless(HAS_PYPDF and EVAL_PDF.exists(), "needs pypdf and the eval sample")
+    def test_damaged_pdfs_leak_nothing_on_stdout_or_stderr(self):
+        # pypdf logs raw bytes from a bad header or a broken object; neither stream may carry them
+        src = EVAL_PDF.read_bytes()
+        planted = b" /MARKWORD (MARKLEAK zephyr) ]]] "
+        obj = re.search(rb"\n\d+ 0 obj\s*<<", src).end()
+        damaged = {
+            "header.pdf": b"MARKHEAD zephyr\n" + src,
+            "header-only.pdf": b"MARKHEAD zephyr\n",
+            "object.pdf": src[:obj] + planted + src[obj:],
+            "xref.pdf": re.sub(rb"startxref\s+\d+", b"startxref\n99999999", src),
+        }
+        error_line = re.compile(r"count_exam\.py: could not read [\w.-]+ as a PDF \(\w+\)")
+        with tempfile.TemporaryDirectory() as tmp:
+            for name, data in damaged.items():
+                with self.subTest(file=name):
+                    path = Path(tmp) / name
+                    path.write_bytes(data)
+                    result = self.cli(path)
+                    for stream in (result.stdout, result.stderr):
+                        self.assertNotIn("MARK", stream)
+                        self.assertNotIn("zephyr", stream)
+                    for line in filter(None, result.stderr.splitlines()):
+                        self.assertRegex(line, error_line)
+                    words = re.findall(r"[^\W\d_]+", LABEL.sub(" ", result.stdout))
+                    self.assertEqual(sorted(set(words) - ALLOWED), [])
+
 
 if __name__ == "__main__":
     unittest.main()
