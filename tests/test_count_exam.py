@@ -9,6 +9,7 @@ every report must come from the script's own fixed wording.
 import contextlib
 import importlib.util
 import io
+import os
 import re
 import subprocess
 import sys
@@ -261,7 +262,7 @@ class SpoilerFree(unittest.TestCase):
 
 class CommandLine(unittest.TestCase):
     def cli(self, *args):
-        return subprocess.run([sys.executable, str(SCRIPT), *map(str, args)], capture_output=True, text=True)
+        return subprocess.run([sys.executable, str(SCRIPT), *map(str, args)], capture_output=True, text=True, encoding="utf-8")
 
     def test_wrong_argument_count_and_missing_file(self):
         for args in ((), ("a.pdf", "b.pdf")):
@@ -280,6 +281,28 @@ class CommandLine(unittest.TestCase):
             self.assertEqual(ce.main(["count_exam.py", str(SCRIPT)]), 1)
         self.assertIn("python3 -m pip install pypdf", err.getvalue())
         self.assertIn("Do not read the PDF any other way", err.getvalue())
+
+    def test_report_prints_utf8_on_a_legacy_windows_code_page(self):
+        # "–" in "Q1–2" is not in cp437 (a Windows console or pipe); the report must come out as UTF-8, not crash.
+        # A stub pypdf on PYTHONPATH supplies the page text, so this runs with or without the real pypdf.
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "pypdf").mkdir()
+            (Path(tmp) / "pypdf/__init__.py").write_text(
+                "class _Page:\n"
+                "    def extract_text(self):\n"
+                "        return '1. MARKA\\nA. x\\nB. y\\n2. MARKB\\nA. x\\nB. y'\n"
+                "class PdfReader:\n"
+                "    def __init__(self, path):\n"
+                "        self.pages = [_Page()]\n", encoding="utf-8")
+            pdf = Path(tmp) / "exam.pdf"
+            pdf.write_bytes(b"%PDF-1.4\n")
+            env = dict(os.environ, PYTHONIOENCODING="cp437", PYTHONPATH=tmp)
+            result = subprocess.run([sys.executable, str(SCRIPT), str(pdf)], capture_output=True,
+                                    encoding="utf-8", env=env)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("questions found 2: Q1–2\n", result.stdout)
+        self.assertNotIn("UnicodeEncodeError", result.stderr)
+        self.assertNotIn("MARK", result.stdout)
 
     @unittest.skipUnless(HAS_PYPDF, "needs pypdf")
     def test_image_only_and_damaged_pdfs(self):

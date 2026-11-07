@@ -1,4 +1,4 @@
-# Runs the Python, engine and browser tests on every push and pull request.
+# Runs the Python, engine and browser tests on every push and pull request, on Ubuntu and on Windows.
 name: Tests
 
 on:
@@ -23,6 +23,32 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Install pypdf (count_exam.py only)
+        run: python -m pip install pypdf
+      - name: Python tests
+        run: python -m unittest -v
+      - name: Engine tests
+        run: node --test
+      - name: Browser tests
+        run: node tests/browser/run.mjs
+        env:
+          REQUIRE_BROWSER: "1"
+
+  # The same three suites on Windows: python (not python3), cp1252 pipes, Windows paths and Chrome locations.
+  # Chrome is preinstalled on the runner; tests/browser/cdp.mjs finds it under Program Files by itself.
+  test-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
       - uses: actions/setup-node@v7
         with:
           node-version: 22

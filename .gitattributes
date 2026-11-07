@@ -1,0 +1,4 @@
+# LF in every checkout, Windows included: the tests compare build output with the sources byte for byte
+* text=auto eol=lf
+*.pdf binary
+*.png binary

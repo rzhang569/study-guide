@@ -2,3 +2,5 @@ _archive/
 .DS_Store
 __pycache__/
 *.pyc
+# the demo page is built, not checked in (Pages and the tests build it from the sources)
+/skills/study-guide/examples/demo/review.html
