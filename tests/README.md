@@ -125,7 +125,7 @@ a complete closed JSON schema: unknown extension fields remain supported.
 | Short records `{v,ok,shown,tries,self,fix,tried}`; notebook `redo` | Runtime | Complete state roundtrip; typed reevaluation, first vs fixed scoring and independent notebook mastery tests |
 | Stored option indexes are authored indexes | Runtime | Stable seeded order, forced shown letters, legacy eval state, append/remove and redo tests |
 | Mock paper/draft/flags/seen/pcount/history, per-lecture scores, picks, used/limit/auto | Runtime | Draw freshness/order/proportions/caps, draft persistence, flags, blank/partial scoring, timing and history tests |
-| Artifact db docs `{v:1,state,updatedAt}` and report mirror | Experimental runtime | Not claimed tested against a live artifact db; local/export path is covered |
+| Artifact db docs `{v:1,state,updatedAt}` and report mirror | Experimental runtime | Sync logic tested against a fake db (debounced writes, newer side wins on boot, local progress pushed, db failures fall back to localStorage); not tested against a live artifact db |
 | Report kind/v/course/key/at; practice answered/firstScore/total and missed records | Runtime | Public `StudyGuide.report()`, first-score precision, scope independence, plain HTML/sup/sub text, redoneRight |
 | Report short firstScore/afterFixes/max/missedSteps | Runtime | Typed/choice/self score paths and eval summary compatibility |
 | Report mock papers/recent/byLecture/last/wrong/flaggedButRight | Runtime | Partial totals, history aggregation, recent-eight cap, blanks/flags/removed ids and eval compatibility |
