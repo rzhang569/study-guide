@@ -16,8 +16,10 @@ Everything printed is fixed wording, numbers and normalised labels. What cannot 
 unknown. This lets a student keep the sample unseen for a timed run while the mock exam is still calibrated
 to its size and structure. Needs pypdf (python3 -m pip install pypdf).
 """
+import logging
 import re
 import sys
+import warnings
 from pathlib import Path
 
 QLINE = re.compile(r"^(?:Q(?:uestion)?\s*)?(\d{1,3})[.):]\s")
@@ -304,8 +306,13 @@ def main(argv):
         print("count_exam.py needs pypdf: run python3 -m pip install pypdf, then run this again. "
               "Do not read the PDF any other way.", file=sys.stderr)
         return 1
+    # pypdf logs and warns with raw bytes from damaged files (a bad header, a broken object), which can be question
+    # text, so nothing it says may reach the terminal; our own messages below name only the error type
+    logging.getLogger("pypdf").setLevel(logging.CRITICAL + 1)
     try:
-        pages = [p.extract_text() or "" for p in PdfReader(str(path)).pages]
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            pages = [p.extract_text() or "" for p in PdfReader(str(path)).pages]
     except Exception as e:  # damaged or encrypted file; the error type says enough without quoting the file
         print(f"count_exam.py: could not read {path.name} as a PDF ({type(e).__name__})", file=sys.stderr)
         return 1

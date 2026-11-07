@@ -379,6 +379,22 @@ class DataRules(CourseCase):
         self.assertNotIn("'ans'", '\n'.join(errors))
         self.assertNotIn('links practice group', '\n'.join(errors))
 
+    def test_a_malformed_item_next_to_a_broken_file_is_reported_not_crashed_on(self):
+        # once one file is broken the build keeps checking the others, so the audits must never see an item
+        # whose options or answer failed validation (e.g. "opts": 7 used to raise TypeError in audit())
+        for opts in (7, {'a': 1}, 'ab'):
+            with self.subTest(opts=opts):
+                self.data = fixture()
+                self.data['practice']['items'][0]['opts'] = opts
+                self.write()
+                (self.course / 'mock.json').write_text('{"groups": [}')
+                result = self.cli(self.course)
+                self.assertEqual(result.returncode, 1)
+                self.assertNotIn('Traceback', result.stderr + result.stdout)
+                out = result.stderr + result.stdout
+                self.assertIn('mock.json: invalid JSON', out)
+                self.assertIn("practice item 'q1': needs at least 2 options", out)
+
     def test_json_with_a_byte_order_mark_is_accepted(self):
         self.write()
         for name in ('course', 'practice', 'mock', 'short'):
