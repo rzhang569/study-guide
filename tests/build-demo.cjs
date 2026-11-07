@@ -19,8 +19,9 @@ function findPython() {
   return python;
 }
 
-/* build the demo into dir and return the page's path; with lang, a copy of the course with that lang */
-function buildDemo(dir, lang) {
+/* build the demo into dir and return the page's path; with lang, a copy of the course with that lang.
+   build: another copy's build.py (tests/browser/compare.mjs builds an older version too); name: the page's file name */
+function buildDemo(dir, lang, {build = BUILD, name} = {}) {
   const py = findPython();
   if (!py) throw new Error('Python not found (set PYTHON)');
   let course = DEMO;
@@ -30,9 +31,9 @@ function buildDemo(dir, lang) {
     const cfgFile = path.join(course, 'course.json'), cfg = JSON.parse(fs.readFileSync(cfgFile, 'utf8'));
     cfg.lang = lang; fs.writeFileSync(cfgFile, JSON.stringify(cfg, null, 2));
   }
-  const out = path.join(dir, lang ? `review-${lang}.html` : 'review.html');
+  const out = path.join(dir, name || (lang ? `review-${lang}.html` : 'review.html'));
   const [cmd, ...args] = py;
-  const r = spawnSync(cmd, [...args, BUILD, course, '-o', out], {encoding: 'utf8'});
+  const r = spawnSync(cmd, [...args, build, course, '-o', out], {encoding: 'utf8'});
   if (r.status !== 0) throw new Error(`build.py failed${lang ? ' for ' + lang : ''}:\n${r.stdout}\n${r.stderr}${r.error || ''}`);
   return out;
 }
