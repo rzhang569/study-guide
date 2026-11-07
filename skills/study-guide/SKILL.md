@@ -1,8 +1,8 @@
 ---
 name: study-guide
-description: Build an interactive exam review website for a course. It has lecture-by-lecture notes with slide references and plain-language explanations, a practice bank that explains every option, step-by-step short answers, timed mock exams drawn from a separate pool calibrated to the real exam, and a mistake notebook. Progress flows back so Claude can find weak spots and write targeted new drills. Use this whenever a student wants to prepare for a midterm, final or quiz, or asks for a study guide, review page, practice questions or a mock exam from their slides, notes or course website. Also use it when they share exam-prep progress and ask what to review next, even if they never say "website".
+description: Build an interactive exam review website for a course. It has lecture-by-lecture notes with slide references and plain-language explanations, a practice bank that explains every option, step-by-step short answers, timed mock exams drawn from a separate pool calibrated to the real exam, and a mistake notebook. Exported progress lets you find weak spots and write targeted new drills. Use this whenever a student wants to prepare for a midterm, final or quiz, or asks for a study guide, review page, practice questions or a mock exam from their slides, notes or course website. Also use it when they share exam-prep progress and ask what to review next, even if they never say "website".
 license: MIT
-compatibility: Needs Python 3 to build (standard library only; count_exam.py also needs pypdf). Web access helps research the course; a browser helps check the page. The built page is one HTML file that works offline except for fonts and MathJax from public CDNs.
+compatibility: Works with any agent that can run scripts. Needs Python 3 to build (standard library only; count_exam.py also needs pypdf). Web access helps research the course; a browser helps check the page. The built page is one HTML file that works offline except for fonts and MathJax from public CDNs.
 metadata:
   version: "0.1.0"
 ---
@@ -27,7 +27,11 @@ The engine (`assets/engine.js`) and the styles (`assets/page.css`) are finished 
 | write or audit questions, or calibrate the mock exam | `references/question-bank.md` |
 | check a field name, the progress format or the db docs | `references/data-format.md` |
 
-`examples/demo/` is a complete small course (fictional PROB 101, three lectures). Its built page is `examples/demo/review.html`. When unsure how something should look, copy the pattern from the demo.
+`examples/demo/` is a complete small course (fictional PROB 101, three lectures). When unsure how something should look, copy the pattern from its sources: `sections/*.html`, `practice.json`, `mock.json` and `short.json`.
+
+Don't read `assets/engine.js`, `assets/page.css` or any built `review.html`. `build.py` inlines them, they are tens of thousands of tokens, and nothing in them needs your edits.
+
+In the commands below, `<skill-dir>` is the folder that contains this `SKILL.md`. If `python3` is not found (common on Windows), use `python` or `py -3`.
 
 ## 1. Find out what the exam is
 
@@ -102,7 +106,9 @@ Errors stop the build. Warnings come from the question-bank checks; fix them unl
 - the correct answer is the longest option in too many questions;
 - one letter is the shown answer too often;
 - every multi-select has the same number of answers;
-- a mock question is a practice question with new numbers. Then open `<course-dir>/review.html` in a browser and check:
+- a mock question is a practice question with new numbers.
+
+Add `--strict` to make warnings end the build with exit code 2 (the page is still written), so you can keep fixing until it is clean. Then open `<course-dir>/review.html` in a browser and check:
 
 - the console shows no errors and formulas render;
 - answering a practice question, a short-answer step and a full mock paper works;
@@ -111,8 +117,8 @@ Errors stop the build. Warnings come from the question-bank checks; fix them unl
 
 ## 7. Deliver
 
-- **Claude Code / local:** give the file path. Progress is saved in that browser's localStorage. The **Export progress** button in the practice center gives the student JSON to paste back to you.
-- **claude.ai artifact (experimental, not yet tested end to end):** publish the built HTML and grant the `db` capability. If `window.claude.use("db")` is available, the engine mirrors progress to the docs `progress/practice` and `progress/mock` and keeps a summary in `progress/report`. Before relying on it, answer one question on the published page and read `progress/report` back. If the doc is missing, tell the student to use **Export progress** instead.
+- **Local (any agent):** give the file path. Progress is saved in that browser's localStorage. The **Export progress** button in the practice center gives the student JSON to paste back to you.
+- **claude.ai artifact (Claude only; experimental, not yet tested end to end):** publish the built HTML and grant the `db` capability. If `window.claude.use("db")` is available, the engine mirrors progress to the docs `progress/practice` and `progress/mock` and keeps a summary in `progress/report`. Before relying on it, answer one question on the published page and read `progress/report` back. If the doc is missing, tell the student to use **Export progress** instead.
 
 Tell the student in two or three lines how to use the page: read a section, do its practice box, mock exams near the end, and the mistake notebook the day before.
 

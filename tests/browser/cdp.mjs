@@ -6,14 +6,21 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+const WIN = process.platform === 'win32';
+/* Windows installs per machine (Program Files, Program Files (x86)) or per user (LOCALAPPDATA) */
+const winPaths = file => [process.env.PROGRAMFILES || 'C:\\Program Files', process.env['PROGRAMFILES(X86)'], process.env.LOCALAPPDATA]
+  .filter(Boolean).map(dir => path.join(dir, file));
 const CANDIDATES = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/Applications/Chromium.app/Contents/MacOS/Chromium',
-  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  ...(WIN ? winPaths('Google\\Chrome\\Application\\chrome.exe') : []),
+  // Edge is Chromium too, and every Windows machine has it
+  '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+  ...(WIN ? winPaths('Microsoft\\Edge\\Application\\msedge.exe') : []),
 ];
-const ON_PATH = ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser'];
+const ON_PATH = WIN ? ['chrome.exe', 'msedge.exe'] : ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser'];
 
-/* CHROME_PATH first, then the usual install locations, then the PATH */
+/* CHROME_PATH first, then the usual install locations (Chrome before Edge), then the PATH */
 export function findChrome() {
   if (process.env.CHROME_PATH) return fs.existsSync(process.env.CHROME_PATH) ? process.env.CHROME_PATH : null;
   for (const file of CANDIDATES) if (fs.existsSync(file)) return file;
@@ -82,7 +89,8 @@ export async function launch(chromePath, {blockUrls = []} = {}) {
       conn.close();
       if (proc.exitCode == null) proc.kill();
       await Promise.race([exited, new Promise(r => setTimeout(r, 3000))]);
-      fs.rmSync(profile, {recursive: true, force: true, maxRetries: 3});
+      // Windows can keep profile files locked for a moment after Chrome exits; a leftover temp profile is not a failure
+      try { fs.rmSync(profile, {recursive: true, force: true, maxRetries: 10, retryDelay: 200}); } catch {}
     },
   };
 }

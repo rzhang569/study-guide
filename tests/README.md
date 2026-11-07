@@ -1,18 +1,27 @@
 # Test coverage and data-format audit
 
-Run from the repository root:
+Run from the repository root (on Windows, `python` or `py -3` instead of `python3`):
 
 ```bash
 python3 -m unittest -v
 node --test
-node tests/browser/run.mjs   # real headless Chrome; prints SKIP without Chrome
+node tests/browser/run.mjs   # real headless Chrome; prints SKIP without a browser or Python
 ```
 
 The browser tests build the demo in English and Chinese into a temporary folder and drive
 headless Chrome over the DevTools protocol (`tests/browser/cdp.mjs`, no npm packages). They
 cover the practice center, short-answer redo, a full mock paper and its score report, and the
-mistake notebook. CI runs all three suites (`.github/workflows/test.yml`) with
-`REQUIRE_BROWSER=1`, so a missing browser fails the job instead of skipping.
+mistake notebook. CI runs all three suites (`.github/workflows/test.yml`) on Ubuntu (Python
+3.9 and 3.13) and on Windows (Python 3.13), with `REQUIRE_BROWSER=1`, so a missing browser
+fails the job instead of skipping.
+
+The Node side finds what it needs by itself:
+
+- Browser: `CHROME_PATH`, then the usual Chrome locations on macOS, Linux and Windows
+  (Program Files, Program Files (x86), `%LOCALAPPDATA%`), then Edge, then the `PATH`.
+- Python, to build the demo (`tests/build-demo.cjs`): `PYTHON`, then `python3`, `python`,
+  `py -3` (`python` first on Windows). Without one, the browser tests and the engine test
+  that boots the built demo skip.
 
 Python uses only the standard library. Node uses built-in modules (`node:test`,
 `node:vm`, filesystem/path loading, and assertions); there are no npm packages.
@@ -22,7 +31,32 @@ Python uses only the standard library. Node uses built-in modules (`node:test`,
 All authored test courses are tiny fictional fixtures in `TemporaryDirectory`.
 The demo and drills-from-progress files are read-only test inputs. Demo builds and
 `--init` tests target temporary copies. Tests never edit eval fixtures or source
-courses. A separate final rebuild updates the checked-in demo for the engine fixes.
+courses. The built demo page is not checked in (`.gitignore` keeps a local build out):
+the tests and the Pages workflow build it from the sources. `evals/drills-from-progress`
+keeps its own built page as an eval fixture.
+
+## build.py exit codes
+
+- 0: success (the page is written, or `--check` passed)
+- 1: errors; nothing is written
+- 2: `--strict` and at least one warning; the page is still written (with `--check`,
+  nothing is written either way)
+
+`test_strict_exit_codes` covers all three, with and without `--check`. Note that
+argparse also exits with 2 on a usage error.
+
+## Windows
+
+- `build.py` and `count_exam.py` print UTF-8 whatever the console code page, so a
+  Chinese stem or the "–" in a count_exam report cannot raise `UnicodeEncodeError` on
+  cp1252 or cp437. Tests run both CLIs with `PYTHONIOENCODING` set to such a code page.
+- Every file read and write in the scripts and tests names `encoding="utf-8"`. Check with
+  `python3 -X warn_default_encoding -W error::EncodingWarning -m unittest` (Python 3.10+):
+  no EncodingWarning.
+- `review.html` is written with LF line endings, so a Windows build is byte-identical to a
+  macOS/Linux build, also from CRLF sources.
+- `.gitattributes` keeps LF in every checkout: the engine test compares the engine embedded
+  in the built demo with `assets/engine.js`.
 
 ## Rule table
 
@@ -165,5 +199,5 @@ On Python 3.12.10 and Node.js 20.20.2, both exact commands passed four consecuti
 runs on the final code: **46 Python tests and 79 Node tests**, zero failures,
 errors, skips or todos. `git diff --check` is clean. The demo rebuild reports zero
 warnings; rebuilding it again is byte-identical. Relative to the starting HEAD,
-`review.html` changes only where the fixed `engine.js` is embedded. No demo data,
+the then checked-in demo `review.html` changed only where the fixed `engine.js` is embedded. No demo data,
 section HTML, eval fixture, reference document or archive content changed.

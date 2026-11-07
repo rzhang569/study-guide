@@ -3,6 +3,7 @@
 
     python3 build.py COURSE_DIR              # check, then write COURSE_DIR/review.html
     python3 build.py COURSE_DIR --check      # check only
+    python3 build.py COURSE_DIR --strict     # also fail (exit code 2) on warnings; works with --check
     python3 build.py --init COURSE_DIR       # start a new course folder from the bundled example
 
 A course folder holds:
@@ -14,6 +15,8 @@ A course folder holds:
     extra.css / extra.js   optional page-specific styles and widgets
 
 Errors stop the build. Warnings are the question-bank audits from references/question-bank.md.
+Exit codes: 0 success, 1 errors (nothing written), 2 warnings with --strict (the page is still written).
+The page is UTF-8 with LF line endings on every OS, so a Windows build is byte-identical to a Linux one.
 Standard library only.
 """
 import argparse
@@ -627,7 +630,9 @@ def check(course):
     return rep, cfg, practice, mock, short, sections, extras
 
 
-def build(course, out):
+def build(course, out, strict=False):
+    """Check, then write the page to out (None: check only). Returns the exit code: 0, 1 on errors, or 2 when
+    strict and there are warnings."""
     rep, cfg, practice, mock, short, sections, extras = check(course)
     for w in rep.warnings:
         print("warning:", w)
@@ -636,9 +641,16 @@ def build(course, out):
     if rep.errors:
         print(f"{len(rep.errors)} error(s); nothing written.")
         return 1
+
+    def done():
+        if strict and rep.warnings:
+            print(f"--strict: {len(rep.warnings)} warning(s), so the exit code is 2.")
+            return 2
+        return 0
+
     if out is None:
         print(f"check passed with {len(rep.warnings)} warning(s).")
-        return 0
+        return done()
     ui = UI[cfg.get("lang", "zh")]
     body = "\n".join(s for _, s in sections)
     if "practice" not in section_ids(body):
@@ -684,13 +696,15 @@ def build(course, out):
     ])
     try:
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(page, encoding="utf-8")
+        # newline="\n": no CRLF on Windows (Path.write_text only takes newline= from Python 3.10)
+        with open(out, "w", encoding="utf-8", newline="\n") as f:
+            f.write(page)
     except OSError as e:
         print(f"error: cannot write {out}: {e.strerror or e}")
         return 1
     counts = f"{len((practice or {}).get('items', []))} practice, {len((mock or {}).get('items', []))} mock, {len((short or {}).get('items', []))} short answer"
     print(f"wrote {out} ({len(page.encode('utf-8')) // 1024} KB; {counts}; {len(rep.warnings)} warning(s))")
-    return 0
+    return done()
 
 
 def init(course):
@@ -705,10 +719,21 @@ def init(course):
     return 0
 
 
+def utf8_stdio():
+    """A Windows console or pipe can default to a code page (cp1252, cp437) that cannot print a Chinese stem;
+    print UTF-8 instead of crashing with UnicodeEncodeError."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="backslashreplace")
+
+
 def main():
+    utf8_stdio()
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("course", type=Path, help="course folder")
     ap.add_argument("--check", action="store_true", help="validate only, write nothing")
+    ap.add_argument("--strict", action="store_true",
+                    help="exit with code 2 when there are warnings (errors are still 1); works with --check")
     ap.add_argument("--init", action="store_true", help="create the course folder from the bundled example")
     ap.add_argument("-o", "--out", type=Path, help="output file (default: COURSE/review.html)")
     a = ap.parse_args()
@@ -717,7 +742,7 @@ def main():
     if not a.course.is_dir():
         print(f"{a.course} is not a folder")
         return 1
-    return build(a.course, None if a.check else (a.out or a.course / "review.html"))
+    return build(a.course, None if a.check else (a.out or a.course / "review.html"), strict=a.strict)
 
 
 if __name__ == "__main__":

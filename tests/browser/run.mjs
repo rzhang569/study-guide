@@ -3,9 +3,10 @@
  *
  *   node tests/browser/run.mjs
  *
- * Zero dependencies: Node >= 20 and Chrome or Chromium. Node 22+ has a global WebSocket; on Node 20 this script
- * re-runs itself with --experimental-websocket, so the same command works. Chrome is found via CHROME_PATH, then
- * the usual macOS/Linux/Windows locations, then the PATH; without Chrome (or python3) it prints SKIP and exits 0.
+ * Zero dependencies: Node >= 20, Python, and Chrome, Chromium or Edge. Node 22+ has a global WebSocket; on Node 20
+ * this script re-runs itself with --experimental-websocket, so the same command works. Chrome is found via CHROME_PATH, then
+ * the usual macOS/Linux/Windows locations (Chrome first, then Edge), then the PATH; Python is PYTHON, then python3,
+ * python or py -3. Without a browser or Python it prints SKIP and exits 0.
  * Pages are built from a temporary copy of examples/demo with scripts/build.py (once in English, once in Chinese),
  * opened over file:// with a fresh Chrome profile, and the font/MathJax CDNs are blocked so the run is offline.
  * Not picked up by `node --test` on purpose: the unit tests stay browser-free. */
@@ -16,8 +17,6 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(HERE, '../..');
 const skip = why => {
   /* CI sets REQUIRE_BROWSER=1 so a missing browser fails the job instead of passing silently */
   if (process.env.REQUIRE_BROWSER) { console.log(`FAIL: browser tests not run: ${why}`); process.exit(1); }
@@ -32,24 +31,15 @@ if (typeof WebSocket === 'undefined') {
 }
 const {findChrome, launch} = await import('./cdp.mjs');
 const chrome = findChrome();
-if (!chrome) skip('Chrome/Chromium not found (set CHROME_PATH)');
-if (spawnSync('python3', ['--version']).status !== 0) skip('python3 not found (needed to build the pages)');
+if (!chrome) skip('Chrome, Chromium or Edge not found (set CHROME_PATH)');
+const {findPython, buildDemo} = (await import('../build-demo.cjs')).default;
+if (!findPython()) skip('Python not found (set PYTHON; needed to build the pages)');
+console.log(`# browser: ${chrome}\n# python: ${findPython().join(' ')}`);
 
 const {test, before, after, afterEach} = await import('node:test');
 const assert = (await import('node:assert/strict')).default;
 const KEY = 'demo-prob101-mt1';
 
-/* build the demo into a temp folder: course copy with lang set, then build.py -o */
-function buildDemo(tmp, lang) {
-  const course = path.join(tmp, `course-${lang}`);
-  fs.cpSync(path.join(ROOT, 'skills/study-guide/examples/demo'), course, {recursive: true, filter: f => !f.endsWith('review.html')});
-  const cfgFile = path.join(course, 'course.json'), cfg = JSON.parse(fs.readFileSync(cfgFile, 'utf8'));
-  cfg.lang = lang; fs.writeFileSync(cfgFile, JSON.stringify(cfg, null, 2));
-  const out = path.join(tmp, `review-${lang}.html`);
-  const r = spawnSync('python3', [path.join(ROOT, 'skills/study-guide/scripts/build.py'), course, '-o', out], {encoding: 'utf8'});
-  if (r.status !== 0) throw new Error(`build.py failed for ${lang}:\n${r.stdout}\n${r.stderr}`);
-  return out;
-}
 /* fallback when localStorage does not work on file://: a static server on 127.0.0.1 with an ephemeral port */
 function serve(dir) {
   const server = http.createServer((req, res) => {
@@ -77,7 +67,7 @@ before(async () => {
 after(async () => {
   if (browser) await browser.close();
   if (server) server.close();
-  if (tmp) fs.rmSync(tmp, {recursive: true, force: true});
+  if (tmp) fs.rmSync(tmp, {recursive: true, force: true, maxRetries: 5});
 });
 afterEach(() => { if (page) { const errors = page.errors.splice(0); assert.deepEqual(errors, [], 'console errors or uncaught exceptions'); } });
 

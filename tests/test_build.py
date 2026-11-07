@@ -3,6 +3,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -71,11 +72,11 @@ class CourseCase(unittest.TestCase):
             self.assertEqual(b.build(self.course, out), 1)
         self.assertIn('error:', log.getvalue())
         self.assertNotIn('Traceback', log.getvalue())
-        self.assertEqual(out.read_text(), 'previous output')
+        self.assertEqual(out.read_text(encoding='utf-8'), 'previous output')
 
     def cli(self, *args):
         return subprocess.run([sys.executable, str(SCRIPT), *map(str, args)], cwd=ROOT,
-                              capture_output=True, text=True)
+                              capture_output=True, text=True, encoding='utf-8')
 
 
 class DataRules(CourseCase):
@@ -85,7 +86,7 @@ class DataRules(CourseCase):
         self.assertEqual(self.check().errors, [])
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(b.build(self.course, self.course / 'review.html'), 0)
-        self.assertIn('<html lang="zh-CN">', (self.course / 'review.html').read_text())
+        self.assertIn('<html lang="zh-CN">', (self.course / 'review.html').read_text(encoding='utf-8'))
 
     def test_missing_required_files_and_empty_sections(self):
         self.write()
@@ -104,7 +105,7 @@ class DataRules(CourseCase):
             with self.subTest(name=name):
                 p = self.course / (name + '.json')
                 old = p.read_bytes()
-                p.write_text('{\n  "bad": }')
+                p.write_text('{\n  "bad": }', encoding='utf-8')
                 self.assertRegex('\n'.join(b.check(self.course)[0].errors),
                                  name + r'.json: invalid JSON at line 2 col \d+')
                 p.write_bytes(old)
@@ -358,7 +359,7 @@ class DataRules(CourseCase):
         self.data['practice']['items'][0]['ans'] = 5
         self.data['short']['items'][0]['stem'] = ''
         self.write()
-        (self.course / 'mock.json').write_text('{"groups": [}')
+        (self.course / 'mock.json').write_text('{"groups": [}', encoding='utf-8')
         errors = '\n'.join(b.check(self.course)[0].errors)
         self.assertIn('mock.json: invalid JSON', errors)
         self.assertIn("practice item 'q1': 'ans'", errors)
@@ -387,7 +388,7 @@ class DataRules(CourseCase):
                 self.data = fixture()
                 self.data['practice']['items'][0]['opts'] = opts
                 self.write()
-                (self.course / 'mock.json').write_text('{"groups": [}')
+                (self.course / 'mock.json').write_text('{"groups": [}', encoding='utf-8')
                 result = self.cli(self.course)
                 self.assertEqual(result.returncode, 1)
                 self.assertNotIn('Traceback', result.stderr + result.stdout)
@@ -411,16 +412,16 @@ class BuildOutput(CourseCase):
     def test_embeds_assets_data_sorted_sections_and_escapes_script_close(self):
         self.data['course'].update(title='<Fictional & title>', footer='<b>footer</b>', lang='en')
         self.data['practice']['items'][0]['stem'] = '“数值” </script><script>bad()</script> <!--<script>'
-        (self.course / 'sections/00-first.html').write_text('<header id="exam">FIRST</header>')
-        (self.course / 'extra.css').write_text('/* extra css */')
-        (self.course / 'extra.js').write_text('/* extra js */')
+        (self.course / 'sections/00-first.html').write_text('<header id="exam">FIRST</header>', encoding='utf-8')
+        (self.course / 'extra.css').write_text('/* extra css */', encoding='utf-8')
+        (self.course / 'extra.js').write_text('/* extra js */', encoding='utf-8')
         self.write()
         out = self.course / 'review.html'
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(b.build(self.course, out), 0)
         page = out.read_text(encoding='utf-8')
-        self.assertIn((b.ASSETS / 'engine.js').read_text(), page)
-        self.assertIn((b.ASSETS / 'page.css').read_text(), page)
+        self.assertIn((b.ASSETS / 'engine.js').read_text(encoding='utf-8'), page)
+        self.assertIn((b.ASSETS / 'page.css').read_text(encoding='utf-8'), page)
         self.assertIn('/* extra css */', page)
         self.assertIn('/* extra js */', page)
         self.assertIn('<title>&lt;Fictional &amp; title&gt;</title>', page)
@@ -437,13 +438,13 @@ class BuildOutput(CourseCase):
         self.write()
         with contextlib.redirect_stdout(io.StringIO()):
             b.build(self.course, out)
-        self.assertIn('tex-svg-full', out.read_text())
+        self.assertIn('tex-svg-full', out.read_text(encoding='utf-8'))
 
     def test_existing_practice_anchor_is_not_duplicated(self):
-        (self.course / 'sections/90-practice.html').write_text('<section id="practice"></section>')
+        (self.course / 'sections/90-practice.html').write_text('<section id="practice"></section>', encoding='utf-8')
         self.write()
         self.assertEqual(self.cli(self.course).returncode, 0)
-        self.assertEqual((self.course / 'review.html').read_text().count('id="practice"'), 1)
+        self.assertEqual((self.course / 'review.html').read_text(encoding='utf-8').count('id="practice"'), 1)
 
     def test_cli_check_output_missing_folder_and_no_write_on_error(self):
         self.write()
@@ -479,12 +480,12 @@ class BuildOutput(CourseCase):
 
     def test_init_refuses_a_file_without_traceback(self):
         target = self.course / 'existing-file'
-        target.write_text('keep me')
+        target.write_text('keep me', encoding='utf-8')
         result = self.cli('--init', target)
         self.assertEqual(result.returncode, 1)
         self.assertIn('not a folder', result.stdout)
         self.assertNotIn('Traceback', result.stderr)
-        self.assertEqual(target.read_text(), 'keep me')
+        self.assertEqual(target.read_text(encoding='utf-8'), 'keep me')
 
     def test_demo_build_is_identical_twice_without_modifying_demo(self):
         target = self.course / 'demo-copy'
@@ -527,15 +528,90 @@ class BuildOutput(CourseCase):
         self.assertNotIn('Traceback', blocked.stderr)
 
     def test_demo_builds_with_no_warnings_into_a_temp_folder(self):
-        before = (DEMO / 'review.html').read_bytes()
+        # the built demo is not checked in; building it elsewhere must leave the demo folder exactly as it was
+        def snapshot():
+            return {f.relative_to(DEMO).as_posix(): f.read_bytes() for f in DEMO.rglob('*') if f.is_file()}
+        before = snapshot()
         out = Path(self.tmp.name) / 'demo-out' / 'review.html'
-        built = self.cli(DEMO, '-o', out)
+        built = self.cli(DEMO, '-o', out, '--strict')
         self.assertEqual(built.returncode, 0, built.stdout + built.stderr)
         self.assertNotIn('warning:', built.stdout)
         self.assertNotIn('error:', built.stdout)
         self.assertIn('; 0 warning(s))', built.stdout)
         self.assertTrue(out.exists())
-        self.assertEqual((DEMO / 'review.html').read_bytes(), before)
+        self.assertEqual(snapshot(), before)
+
+    def test_page_has_lf_line_endings_even_from_crlf_sources(self):
+        # a Windows build must be byte-identical to a macOS/Linux one: no CRLF from the sources or from writing
+        self.write()
+        files = {'sections/10-main.html': '<section id="l1">\n<h2>Test</h2>\n</section>\n',
+                 'extra.css': '/* one */\n/* two */\n', 'extra.js': '// one\n// two\n'}
+        for rel, text in files.items():
+            (self.course / rel).write_bytes(text.encode('utf-8'))
+        lf = Path(self.tmp.name) / 'lf.html'
+        self.assertEqual(self.cli(self.course, '-o', lf).returncode, 0)
+        for rel, text in files.items():
+            (self.course / rel).write_bytes(text.replace('\n', '\r\n').encode('utf-8'))
+        crlf = Path(self.tmp.name) / 'crlf.html'
+        self.assertEqual(self.cli(self.course, '-o', crlf).returncode, 0)
+        self.assertNotIn(b'\r', crlf.read_bytes())
+        self.assertEqual(crlf.read_bytes(), lf.read_bytes())
+
+    def test_strict_exit_codes(self):
+        # 0 clean, 1 errors (nothing written), 2 warnings with --strict (the page is still written)
+        self.data['course']['mock'] = {'sections': [{'cat': 'single', 'n': 1}]}   # a pool twice the draw: no warnings
+        self.data['mock']['items'].append(choice('m2', g='m', stem='Choose the smaller value.'))
+        self.write()
+        out = self.course / 'review.html'
+        for args in (('--strict',), ('--check', '--strict')):
+            with self.subTest(args=args):
+                clean = self.cli(self.course, *args)
+                self.assertEqual(clean.returncode, 0, clean.stdout + clean.stderr)
+                self.assertNotIn('--strict', clean.stdout)
+        self.data['practice']['groups'][0]['sec'] = 'missing'   # a warning, not an error
+        self.write()
+        out.unlink()
+        self.assertEqual(self.cli(self.course).returncode, 0)
+        out.unlink()
+        self.assertEqual(self.cli(self.course, '--check').returncode, 0)
+        checked = self.cli(self.course, '--check', '--strict')
+        self.assertEqual(checked.returncode, 2, checked.stdout + checked.stderr)
+        self.assertIn('warning:', checked.stdout)
+        self.assertIn('--strict: 1 warning(s), so the exit code is 2.', checked.stdout)
+        self.assertFalse(out.exists())
+        built = self.cli(self.course, '--strict')
+        self.assertEqual(built.returncode, 2, built.stdout + built.stderr)
+        self.assertTrue(out.exists())
+        self.data['course']['title'] = ''   # an error as well: errors win, exit 1, nothing written
+        self.write()
+        out.unlink()
+        for args in (('--strict',), ('--check', '--strict')):
+            with self.subTest(args=args):
+                failed = self.cli(self.course, *args)
+                self.assertEqual(failed.returncode, 1, failed.stdout + failed.stderr)
+                self.assertIn('nothing written', failed.stdout)
+                self.assertFalse(out.exists())
+        self.assertIn('--strict', self.cli('--help').stdout)
+
+    def test_cli_prints_utf8_on_a_legacy_windows_code_page(self):
+        # a Windows pipe or console on cp1252 cannot encode Chinese; the CLI must print UTF-8, not crash
+        env = dict(os.environ, PYTHONIOENCODING='cp1252')
+        self.data['practice']['items'][0].pop('id')
+        self.data['practice']['items'][0]['stem'] = '掷两颗骰子'
+        self.write()
+        failed = subprocess.run([sys.executable, str(SCRIPT), str(self.course)], capture_output=True,
+                                encoding='utf-8', env=env)
+        self.assertEqual(failed.returncode, 1, failed.stdout + failed.stderr)
+        self.assertIn("practice: an item has no id (stem: '掷两颗骰子')", failed.stdout)
+        self.assertNotIn('UnicodeEncodeError', failed.stderr)
+        self.data = fixture()
+        self.write()
+        out = Path(self.tmp.name) / '复习页' / 'review.html'
+        built = subprocess.run([sys.executable, str(SCRIPT), str(self.course), '-o', str(out)], capture_output=True,
+                               encoding='utf-8', env=env)
+        self.assertEqual(built.returncode, 0, built.stdout + built.stderr)
+        self.assertIn(f'wrote {out} (', built.stdout)
+        self.assertNotIn('UnicodeEncodeError', built.stderr)
 
     def test_init_into_an_empty_temporary_folder(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -567,11 +643,11 @@ class Audits(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             course = Path(tmp)
             (course / 'sections').mkdir()
-            (course / 'sections/10.html').write_text('<section id="l1"></section>')
+            (course / 'sections/10.html').write_text('<section id="l1"></section>', encoding='utf-8')
             data['practice']['items'][0]['stem'] = 'Roll 3 dice and count the even outcomes.'
             data['mock']['items'][0]['stem'] = 'Roll 9 dice and count the even outcomes.'
             for name, bank in data.items():
-                (course / (name + '.json')).write_text(json.dumps(bank))
+                (course / (name + '.json')).write_text(json.dumps(bank), encoding='utf-8')
             self.assertIn('m1 ~ q1', '\n'.join(b.check(course)[0].warnings))
 
     def test_letter_warning_and_fixed_exclusion(self):
@@ -676,7 +752,7 @@ class EdgeCases(CourseCase):
         for token in ('NaN', 'Infinity', '-Infinity'):
             with self.subTest(token=token):
                 (self.course / 'course.json').write_text(
-                    '{"title":"test", "storageKey":"test", "extra":' + token + '}')
+                    '{"title":"test", "storageKey":"test", "extra":' + token + '}', encoding='utf-8')
                 self.assertIn('invalid JSON', '\n'.join(b.check(self.course)[0].errors))
 
     def test_non_utf8_json_has_a_clear_diagnostic(self):
@@ -716,7 +792,7 @@ class EdgeCases(CourseCase):
                   'defaultMinutes': 2.5, 'note': '<i>Intro</i>'})
         self.assertEqual(self.check().errors, [])
         self.assertEqual(self.cli(self.course).returncode, 0)
-        blob = re.search(r'window.STUDY_DATA = (.*?);</script>', (self.course / 'review.html').read_text()).group(1)
+        blob = re.search(r'window.STUDY_DATA = (.*?);</script>', (self.course / 'review.html').read_text(encoding='utf-8')).group(1)
         self.assertEqual(json.loads(blob)['config'], self.data['course'])
 
     def test_short_option_shapes_and_optional_metadata_types(self):

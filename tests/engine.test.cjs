@@ -1,9 +1,11 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const vm = require('node:vm');
 const {load, fixture, clone, Element, ROOT, source} = require('./engine-harness.cjs');
+const {DEMO, findPython, buildDemo} = require('./build-demo.cjs');
 const q = (type, extra = {}) => ({type, ...extra});
 const fill = (h, ref, value) => h.api.fillCheck({accept: [ref]}, value);
 function option(card, h, question, original) { return card.querySelectorAll('.opt')[h.api.displayOrder(question).indexOf(original)]; }
@@ -355,12 +357,14 @@ test('drills-from-progress legacy state roundtrips and export schema matches the
   }
 });
 
-test('built demo embeds exactly the source data and its engine can boot with the same VM', () => {
-  const demo = path.join(ROOT, 'skills/study-guide/examples/demo');
-  const html = fs.readFileSync(path.join(demo, 'review.html'), 'utf8');
+// the built demo is not checked in: build it into a temporary folder (skipped only when no Python is found)
+test('built demo embeds exactly the source data and its engine can boot with the same VM', {skip: !findPython() && 'Python not found (set PYTHON)'}, t => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sg-demo-'));
+  t.after(() => fs.rmSync(tmp, {recursive: true, force: true}));
+  const html = fs.readFileSync(buildDemo(tmp), 'utf8');
   const data = JSON.parse(html.match(/window.STUDY_DATA = (.*?);<\/script>/)[1]);
   for (const [key, file] of [['config', 'course'], ['practice', 'practice'], ['mock', 'mock'], ['short', 'short']])
-    assert.deepEqual(data[key], JSON.parse(fs.readFileSync(path.join(demo, file + '.json'), 'utf8')));
+    assert.deepEqual(data[key], JSON.parse(fs.readFileSync(path.join(DEMO, file + '.json'), 'utf8')));
   const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   const code = scripts.find(s => s.includes('function fillCheck'));
   assert.ok(code); assert.equal(code.trim(), source.trim()); new vm.Script(code);
@@ -527,7 +531,6 @@ test('omitted mock configuration draws the documented default 10/10/5/5 layout',
 });
 
 /* ---------- batch 1: golden orders, languages, notebook store, regression tests ---------- */
-const DEMO = path.join(ROOT, 'skills/study-guide/examples/demo');
 function demoData() {
   return Object.fromEntries([['config', 'course'], ['practice', 'practice'], ['mock', 'mock'], ['short', 'short']]
     .map(([key, file]) => [key, JSON.parse(fs.readFileSync(path.join(DEMO, file + '.json'), 'utf8'))]));

@@ -293,6 +293,10 @@ def measure(pages):
 
 
 def main(argv):
+    # the report uses "–" and "…", which a Windows console or pipe on cp437 cannot encode: print UTF-8 instead
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="backslashreplace")
     if len(argv) != 2:
         print("usage: python3 count_exam.py sample_exam.pdf", file=sys.stderr)
         return 2
