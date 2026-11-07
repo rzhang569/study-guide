@@ -78,7 +78,7 @@ New papers prefer questions not drawn before, so the pool should hold at least t
 
 `build.py` checks these automatically, as errors (E) or warnings (W):
 
-- (E) ids unique across all banks, groups exist, answers index real options, fill-ins have `accept`;
+- (E) ids unique across all banks, groups exist, answers index real options, fill-ins have `accept` with no empty or non-text entries;
 - (W) every choice option has a `why`;
 - (W) the right answer is the single longest option in at most about 30% of single-choice questions;
 - (W) multi-select questions don't all have the same number of correct answers;

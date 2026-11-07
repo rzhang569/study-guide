@@ -39,7 +39,7 @@ All files are UTF-8 JSON. Text fields that say HTML may contain inline markup (`
 | `single` (default) | `opts`, `ans` (index) | display order shuffled per question (stable) |
 | `tf` | `ans` (0 = True, 1 = False), `opts` = two `{ "why" }` | labels filled in; never shuffled |
 | `multi` | `opts`, `ans` (list of indexes) | partial credit |
-| `fill` | `accept` (list), `answer` (display HTML) | numbers compared by value |
+| `fill` | `accept` (list of texts or numbers, none empty), `answer` (display HTML) | numbers compared by value |
 | `card` | `answer` (HTML) | flashcard, practice only, unscored |
 
 `fixed: true` on a choice question keeps the authored option order (for options like "All of the above").

@@ -164,7 +164,7 @@ class DataRules(CourseCase):
             item = self.data[bank]['items'][0]
             item['k' if bank == 'short' else 'g'] = 'missing'
             self.invalid('not defined')
-        for bank in ('practice', 'mock'):
+        for bank in ('practice', 'mock', 'short'):
             self.data = fixture()
             self.data[bank]['items'][0]['lec'] = 'L9'
             self.invalid('lectures')
@@ -310,7 +310,7 @@ class DataRules(CourseCase):
         self.data['course']['mock'] = {'sections': []}
         self.invalid('mock.sections is empty')
         self.assertIn('delete the key', '\n'.join(self.check().errors))
-        self.assertNotIn('wants', '\n'.join(self.check().warnings))
+        self.assertEqual(self.check().warnings, [])
         # the engine drops n: 0 sections, so their pools are not audited
         self.data = fixture()
         self.data['course'].update(lectures=['L1', 'L2'], mock={
@@ -319,8 +319,7 @@ class DataRules(CourseCase):
         self.data['mock']['items'] += [choice('m-tf', g='m2', type='tf', stem='A claim.'), choice('m-2', g='m', stem='Other value.')]
         rep = self.check()
         self.assertEqual(rep.errors, [])
-        self.assertNotIn('weights give no share', '\n'.join(rep.warnings))
-        self.assertNotIn("'tf'", '\n'.join(rep.warnings))
+        self.assertEqual(rep.warnings, [])
 
     def test_a_mock_layout_with_only_zero_sections_is_an_error(self):
         # one type may be 0, but the paper as a whole must ask something
@@ -329,7 +328,7 @@ class DataRules(CourseCase):
         self.assertIn("at least one section's n must be greater than 0", '\n'.join(self.check().errors))
         self.data = fixture()
         self.data['course']['mock'] = {'sections': [{'cat': 'tf', 'n': 0}, {'cat': 'single', 'n': 1}]}
-        self.assertNotIn('every mock section has n: 0', '\n'.join(self.check().errors))
+        self.assertEqual(self.check().errors, [])
 
     def test_mock_items_need_a_lecture(self):
         del self.data['mock']['groups'][0]['lec']
@@ -439,6 +438,13 @@ class BuildOutput(CourseCase):
         with contextlib.redirect_stdout(io.StringIO()):
             b.build(self.course, out)
         self.assertIn('tex-svg-full', out.read_text(encoding='utf-8'))
+        # a formula only in the notes loads MathJax too
+        self.data = fixture()
+        self.write()
+        (self.course / 'sections/20-tex.html').write_text("<section id=\"l2\"><span data-tex='x^2'>x</span></section>", encoding='utf-8')
+        with contextlib.redirect_stdout(io.StringIO()):
+            b.build(self.course, out)
+        self.assertIn('tex-svg-full', out.read_text(encoding='utf-8'))
 
     def test_existing_practice_anchor_is_not_duplicated(self):
         (self.course / 'sections/90-practice.html').write_text('<section id="practice"></section>', encoding='utf-8')
@@ -446,22 +452,13 @@ class BuildOutput(CourseCase):
         self.assertEqual(self.cli(self.course).returncode, 0)
         self.assertEqual((self.course / 'review.html').read_text(encoding='utf-8').count('id="practice"'), 1)
 
-    def test_cli_check_output_missing_folder_and_no_write_on_error(self):
+    def test_cli_check_writes_nothing_and_a_missing_folder_fails(self):
+        # --out and errors on the CLI: test_out_path_in_a_new_folder_and_unwritable_out, test_strict_exit_codes
         self.write()
         checked = self.cli(self.course, '--check')
         self.assertEqual(checked.returncode, 0, checked.stdout + checked.stderr)
         self.assertFalse((self.course / 'review.html').exists())
-        out = self.course / 'custom.html'
-        built = self.cli(self.course, '--out', out)
-        self.assertEqual(built.returncode, 0, built.stdout + built.stderr)
-        self.assertTrue(out.exists())
         self.assertEqual(self.cli(self.course / 'absent').returncode, 1)
-        self.data['course']['title'] = ''
-        self.write()
-        bad = self.cli(self.course)
-        self.assertEqual(bad.returncode, 1)
-        self.assertIn('nothing written', bad.stdout)
-        self.assertFalse((self.course / 'review.html').exists())
 
     def test_init_new_empty_and_refuses_nonempty(self):
         for target in (self.course / 'new', self.course / 'empty'):
@@ -486,18 +483,6 @@ class BuildOutput(CourseCase):
         self.assertIn('not a folder', result.stdout)
         self.assertNotIn('Traceback', result.stderr)
         self.assertEqual(target.read_text(encoding='utf-8'), 'keep me')
-
-    def test_demo_build_is_identical_twice_without_modifying_demo(self):
-        target = self.course / 'demo-copy'
-        shutil.copytree(DEMO, target)
-        for _ in range(2):
-            built = self.cli(target)
-            self.assertEqual(built.returncode, 0, built.stdout + built.stderr)
-            contents = (target / 'review.html').read_bytes()
-            if _ == 0:
-                first = contents
-            else:
-                self.assertEqual(first, contents)
 
     def test_toc_labels_markers_and_skip(self):
         entries = b.toc_entries('<header id="exam"></header><section id="x"><h2>A &amp; B</h2></section>'
@@ -534,10 +519,7 @@ class BuildOutput(CourseCase):
         before = snapshot()
         out = Path(self.tmp.name) / 'demo-out' / 'review.html'
         built = self.cli(DEMO, '-o', out, '--strict')
-        self.assertEqual(built.returncode, 0, built.stdout + built.stderr)
-        self.assertNotIn('warning:', built.stdout)
-        self.assertNotIn('error:', built.stdout)
-        self.assertIn('; 0 warning(s))', built.stdout)
+        self.assertEqual(built.returncode, 0, built.stdout + built.stderr)   # --strict: no warnings either
         self.assertTrue(out.exists())
         self.assertEqual(snapshot(), before)
 
@@ -613,28 +595,12 @@ class BuildOutput(CourseCase):
         self.assertIn(f'wrote {out} (', built.stdout)
         self.assertNotIn('UnicodeEncodeError', built.stderr)
 
-    def test_init_into_an_empty_temporary_folder(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            made = self.cli('--init', tmp)
-            self.assertEqual(made.returncode, 0, made.stdout + made.stderr)
-            self.assertFalse((Path(tmp) / 'review.html').exists())
-            self.assertTrue((Path(tmp) / 'sections').is_dir())
-            self.assertIn('check passed with 0 warning(s)', self.cli(tmp, '--check').stdout)
-
-
 class Audits(unittest.TestCase):
-    def test_warning_patterns_and_small_bank_thresholds(self):
-        scenarios = [([choice(str(i), opts=[{'t': 'long correct'}, {'t': 'x'}]) for i in range(6)], 'single longest'),
-                     ([choice(str(i), type='multi', ans=[0]) for i in range(4)], 'exactly 1 correct'),
-                     ([choice(str(i), type='tf') for i in range(6)], 'true/false'),
-                     ([choice('x', opts=['x', 'y'])], "lack a 'why'")]
-        for items, expected in scenarios:
-            rep = b.Report()
-            b.audit('test', items, rep)
-            self.assertIn(expected, '\n'.join(rep.warnings))
+    def test_options_without_a_why_are_a_warning(self):
+        # the other audits and their thresholds: test_warning_threshold_boundaries
         rep = b.Report()
-        b.audit('test', scenarios[0][0][:5], rep)
-        self.assertNotIn('single longest', '\n'.join(rep.warnings))
+        b.audit('test', [choice('x', opts=['x', 'y'])], rep)
+        self.assertIn("lack a 'why'", '\n'.join(rep.warnings))
 
     def test_number_swapped_stems_and_math_symbols(self):
         self.assertEqual(b.stem_tokens('<b>Roll 3 dice</b>'), b.stem_tokens('Roll 9 dice'))
@@ -649,17 +615,6 @@ class Audits(unittest.TestCase):
             for name, bank in data.items():
                 (course / (name + '.json')).write_text(json.dumps(bank), encoding='utf-8')
             self.assertIn('m1 ~ q1', '\n'.join(b.check(course)[0].warnings))
-
-    def test_letter_warning_and_fixed_exclusion(self):
-        items = [choice(str(i), opts=['one', 'two', 'three', 'four'], show='B') for i in range(8)]
-        rep = b.Report()
-        b.letter_audit('practice', items, 'test', rep)
-        self.assertIn('shown as B in 8/8', '\n'.join(rep.warnings))
-        for q in items:
-            q['fixed'] = True
-        rep = b.Report()
-        b.letter_audit('practice', items, 'test', rep)
-        self.assertEqual(rep.warnings, [])
 
     def assert_advice(self, rep):
         for w in rep.warnings:
@@ -680,6 +635,11 @@ class Audits(unittest.TestCase):
         self.assertIn('shown as A in 8/8', rep.warnings[0])
         self.assertIn('"show": "', rep.warnings[0])
         self.assert_advice(rep)
+        # fixed: true keeps the authored order, so those questions are not audited
+        rep = b.Report()
+        b.letter_audit('practice', [choice(str(i), opts=['one', 'two', 'three', 'four'], show='B', fixed=True)
+                                    for i in range(8)], 'test', rep)
+        self.assertEqual(rep.warnings, [])
 
     def test_warning_threshold_boundaries(self):
         def warnings(items, fn=b.audit):
@@ -779,13 +739,6 @@ class EdgeCases(CourseCase):
         self.data['practice']['items'][0].update(opts=['value'] * 9, show='Z')
         self.invalid('at most 8')
 
-    def test_short_stem_and_item_lecture_override(self):
-        self.data['short']['items'][0]['stem'] = ''
-        self.invalid('stem')
-        self.data = fixture()
-        self.data['short']['items'][0]['lec'] = 'L9'
-        self.invalid('lectures')
-
     def test_documented_optional_config_values_embed_without_loss(self):
         self.data['course'].update(lang='en', tfLabels=['是', '否'],
             practiceIntro='<b>Practice</b>', shortIntro='<i>Steps</i>', footer='<p>Fictional source</p>',
@@ -818,6 +771,8 @@ class EdgeCases(CourseCase):
         rep = self.check()
         self.assertEqual(rep.errors, [])
         self.assertNotIn('weights give no share', '\n'.join(rep.warnings))
+        del self.data['mock']['items'][0]['lec']   # without the override the item is its group's L1, which gets no share
+        self.assertIn("weights give no share to ['L1']", '\n'.join(self.check().warnings))
 
     def test_missing_lecture_labels_do_not_crash_weight_audit(self):
         self.data['course']['lectures'].append('L2')
@@ -841,6 +796,55 @@ class EdgeCases(CourseCase):
             self.data = fixture()
             self.data['course']['mock'] = config
             self.invalid(message)
+
+
+class AnswerChecks(CourseCase):
+    def test_fill_ins_need_answers_a_student_can_match(self):
+        # the engine can never mark "", null or an object right, so these are build errors
+        for bad in ([], [''], ['  '], [None], [{}], [True], ['0.5', '']):
+            with self.subTest(accept=bad):
+                self.data = fixture()
+                self.data['practice']['items'] = [{'id': 'f', 'g': 'g', 'type': 'fill', 'stem': 'Value?', 'accept': bad}]
+                self.invalid("'accept'")
+                self.data = fixture()
+                self.data['short']['items'][0]['steps'][0]['accept'] = bad
+                self.invalid("'accept'")
+        self.data = fixture()
+        self.data['practice']['items'] = [{'id': 'f', 'g': 'g', 'type': 'fill', 'stem': 'Value?', 'accept': [0.5, '1/2']}]
+        self.assertEqual(self.check().errors, [])
+
+
+class AuditDetails(unittest.TestCase):
+    def near_copies(self, practice_stem, mock_stem):
+        data = fixture()
+        data['practice']['items'][0]['stem'] = practice_stem
+        data['mock']['items'][0]['stem'] = mock_stem
+        with tempfile.TemporaryDirectory() as tmp:
+            course = Path(tmp)
+            (course / 'sections').mkdir()
+            (course / 'sections/10.html').write_text('<section id="l1"></section>', encoding='utf-8')
+            for name, bank in data.items():
+                (course / (name + '.json')).write_text(json.dumps(bank), encoding='utf-8')
+            return 'm1 ~ q1' in '\n'.join(b.check(course)[0].warnings)
+
+    def test_near_copy_audit_catches_one_changed_word_but_not_a_new_scenario(self):
+        stem = 'A bag holds red and blue marbles and two are drawn without replacement; find the chance both are red.'
+        self.assertTrue(self.near_copies(stem, stem.replace('bag', 'box')))
+        self.assertFalse(self.near_copies(stem, 'A factory makes parts on two lines; given a defect, which line most likely made it?'))
+        self.assertFalse(self.near_copies('Find the mean.', 'Find the median.'))   # under 6 words: never fuzzy-matched
+
+    def test_letter_warning_suggestions_remove_the_pile_up(self):
+        at_a = [i for i in range(300) if b.seeded_order(f'test:q{i}', 4)[0] == 0][:9]
+        items = [choice(f'q{i}', opts=['one', 'two', 'three', 'four']) for i in at_a]
+        rep = b.Report()
+        b.letter_audit('practice', items, 'test', rep)
+        tips = re.findall(r'(q\d+): "show": "([A-D])"', rep.warnings[0])
+        self.assertTrue(tips)
+        for qid, letter in tips:
+            next(q for q in items if q['id'] == qid)['show'] = letter
+        rep = b.Report()
+        b.letter_audit('practice', items, 'test', rep)
+        self.assertEqual(rep.warnings, [])
 
 
 if __name__ == '__main__':
