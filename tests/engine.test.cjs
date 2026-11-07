@@ -948,3 +948,19 @@ test('artifact db: a db that cannot open, read or write never breaks saving to l
     if (db.writes) assert.deepEqual(db.writes.map(w => w[0]), ['progress/practice', 'progress/report', 'progress/practice', 'progress/report']);
   }
 });
+
+test('a multi-select answer in notes and reports uses the language\'s list separator', () => {
+  const zh = fixture(); zh.config.lang = 'zh';
+  for (const [data, sep] of [[fixture(), ', '], [zh, '、']]) {
+    const h = load({data}), q = h.api.BANKS.practice.imap.p2;
+    assert.equal(h.api.pickText(q, [0, 2]), [0, 2].map(i => h.api.letterOf(q, i)).sort().join(sep));
+  }
+});
+
+test('a saved scope whose lecture no longer has practice questions falls back to all', () => {
+  const storage = new Map([['test:practice', JSON.stringify({v: 1, scope: 'L9', ans: {}, sa: {}, redo: {}, updatedAt: ''})]]);
+  const h = load({storage}), all = h.api.BANKS.practice.items.map(q => q.id);
+  assert.deepEqual(clone(h.api.practiceList().map(q => q.id)), all);
+  h.api.STATE.practice.scope = 'L1';
+  assert.deepEqual(clone(h.api.practiceList().map(q => q.id)), all.filter(id => h.api.BANKS.practice.imap[id].lec === 'L1'));
+});

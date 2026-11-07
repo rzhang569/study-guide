@@ -508,9 +508,14 @@
 
   /* ================= practice bank ================= */
   function firstScore(q, rec) { return (!rec || rec.first == null) ? null : scoreOf(q, rec.first); }
+  /* the saved practice scope, or "all" once that lecture has no practice questions (the bank changed) */
+  function scopeOf(st) {
+    var sc = st.scope;
+    return sc !== "all" && BANKS.practice.items.some(function (q) { return q.lec === sc; }) ? sc : "all";
+  }
   function practiceList() {
-    var st = STATE.practice;
-    return BANKS.practice.items.filter(function (q) { return st.scope === "all" || q.lec === st.scope; });
+    var sc = scopeOf(STATE.practice);
+    return BANKS.practice.items.filter(function (q) { return sc === "all" || q.lec === sc; });
   }
   function notCard(q) { return q.type !== "card"; }
   function groupBox(title, desc) { return el("div", "qgroup", "<h3>" + title + "</h3>" + (desc ? '<p class="qdesc">' + desc + "</p>" : "")); }
@@ -700,7 +705,7 @@
 
   function renderPractice() {
     var st = STATE.practice, root = document.getElementById("bank-practice"); if (!root) return;
-    var sel = document.getElementById("scope-practice"); if (sel) sel.value = st.scope;
+    var sel = document.getElementById("scope-practice"); if (sel) sel.value = scopeOf(st);
     root.innerHTML = "";
     var list = practiceList(), num = 0;
     if (!list.length) root.appendChild(el("p", "empty", t("emptyScope")));
@@ -942,7 +947,7 @@
   function pickText(q, v) {
     if (v == null || v === "") return t("noAnswer");
     if (q.type === "fill") return ZH ? "「" + esc(v) + "」" : "“" + esc(v) + "”";
-    if (Array.isArray(v)) return v.length ? v.map(function (i) { return letterOf(q, i); }).sort().join(", ") : t("noPick");
+    if (Array.isArray(v)) return v.length ? v.map(function (i) { return letterOf(q, i); }).sort().join(ZH ? "、" : ", ") : t("noPick");
     return q.opts && q.opts[v] ? letterOf(q, v) + " (" + plain(q.opts[v].t).slice(0, 40) + ")" : t("noAnswer");
   }
   /* Mock mistakes have their own store, so they outlast the 20-paper history and keep their paper numbers:
@@ -1421,8 +1426,8 @@
       var cp = button("btn", t("exportCopy"));
       cp.addEventListener("click", function () {
         function done() { cp.textContent = t("exportCopied"); setTimeout(function () { cp.textContent = t("exportCopy"); }, 1500); }
-        try { navigator.clipboard.writeText(json).then(done, function () { ta.select(); document.execCommand("copy"); done(); }); }
-        catch (e) { ta.select(); try { document.execCommand("copy"); done(); } catch (e2) {} }
+        function fallback() { ta.select(); try { document.execCommand("copy"); done(); } catch (e) {} }
+        try { navigator.clipboard.writeText(json).then(done, fallback); } catch (e) { fallback(); }
       });
       var dl = el("a", "btn ghost", t("exportSave"));
       dl.href = "data:application/json;charset=utf-8," + encodeURIComponent(json);
