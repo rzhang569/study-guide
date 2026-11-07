@@ -152,7 +152,7 @@
       railK: "In this section", railPrac: "Section practice ↓"
     }
   };
-  var S = STR[CFG.lang] || STR.zh;
+  var S = STR[CFG.lang] || STR.zh, ZH = S === STR.zh;
   function t(k, v) {
     var s = S[k] != null ? S[k] : STR.zh[k];
     if (s == null) return k;
@@ -167,19 +167,17 @@
     for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
     return function () { h += 0x6D2B79F5; var x = h; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
   }
-  function seededOrder(seed, n) {
-    var rnd = seeded(seed), idx = [];
-    for (var k = 0; k < n; k++) idx.push(k);
-    for (var i = n - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)); var x = idx[i]; idx[i] = idx[j]; idx[j] = x; }
-    return idx;
-  }
+  function range(n) { for (var a = [], k = 0; k < n; k++) a.push(k); return a; }
+  function shuffleWith(rnd, a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)); var x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+  function shuffle(a) { return shuffleWith(Math.random, a); }
+  function seededOrder(seed, n) { return shuffleWith(seeded(seed), range(n)); }
   /* answers are stored by original option index; only the display order is shuffled, with a seed from the
      question id so the order is stable across reloads. True/false keeps True first. */
   var ORDER = {};
   function displayOrder(q) {
     if (ORDER[q.id]) return ORDER[q.id];
     var n = q.opts.length, order;
-    if (q.cat === "tf" || q.fixed || n < 3) order = seededOrder("", n).sort(function (a, b) { return a - b; });
+    if (q.cat === "tf" || q.fixed || n < 3) order = range(n);
     else {
       order = seededOrder(KEY + ":" + q.id, n);
       /* "show": "B" puts a single-choice answer at that letter; it changes only the display, never the stored
@@ -225,8 +223,7 @@
   });
 
   var LECS = (CFG.lectures || []).slice();
-  [BANKS.practice, BANKS.mock].forEach(function (b) { b.items.forEach(function (q) { if (q.lec && LECS.indexOf(q.lec) < 0) LECS.push(q.lec); }); });
-  SA.forEach(function (s) { if (s.lec && LECS.indexOf(s.lec) < 0) LECS.push(s.lec); });
+  BANKS.practice.items.concat(BANKS.mock.items, SA).forEach(function (q) { if (q.lec && LECS.indexOf(q.lec) < 0) LECS.push(q.lec); });
 
   var MCFG = CFG.mock || {};
   var MOCK_SECTIONS = (MCFG.sections || [{ cat: "tf", n: 10 }, { cat: "single", n: 10 }, { cat: "multi", n: 5 }, { cat: "fill", n: 5 }]).filter(function (x) { return x.n > 0; });
@@ -400,9 +397,13 @@
     }
     return 0;
   }
-  function fmt(x) { return (Math.round(x * 100) / 100).toString(); }
+  function round2(x) { return Math.round(x * 100) / 100; }
+  function fmt(x) { return round2(x).toString(); }
   function pct(s, m) { return m ? Math.round(s / m * 100) : 0; }
   function scoreClass(x) { return x >= 0.999 ? "sc-full" : (x > 0 ? "sc-part" : "sc-zero"); }
+  function scoreBadge(x, text) { return span("qscore " + scoreClass(x), text); }
+  /* the answer shown for a fill-in */
+  function refAnswer(q) { return q.answer || (q.accept || [])[0]; }
 
   /* ================= helpers ================= */
   /* formulas: elements carry LaTeX in data-tex and plain-text fallback inside; MathJax (if it loads) swaps in SVG */
@@ -435,8 +436,8 @@
   /* a button that asks once before acting: the first click arms it and shows Cancel, and it disarms by itself after 5 s */
   function confirmBtn(label, armedLabel, onConfirm, cls, armedCls) {
     var wrap = el("span", "confirm");
-    var b = el("button", cls, label); b.type = "button";
-    var x = el("button", "reset", t("cancel")); x.type = "button"; x.hidden = true;
+    var b = button(cls, label);
+    var x = button("reset", t("cancel")); x.hidden = true;
     var tm = null;
     function disarm() { clearTimeout(tm); b.dataset.armed = ""; b.textContent = label; b.className = cls; x.hidden = true; }
     b.addEventListener("click", function () {
@@ -452,7 +453,16 @@
     return wrap;
   }
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
-  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+  function span(cls, html) { return '<span class="' + cls + '">' + html + "</span>"; }
+  function button(cls, html) { var b = el("button", cls, html); b.type = "button"; return b; }
+  function textInput(id, value, aria) {
+    var inp = document.createElement("input");
+    inp.type = "text"; inp.id = id; inp.value = value;
+    inp.setAttribute("aria-label", aria); inp.autocomplete = "off"; inp.spellcheck = false;
+    return inp;
+  }
+  /* a multi-select pick list with option i added or removed, kept sorted */
+  function toggled(list, i) { var a = (list || []).slice(), k = a.indexOf(i); if (k >= 0) a.splice(k, 1); else a.push(i); return a.sort(); }
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
   /* plain text for the progress report; superscripts and subscripts keep their meaning (x<sup>2</sup> -> x^2) */
   function plain(h) {
@@ -460,16 +470,10 @@
     d.innerHTML = String(h == null ? "" : h).replace(/<sup>(.*?)<\/sup>/g, "^$1").replace(/<sub>(.*?)<\/sub>/g, "_$1");
     return d.textContent.replace(/\s+/g, " ").trim();
   }
-  function optWhy(q, i) {
-    var x = q.opts[i];
-    if (x && x.why) return x.why;
-    var correct = q.type === "multi" ? q.ans.indexOf(i) >= 0 : i === q.ans;
-    return correct ? t("optRight") : t("optWrong");
-  }
   function typeTag(q) {
-    if (q.type === "multi") return '<span class="qtype multi">' + t("tMulti") + "</span>";
-    if (q.type === "fill") return '<span class="qtype fill">' + t("tFill") + "</span>";
-    if (q.type === "card") return '<span class="qtype">' + t("tCard") + "</span>";
+    if (q.type === "multi") return span("qtype multi", t("tMulti"));
+    if (q.type === "fill") return span("qtype fill", t("tFill"));
+    if (q.type === "card") return span("qtype", t("tCard"));
     return "";
   }
   function metaLine(q, badge) { return [q.lec, q.src].filter(Boolean).join(" · ") + typeTag(q) + (badge || ""); }
@@ -489,11 +493,18 @@
     d.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); d.click(); } });
     return d;
   }
-  function optHtml(q, i, pos, label, exp, square) {
-    return '<span class="bub' + (square ? " sq" : "") + '">' + L[pos] + '</span><span class="obody"><span class="otext">' + q.opts[i].t +
-      (label ? '<span class="olabel">' + label + "</span>" : "") + "</span>" + exp + "</span>";
+  function optHtml(pos, text, label, exp, square) {
+    return span("bub" + (square ? " sq" : ""), L[pos]) + span("obody", span("otext", text + (label ? span("olabel", label) : "")) + exp);
   }
-  function expOf(q, i) { return '<span class="oexp">' + optWhy(q, i) + "</span>"; }
+  /* an option's own explanation, or a plain right / wrong note when it has none */
+  function expOf(q, i) {
+    var x = q.opts[i];
+    if (x && x.why) return span("oexp", x.why);
+    var correct = q.type === "multi" ? q.ans.indexOf(i) >= 0 : i === q.ans;
+    return span("oexp", correct ? t("optRight") : t("optWrong"));
+  }
+  /* after answering, a hint to click the options not yet opened: the right one plus every wrong try are open */
+  function moreHint(tried, ans, n) { return tried.filter(function (k) { return k !== ans; }).length + 1 < n ? " " + span("empty", t("moreOpts")) : ""; }
 
   /* ================= practice bank ================= */
   function firstScore(q, rec) { return (!rec || rec.first == null) ? null : scoreOf(q, rec.first); }
@@ -501,44 +512,44 @@
     var st = STATE.practice;
     return BANKS.practice.items.filter(function (q) { return st.scope === "all" || q.lec === st.scope; });
   }
+  function notCard(q) { return q.type !== "card"; }
+  function groupBox(title, desc) { return el("div", "qgroup", "<h3>" + title + "</h3>" + (desc ? '<p class="qdesc">' + desc + "</p>" : "")); }
 
   /* where: "p" practice center, "s" section box, "b" mistake notebook */
   function practiceCard(q, num, where) {
     where = where || "p";
-    var key = "practice", st = STATE[key];
+    var st = STATE.practice;
     /* the notebook redoes a question under its own record, so first-try scores stay as they were */
     var store = where === "b" ? (st.redo = st.redo || {}) : st.ans;
     var c = el("div", "q"); c.id = "q-" + where + "-" + q.id; c.setAttribute("data-num", num);
-    var badge = "", fs = q.type === "card" ? null : firstScore(q, store[q.id]);
-    if (fs != null) badge = '<span class="qscore ' + scoreClass(fs) + '">' + t("firstScore", { s: fmt(fs) }) + "</span>";
-    c.appendChild(el("p", "qmeta", metaLine(q, badge)));
+    var fs = q.type === "card" ? null : firstScore(q, store[q.id]);
+    c.appendChild(el("p", "qmeta", metaLine(q, fs != null ? scoreBadge(fs, t("firstScore", { s: fmt(fs) })) : "")));
     c.appendChild(el("div", "qstem", num + ". " + q.stem));
-    function rerender() { refreshQ(q); return document.getElementById("q-" + where + "-" + q.id); }
+    function commit() { save("practice"); refreshQ(q); }
     /* a slip of the finger: wipe this question's record so the next answer counts as the first; outside the
        notebook its notebook redo goes too, or a later miss would show up as already mastered */
     function undoBtn() {
-      var w = confirmBtn(t("undo"), t("undoArmed"), function () { delete store[q.id]; if (where !== "b") delete st.redo[q.id]; save(key); rerender(); }, "reset undo", "reset undo armed");
+      var w = confirmBtn(t("undo"), t("undoArmed"), function () { delete store[q.id]; if (where !== "b") delete st.redo[q.id]; commit(); }, "reset undo", "reset undo armed");
       w.firstChild.title = t("undoTitle");
       return w;
     }
+    function undoFoot() { var f = el("div", "qfoot"); f.appendChild(undoBtn()); return f; }
 
     if (q.type === "card") {
       var rec0 = store[q.id] || {};
       var why0 = el("div", "why", t("answer") + " " + (q.answer || ""));
-      var btn0 = el("button", "reveal", t("reveal")); btn0.type = "button";
+      var btn0 = button("reveal", t("reveal"));
       if (rec0.seen) btn0.hidden = true; else why0.hidden = true;
-      btn0.addEventListener("click", function () { store[q.id] = { seen: true }; save(key); rerender(); });
+      btn0.addEventListener("click", function () { store[q.id] = { seen: true }; commit(); });
       c.appendChild(btn0); c.appendChild(why0);
       return c;
     }
 
     if (q.type === "fill") {
-      var recF = store[q.id] || {};
+      var recF = store[q.id] || {}, inId = "in-" + where + "-" + q.id;
       var row = el("div", "fillrow");
-      var inp = document.createElement("input");
-      inp.type = "text"; inp.id = "in-" + where + "-" + q.id; inp.value = recF.last != null ? recF.last : "";
-      inp.setAttribute("aria-label", t("fillAria")); inp.autocomplete = "off"; inp.spellcheck = false;
-      var sub = el("button", "btn", t("submit")); sub.type = "button";
+      var inp = textInput(inId, recF.last != null ? recF.last : "", t("fillAria"));
+      var sub = button("btn", t("submit"));
       row.appendChild(inp); row.appendChild(sub); c.appendChild(row);
       var hintF = el("p", "fillhint"); hintF.hidden = true; c.appendChild(hintF);
       var submitFill = function () {
@@ -548,18 +559,18 @@
         var r = store[q.id] || {};
         if (r.first == null) r.first = v;
         r.last = v; store[q.id] = r;
-        save(key); rerender();
-        var again = document.getElementById("in-" + where + "-" + q.id); if (again) again.focus();
+        commit();
+        var again = document.getElementById(inId); if (again) again.focus();
       };
       sub.addEventListener("click", submitFill);
       inp.addEventListener("keydown", function (e) { if (e.key === "Enter") submitFill(); });
       if (recF.last != null) {
         var ok = fillOk(q, recF.last);
         inp.className = ok ? "ok" : "bad";
-        var head = ok ? t("fillRight") : t("fillWrong", { a: q.answer || (q.accept || [])[0] });
+        var head = ok ? t("fillRight") : t("fillWrong", { a: refAnswer(q) });
         if (recF.first != null && recF.first !== recF.last) head += t("fillFirst", { v: esc(recF.first) });
         c.appendChild(el("div", "why", head + (q.why || "")));
-        if (!fillOk(q, recF.first)) { c.classList.add("missed"); var uf = el("div", "qfoot"); uf.appendChild(undoBtn()); c.appendChild(uf); }
+        if (!fillOk(q, recF.first)) { c.classList.add("missed"); c.appendChild(undoFoot()); }
       }
       return c;
     }
@@ -579,22 +590,21 @@
           exp = expOf(q, i);
         } else if (chosen) { bt.classList.add("sel"); }
         bt.setAttribute("aria-pressed", chosen ? "true" : "false");
-        bt.innerHTML = optHtml(q, i, pos, label, exp, true);
+        bt.innerHTML = optHtml(pos, q.opts[i].t, label, exp, true);
         if (!submitted) bt.addEventListener("click", function () {
-          var r = store[q.id] || {}, a = (r.sel || []).slice(), k = a.indexOf(i);
-          if (k >= 0) a.splice(k, 1); else a.push(i);
-          a.sort(); r.sel = a; store[q.id] = r; writeLocal(key, st); rerender();
+          var r = store[q.id] || {};
+          r.sel = toggled(r.sel, i); store[q.id] = r; writeLocal("practice", st); refreshQ(q);
         });
         opts.appendChild(bt);
       });
       var foot = el("div", "qfoot");
       if (!submitted) {
-        var sb = el("button", "btn", t("submit")); sb.type = "button"; sb.disabled = !sel.length;
+        var sb = button("btn", t("submit")); sb.disabled = !sel.length;
         sb.addEventListener("click", function () {
           var r = store[q.id] || {};
           if (!(r.sel || []).length) return;
           if (r.first == null) r.first = r.sel.slice();
-          r.submitted = true; store[q.id] = r; save(key); rerender();
+          r.submitted = true; store[q.id] = r; commit();
         });
         foot.appendChild(sb);
         foot.appendChild(el("span", "empty", t("multiHint")));
@@ -602,14 +612,14 @@
         c.classList.add("done");
         var sNow = scoreOf(q, sel), sFirst = scoreOf(q, rec.first);
         if (sFirst < 0.999) c.classList.add("missed");
-        var again = el("button", "btn ghost", t("reselect")); again.type = "button";
-        again.addEventListener("click", function () { var r = store[q.id]; r.submitted = false; r.sel = []; save(key); rerender(); });
+        var again = button("btn ghost", t("reselect"));
+        again.addEventListener("click", function () { var r = store[q.id]; r.submitted = false; r.sel = []; commit(); });
         foot.appendChild(again);
         foot.appendChild(el("span", "qscore " + scoreClass(sNow), t("scoreNow", { s: fmt(sNow) })));
         if (sFirst < 0.999) foot.appendChild(undoBtn());
       }
       c.appendChild(foot);
-      if (submitted) c.appendChild(el("div", "why", t("multiAns", { a: q.ans.map(function (i) { return letterOf(q, i); }).sort().join(S === STR.zh ? "、" : ", ") }) + (q.why || "")));
+      if (submitted) c.appendChild(el("div", "why", t("multiAns", { a: q.ans.map(function (i) { return letterOf(q, i); }).sort().join(ZH ? "、" : ", ") }) + (q.why || "")));
       return c;
     }
 
@@ -618,13 +628,13 @@
       var bt = optEl(), label = "", exp = "";
       if (answered && i === q.ans) { bt.classList.add("right"); label = t("right"); exp = expOf(q, i); }
       else if (tried.indexOf(i) >= 0) { bt.classList.add("wrong"); label = "✗"; exp = expOf(q, i); }
-      bt.innerHTML = optHtml(q, i, pos, label, exp, false);
+      bt.innerHTML = optHtml(pos, q.opts[i].t, label, exp, false);
       bt.addEventListener("click", function () {
         var r = store[q.id] || {};
         if (r.first == null) r.first = i;
         r.tried = r.tried || [];
         if (r.tried.indexOf(i) < 0) r.tried.push(i);
-        store[q.id] = r; save(key); rerender();
+        store[q.id] = r; commit();
       });
       opts.appendChild(bt);
     });
@@ -632,28 +642,29 @@
       c.classList.add("done");
       if (rec.first !== q.ans) c.classList.add("missed");
       var lead = rec.first === q.ans ? t("leadRight") : t("leadWrong", { a: letterOf(q, rec.first), b: letterOf(q, q.ans) });
-      var shown = tried.filter(function (i) { return i !== q.ans; }).length + 1;
-      var tail = shown < q.opts.length ? ' <span class="empty">' + t("moreOpts") + "</span>" : "";
-      c.appendChild(el("div", "why", lead + (q.why || "") + tail));
-      if (rec.first !== q.ans) { var us = el("div", "qfoot"); us.appendChild(undoBtn()); c.appendChild(us); }
+      c.appendChild(el("div", "why", lead + (q.why || "") + moreHint(tried, q.ans, q.opts.length)));
+      if (rec.first !== q.ans) c.appendChild(undoFoot());
     }
     return c;
   }
 
-  function refreshQ(q) {
-    ["p", "s", "b"].forEach(function (w) {
-      var old = document.getElementById("q-" + w + "-" + q.id);
+  /* rebuild in place every copy of a card that is on the page (practice center, section box, notebook) */
+  function swapCards(prefix, id, wheres, make) {
+    wheres.forEach(function (w) {
+      var old = document.getElementById(prefix + w + "-" + id);
       if (!old) return;
-      var num = +old.getAttribute("data-num");
-      var n = w === "b" ? bookCard(q, num) : practiceCard(q, num, w);
+      var n = make(+old.getAttribute("data-num"), w);
       old.replaceWith(n); renderTex(n);
     });
+  }
+  function refreshQ(q) {
+    swapCards("q-", q.id, ["p", "s", "b"], function (num, w) { return w === "b" ? bookCard(q, num) : practiceCard(q, num, w); });
     updatePracticeBar(); updateSecHead(q.sec); updateBookBar();
   }
 
+  function zeroByLec() { var out = {}; LECS.forEach(function (u) { out[u] = { s: 0, m: 0 }; }); return out; }
   function unitStats(list, scoreFn) {
-    var out = {};
-    LECS.forEach(function (u) { out[u] = { s: 0, m: 0 }; });
+    var out = zeroByLec();
     list.forEach(function (q) { var sc = scoreFn(q); if (sc == null || !out[q.lec]) return; out[q.lec].m++; out[q.lec].s += sc; });
     return out;
   }
@@ -667,7 +678,7 @@
   }
 
   function updatePracticeBar() {
-    var st = STATE.practice, list = practiceList().filter(function (q) { return q.type !== "card"; });
+    var st = STATE.practice, list = practiceList().filter(notCard);
     var bar = document.getElementById("bar-practice"); if (!bar) return;
     var info = bar.querySelector(".score"), acts = bar.querySelector(".acts");
     acts.innerHTML = "";
@@ -680,7 +691,7 @@
       st.ans = {}; save("practice"); render("practice");
     }, "reset", "reset armed"));
     var box = document.getElementById("sum-practice");
-    var us = unitStats(BANKS.practice.items.filter(function (q) { return q.type !== "card"; }), function (q) { return firstScore(q, st.ans[q.id]); });
+    var us = unitStats(BANKS.practice.items.filter(notCard), function (q) { return firstScore(q, st.ans[q.id]); });
     var any = LECS.some(function (u) { return us[u].m > 0; });
     var open = box.querySelector("details") && box.querySelector("details").open;
     box.innerHTML = '<details class="weak"' + (open ? " open" : "") + "><summary>" + t("byLec") + "</summary>" + (any ? statsTable(us) : '<p class="empty">' + t("noRecords") + "</p>") + "</details>";
@@ -696,7 +707,7 @@
     BANKS.practice.groups.forEach(function (g) {
       var qs = list.filter(function (q) { return q.g === g.id; });
       if (!qs.length) return;
-      var box = el("div", "qgroup", "<h3>" + g.title + "</h3>" + (g.desc ? '<p class="qdesc">' + g.desc + "</p>" : ""));
+      var box = groupBox(g.title, g.desc);
       qs.forEach(function (q) { num++; box.appendChild(practiceCard(q, num)); });
       root.appendChild(box);
     });
@@ -707,11 +718,13 @@
   /* ================= short answer, step by step ================= */
   function saRec(s) { return (STATE.practice.sa || {})[s.id] || {}; }
   function saStarted(s) { var r = saRec(s); return Object.keys(r).some(function (k) { return r[k] && (r[k].shown || r[k].tries); }); }
+  /* a step answered by typing and judged by the checker, not marked by the student */
+  function typedStep(p, rec) { return p.accept && rec.v != null && !rec.self; }
   /* a typed step is re-judged with the current checker, so older records benefit from looser matching too */
   function stepOk(p, rec) {
     if (!rec || !rec.shown) return null;
     if (rec.fix) return true;
-    if (p.accept && rec.v != null && !rec.self) return fillOk(p, rec.v);
+    if (typedStep(p, rec)) return fillOk(p, rec.v);
     return rec.ok == null ? null : rec.ok;
   }
   /* first-try credit: right with no miss, or "count it" after one try (the checker misread a right answer) */
@@ -733,23 +746,19 @@
     save("practice"); refreshSA(s);
   }
   function refreshSA(s) {
-    ["p", "s"].forEach(function (w) {
-      var old = document.getElementById("sa-" + w + "-" + s.id);
-      if (!old) return;
-      var n = saCard(s, +old.getAttribute("data-num"), w);
-      old.replaceWith(n); renderTex(n);
-    });
+    swapCards("sa-", s.id, ["p", "s"], function (num, w) { return saCard(s, num, w); });
     updateSABar(); updateSecHead(s.sec);
   }
   function saCard(s, num, where) {
     var r = saRec(s), sc = saScore(s), started = saStarted(s);
     var c = el("div", "q sa"); c.id = "sa-" + where + "-" + s.id; c.setAttribute("data-num", num);
-    var badge = started ? '<span class="qscore ' + scoreClass(sc.s / sc.m) + '">' + t("saBadge", { s: sc.s, m: sc.m }) + (sc.f > sc.s ? t("saFixed", { f: sc.f }) : "") + "</span>" : "";
-    c.appendChild(el("p", "qmeta", [s.lec, s.kind].filter(Boolean).join(" · ") + '<span class="qtype fill">' + t("tSA") + "</span>" + (s.opt ? '<span class="qtype">' + t("optional") + "</span>" : "") + badge));
+    var badge = started ? scoreBadge(sc.s / sc.m, t("saBadge", { s: sc.s, m: sc.m }) + (sc.f > sc.s ? t("saFixed", { f: sc.f }) : "")) : "";
+    c.appendChild(el("p", "qmeta", [s.lec, s.kind].filter(Boolean).join(" · ") + span("qtype fill", t("tSA")) + (s.opt ? span("qtype", t("optional")) : "") + badge));
     if (s.opt) c.appendChild(el("div", "why", t("optNote") + s.opt));
     c.appendChild(el("div", "qstem", num + ". " + s.stem));
     s.steps.forEach(function (p, i) {
-      var rec = r[i] || {}, box = el("div", "sastep");
+      var rec = r[i] || {}, box = el("div", "sastep"), inId = "sa-in-" + where + "-" + s.id + "-" + i;
+      function focusInput() { var e = document.getElementById(inId); if (e) { e.focus(); e.select(); } }
       box.appendChild(el("p", "saask", "<b>" + t("step", { i: i + 1, p: p.pts || 1 }) + "</b>" + p.ask));
       if (p.opts) {
         /* shown in a fixed shuffled order (stored answers keep the original index); after answering, the other
@@ -759,8 +768,8 @@
         order.forEach(function (j, n) {
           var b = optEl(), label = "", exp = "";
           if (rec.shown && j === p.ans) { b.classList.add("right"); label = t("right"); }
-          else if (tried.indexOf(j) >= 0) { b.classList.add("wrong"); label = "✗"; if (p.ow && p.ow[j]) exp = '<span class="oexp">' + p.ow[j] + "</span>"; }
-          b.innerHTML = '<span class="bub">' + L[n] + '</span><span class="obody"><span class="otext">' + p.opts[j] + (label ? '<span class="olabel">' + label + "</span>" : "") + "</span>" + exp + "</span>";
+          else if (tried.indexOf(j) >= 0) { b.classList.add("wrong"); label = "✗"; if (p.ow && p.ow[j]) exp = span("oexp", p.ow[j]); }
+          b.innerHTML = optHtml(n, p.opts[j], label, exp, false);
           b.addEventListener("click", function () {
             /* a reopened step keeps its earlier misses in tried */
             if (!rec.shown) setStep(s, i, { v: j, ok: j === p.ans, shown: true, tried: tried.indexOf(j) < 0 ? tried.concat([j]) : tried });
@@ -770,32 +779,27 @@
         });
         box.appendChild(row);
       } else if (p.accept) {
-        var fr = el("div", "fillrow"), inp = document.createElement("input"), inId = "sa-in-" + where + "-" + s.id + "-" + i;
-        inp.type = "text"; inp.id = inId; inp.value = rec.v != null ? rec.v : ""; inp.autocomplete = "off"; inp.spellcheck = false;
-        inp.setAttribute("aria-label", t("stepAria", { i: i + 1 }));
+        var fr = el("div", "fillrow"), inp = textInput(inId, rec.v != null ? rec.v : "", t("stepAria", { i: i + 1 }));
         fr.appendChild(inp);
         if (rec.shown) {
           inp.disabled = true;
-          if (rec.v != null && !rec.self) inp.className = stepOk(p, rec) ? "ok" : "bad";
+          if (typedStep(p, rec)) inp.className = stepOk(p, rec) ? "ok" : "bad";
           box.appendChild(fr);
         } else {
           /* tries without a typed value come from reopening a self-marked step: it is still done on paper */
           var typedMiss = !!rec.tries && rec.v != null, msg = el("p", "fillhint");
           if (typedMiss) { inp.className = "bad"; msg.textContent = t("tries", { n: rec.tries > 1 ? t("triesN", { k: rec.tries }) : "" }); }
           else msg.hidden = true;
-          var chk = el("button", "btn", t("check")); chk.type = "button";
+          var chk = button("btn", t("check"));
           var go = function () {
             var res = fillCheck(p, inp.value);
             if (res === null) { if (norm(inp.value)) { msg.textContent = t("fillHint"); msg.hidden = false; } return; }
             if (res) setStep(s, i, { v: inp.value, ok: true, shown: true });
-            else {
-              setStep(s, i, { v: inp.value, tries: (rec.tries || 0) + 1 });
-              var again = document.getElementById(inId); if (again) { again.focus(); again.select(); }
-            }
+            else { setStep(s, i, { v: inp.value, tries: (rec.tries || 0) + 1 }); focusInput(); }
           };
           chk.addEventListener("click", go);
           inp.addEventListener("keydown", function (e) { if (e.key === "Enter") go(); });
-          var peek = el("button", "btn ghost", typedMiss ? t("peek") : t("peekPaper")); peek.type = "button";
+          var peek = button("btn ghost", typedMiss ? t("peek") : t("peekPaper"));
           peek.addEventListener("click", function () {
             if (typedMiss) setStep(s, i, { v: inp.value, ok: false, shown: true });
             else setStep(s, i, { shown: true, self: true });
@@ -804,39 +808,37 @@
           box.appendChild(fr); box.appendChild(msg);
         }
       } else if (!rec.shown) {
-        var pk = el("button", "btn ghost", t("selfPeek")); pk.type = "button";
+        var pk = button("btn ghost", t("selfPeek"));
         pk.addEventListener("click", function () { setStep(s, i, { shown: true, self: true }); });
         box.appendChild(pk);
       }
       if (rec.shown) {
         var okS = stepOk(p, rec);
         var head = okS === true ? t("stepRight") + (rec.tries ? t("fixedAfter", { n: rec.tries }) : "") : (okS === false ? t("stepWrong") : "");
-        var triedN = p.opts ? (rec.tried || (rec.v != null ? [rec.v] : [])).filter(function (k) { return k !== p.ans; }).length + 1 : 0;
-        var more = p.opts && triedN < p.opts.length ? ' <span class="empty">' + t("moreOpts") + "</span>" : "";
-        box.appendChild(el("div", "why", head + t("sol") + p.sol + more));
+        box.appendChild(el("div", "why", head + t("sol") + p.sol + (p.opts ? moreHint(tried, p.ans, p.opts.length) : "")));
         var sf = el("div", "qfoot");
         if (okS == null) {
-          var yes = el("button", "btn", t("iRight")), no = el("button", "btn ghost", t("iWrong")); yes.type = no.type = "button";
+          var yes = button("btn", t("iRight")), no = button("btn ghost", t("iWrong"));
           yes.addEventListener("click", function () { setStep(s, i, { ok: true }); });
           no.addEventListener("click", function () { setStep(s, i, { ok: false }); });
           sf.appendChild(yes); sf.appendChild(no); sf.appendChild(el("span", "empty", t("selfJudge")));
         } else if (okS === false) {
           /* reopen just this step, keeping what was typed so it can be edited. The miss stays counted in tries
              (a typed miss already was), so a later right answer earns "after fixes" credit, never first-try credit */
-          var redo = el("button", "btn ghost", t("redoStep")); redo.type = "button";
+          var redo = button("btn ghost", t("redoStep"));
           redo.addEventListener("click", function () {
             var r0 = STATE.practice.sa[s.id] || {};
-            if (p.accept && rec.v != null && !rec.self) r0[i] = { v: rec.v, tries: rec.tries || 1 };
+            if (typedStep(p, rec)) r0[i] = { v: rec.v, tries: rec.tries || 1 };
             else {
               r0[i] = { tries: (rec.tries || 0) + 1 };
               if (p.opts) r0[i].tried = rec.tried || (rec.v != null ? [rec.v] : []);
             }
             save("practice"); refreshSA(s);
-            var e = document.getElementById("sa-in-" + where + "-" + s.id + "-" + i); if (e) { e.focus(); e.select(); }
+            focusInput();
           });
           sf.appendChild(redo);
-          if (p.accept && rec.v != null && !rec.self) {
-            var fx = el("button", "reset", t("override")); fx.type = "button";
+          if (typedStep(p, rec)) {
+            var fx = button("reset", t("override"));
             fx.addEventListener("click", function () { setStep(s, i, { ok: true, fix: true }); });
             sf.appendChild(fx);
           }
@@ -846,7 +848,7 @@
       c.appendChild(box);
     });
     if (started) {
-      var f = el("div", "qfoot"), rs = el("button", "btn ghost", t("redoSA")); rs.type = "button";
+      var f = el("div", "qfoot"), rs = button("btn ghost", t("redoSA"));
       rs.addEventListener("click", function () { delete STATE.practice.sa[s.id]; save("practice"); refreshSA(s); });
       f.appendChild(rs);
       if (s.steps.every(function (p, i) { return stepOk(p, r[i]) != null; })) f.appendChild(el("span", "qscore " + scoreClass(sc.s / sc.m), t("saTotal", { s: sc.s, m: sc.m }) + (sc.f > sc.s ? t("saTotalFixed", { f: sc.f, m: sc.m }) : "")));
@@ -868,7 +870,7 @@
     SA_GROUPS.forEach(function (gr) {
       var xs = SA.filter(function (x) { return x.k === gr.id; });
       if (!xs.length) return;
-      var box = el("div", "qgroup", "<h3>" + (gr.title || gr.kind || "") + "</h3>" + (gr.desc ? '<p class="qdesc">' + gr.desc + "</p>" : ""));
+      var box = groupBox(gr.title || gr.kind || "", gr.desc);
       xs.forEach(function (x) { num++; box.appendChild(saCard(x, num, "p")); });
       root.appendChild(box);
     });
@@ -910,7 +912,7 @@
         sas.forEach(function (x, i) { body.appendChild(saCard(x, i + 1, "s")); });
       }
       var foot = el("div", "sp-foot");
-      var close = el("button", "btn ghost", t("close")); close.type = "button";
+      var close = button("btn ghost", t("close"));
       close.addEventListener("click", function () { setOpen(id, false); renderSecBox(id, k); box.scrollIntoView({ block: "start" }); });
       foot.appendChild(close);
       var nxt = SECS[k + 1], a = el("a", "btn", nxt ? t("nextSec") : t("toMock"));
@@ -929,10 +931,9 @@
     SA.forEach(function (s) { if (s.sec) want[s.sec] = 1; });
     SECS = [].slice.call(document.querySelectorAll("section[id]")).map(function (x) { return x.id; }).filter(function (id) { return want[id]; });
     SECS.forEach(function (id) {
-      var sec = document.getElementById(id);
       if (document.getElementById("sp-" + id)) return;
       var box = el("div", "secprac"); box.id = "sp-" + id;
-      sec.appendChild(box);
+      document.getElementById(id).appendChild(box);
     });
   }
 
@@ -940,7 +941,7 @@
   var BOOK_FILTER = "todo";
   function pickText(q, v) {
     if (v == null || v === "") return t("noAnswer");
-    if (q.type === "fill") return S === STR.zh ? "「" + esc(v) + "」" : "“" + esc(v) + "”";
+    if (q.type === "fill") return ZH ? "「" + esc(v) + "」" : "“" + esc(v) + "”";
     if (Array.isArray(v)) return v.length ? v.map(function (i) { return letterOf(q, i); }).sort().join(", ") : t("noPick");
     return q.opts && q.opts[v] ? letterOf(q, v) + " (" + plain(q.opts[v].t).slice(0, 40) + ")" : t("noAnswer");
   }
@@ -971,7 +972,6 @@
   function bookEntries() {
     var out = {}, order = [];
     function add(q, note, kind) {
-      if (!q) return;
       if (!out[q.id]) { out[q.id] = { q: q, notes: [], wrong: false, flag: false }; order.push(q.id); }
       var e = out[q.id];
       if (e.notes.indexOf(note) < 0) e.notes.push(note);
@@ -999,11 +999,10 @@
   function bookCard(q, num) {
     var c = practiceCard(q, num, "b");
     var e = (bookEntries().filter(function (x) { return x.q.id === q.id; })[0]) || { notes: [], wrong: false, flag: false };
-    var tags = (e.wrong ? '<span class="wbt bad">' + t("tagWrong") + "</span>" : "") + (e.flag ? '<span class="wbt flg">' + t("tagFlag") + "</span>" : "") + (mastered(q) ? '<span class="wbt ok">' + t("tagOk") + "</span>" : "");
-    var box = el("div", "wbk", tags + '<span class="wbn">' + e.notes.join(S === STR.zh ? "；" : "; ") + "</span>");
-    var r = (STATE.practice.redo || {})[q.id];
-    if (r) {
-      var again = el("button", "reset", t("clearRedo")); again.type = "button";
+    var tags = (e.wrong ? span("wbt bad", t("tagWrong")) : "") + (e.flag ? span("wbt flg", t("tagFlag")) : "") + (mastered(q) ? span("wbt ok", t("tagOk")) : "");
+    var box = el("div", "wbk", tags + span("wbn", e.notes.join(ZH ? "；" : "; ")));
+    if (STATE.practice.redo[q.id]) {  /* practiceCard(q, num, "b") made sure redo exists */
+      var again = button("reset", t("clearRedo"));
       again.addEventListener("click", function () { delete STATE.practice.redo[q.id]; save("practice"); refreshQ(q); });
       box.appendChild(again);
     }
@@ -1016,10 +1015,17 @@
     c.insertBefore(box, c.children[1]);
     return c;
   }
+  /* what each notebook filter shows */
+  var BOOK_VIEWS = {
+    todo: function (x) { return !mastered(x.q); },
+    wrong: function (x) { return x.wrong; },
+    flag: function (x) { return x.flag; },
+    all: function () { return true; }
+  };
   function updateBookBar() {
     var bar = document.getElementById("bar-book"); if (!bar) return;
-    var all = bookEntries(), left = all.filter(function (x) { return !mastered(x.q); }).length;
-    var nw = all.filter(function (x) { return x.wrong; }).length, nf = all.filter(function (x) { return x.flag; }).length;
+    var all = bookEntries(), left = all.filter(BOOK_VIEWS.todo).length;
+    var nw = all.filter(BOOK_VIEWS.wrong).length, nf = all.filter(BOOK_VIEWS.flag).length;
     bar.querySelector(".score").innerHTML = t("bookBar", { n: all.length, w: nw, f: nf, l: left });
     var tab = document.querySelector('[data-tab="book"]'); if (tab) tab.textContent = left ? t("tabBookN", { n: left }) : t("tabBook");
   }
@@ -1028,19 +1034,14 @@
     var acts = bar.querySelector(".acts"); acts.innerHTML = "";
     var seg = el("div", "seg");
     [["todo", t("fTodo")], ["wrong", t("fWrong")], ["flag", t("fFlag")], ["all", t("fAll")]].forEach(function (x) {
-      var b = el("button", "", x[1]); b.type = "button"; b.setAttribute("aria-pressed", BOOK_FILTER === x[0] ? "true" : "false");
+      var b = button("", x[1]); b.setAttribute("aria-pressed", BOOK_FILTER === x[0] ? "true" : "false");
       b.addEventListener("click", function () { BOOK_FILTER = x[0]; renderBook(); });
       seg.appendChild(b);
     });
     acts.appendChild(seg);
-    var list = bookEntries().filter(function (x) {
-      if (BOOK_FILTER === "todo") return !mastered(x.q);
-      if (BOOK_FILTER === "wrong") return x.wrong;
-      if (BOOK_FILTER === "flag") return x.flag;
-      return true;
-    });
+    var all = bookEntries(), list = all.filter(BOOK_VIEWS[BOOK_FILTER]);
     root.innerHTML = "";
-    if (!list.length) root.appendChild(el("p", "empty", bookEntries().length ? t("bookEmptyF") : t("bookEmpty")));
+    if (!list.length) root.appendChild(el("p", "empty", all.length ? t("bookEmptyF") : t("bookEmpty")));
     list.forEach(function (x, i) { root.appendChild(bookCard(x.q, i + 1)); });
     updateBookBar(); renderTex(root);
   }
@@ -1089,44 +1090,41 @@
   function answeredDraft(d) { return d != null && !(typeof d === "string" && !d.trim()) && !(Array.isArray(d) && !d.length); }
 
   function mockCard(q, num) {
-    var key = "mock", st = STATE[key], locked = st.submitted;
+    var st = STATE.mock, locked = st.submitted;
     var c = el("div", "q"); c.id = "q-m-" + q.id;
     var badge = "";
-    if (locked) { var es = scoreOf(q, st.draft[q.id]); badge = '<span class="qscore ' + scoreClass(es) + '">' + t("score", { s: fmt(es) }) + "</span>"; }
+    if (locked) { var es = scoreOf(q, st.draft[q.id]); badge = scoreBadge(es, t("score", { s: fmt(es) })); }
     var flagged = !!(st.flags && st.flags[q.id]);
     if (flagged) c.classList.add("flagged");
-    var meta = el("p", "qmeta", '<span class="qmetatxt">' + q.lec + typeTag(q) + badge + "</span>");
-    var fb = el("button", "flagbtn" + (flagged ? " on" : ""), flagged ? t("flagged") : t("flag"));
-    fb.type = "button"; fb.title = t("flagTitle");
+    var meta = el("p", "qmeta", span("qmetatxt", q.lec + typeTag(q) + badge));
+    var fb = button("flagbtn" + (flagged ? " on" : ""), flagged ? t("flagged") : t("flag"));
+    fb.title = t("flagTitle");
     fb.setAttribute("aria-pressed", flagged ? "true" : "false");
     fb.addEventListener("click", function () {
       st.flags = st.flags || {};
       if (st.flags[q.id]) delete st.flags[q.id]; else st.flags[q.id] = 1;
-      save(key); rerender();
+      commit();
     });
     meta.appendChild(fb);
     c.appendChild(meta);
     c.appendChild(el("div", "qstem", num + ". " + q.stem));
-    function rerender() { var n = mockCard(q, num); c.replaceWith(n); updateMockBar(); renderTex(n); }
+    function commit() { save("mock"); var n = mockCard(q, num); c.replaceWith(n); updateMockBar(); renderTex(n); }
 
     if (q.type === "fill") {
       var cur = st.draft[q.id] || "";
-      var row = el("div", "fillrow");
-      var inp = document.createElement("input");
-      inp.type = "text"; inp.id = "in-m-" + q.id; inp.value = cur;
-      inp.setAttribute("aria-label", t("fillAria")); inp.autocomplete = "off"; inp.spellcheck = false;
+      var row = el("div", "fillrow"), inp = textInput("in-m-" + q.id, cur, t("fillAria"));
       row.appendChild(inp); c.appendChild(row);
       if (locked) {
         inp.disabled = true;
         var okE = fillOk(q, cur);
         inp.className = okE ? "ok" : "bad";
-        c.appendChild(el("div", "why", (okE ? t("correct") : t("refAns", { a: q.answer || (q.accept || [])[0] })) + (q.why || "")));
+        c.appendChild(el("div", "why", (okE ? t("correct") : t("refAns", { a: refAnswer(q) })) + (q.why || "")));
         if (!okE) c.classList.add("missed");
       } else {
         var tmr;
         inp.addEventListener("input", function () {
           st.draft[q.id] = inp.value;
-          clearTimeout(tmr); tmr = setTimeout(function () { save(key); updateMockBar(); }, 400);
+          clearTimeout(tmr); tmr = setTimeout(function () { save("mock"); updateMockBar(); }, 400);
         });
       }
       return c;
@@ -1146,14 +1144,11 @@
         exp = expOf(q, i);
       } else if (chosen) { bt.classList.add(multi ? "sel" : "picked"); }
       bt.setAttribute("aria-pressed", chosen ? "true" : "false");
-      bt.innerHTML = optHtml(q, i, pos, label, exp, multi);
+      bt.innerHTML = optHtml(pos, q.opts[i].t, label, exp, multi);
       if (!locked) bt.addEventListener("click", function () {
-        if (multi) {
-          var a = (st.draft[q.id] || []).slice(), k = a.indexOf(i);
-          if (k >= 0) a.splice(k, 1); else a.push(i);
-          a.sort(); if (a.length) st.draft[q.id] = a; else delete st.draft[q.id];
-        } else st.draft[q.id] = i;
-        save(key); rerender();
+        if (multi) { var a = toggled(st.draft[q.id], i); if (a.length) st.draft[q.id] = a; else delete st.draft[q.id]; }
+        else st.draft[q.id] = i;
+        commit();
       });
       opts.appendChild(bt);
     });
@@ -1181,7 +1176,7 @@
     nav.innerHTML = "";
     if (!st.paper.length) { nav.hidden = true; return; }
     nav.hidden = false;
-    var tg = el("button", "btn ghost small", t("card") + " " + (NAV_OPEN ? "▴" : "▾")); tg.type = "button";
+    var tg = button("btn ghost small", t("card") + " " + (NAV_OPEN ? "▴" : "▾"));
     tg.setAttribute("aria-expanded", NAV_OPEN ? "true" : "false");
     tg.addEventListener("click", function () { NAV_OPEN = !NAV_OPEN; paperNav(bar); });
     nav.appendChild(tg);
@@ -1192,7 +1187,7 @@
       if (st.submitted) { var ok = wrong.indexOf(id) < 0; cls += ok ? " ok" : " bad"; tip += ok ? t("qOk") : t("qBad"); }
       else { var an = answeredDraft(st.draft[id]); if (an) cls += " ans"; tip += an ? t("qAns") : t("qUnans"); }
       if (fl) { cls += " flg"; tip += t("qFlg"); }
-      var cb = el("button", cls, String(i + 1)); cb.type = "button"; cb.title = tip; cb.setAttribute("aria-label", tip);
+      var cb = button(cls, String(i + 1)); cb.title = tip; cb.setAttribute("aria-label", tip);
       cb.addEventListener("click", function () { NAV_OPEN = false; paperNav(bar); jumpTo(id); });
       grid.appendChild(cb);
     });
@@ -1200,6 +1195,10 @@
     nav.appendChild(el("p", "legend", st.submitted ? t("legendDone") : t("legendLive")));
   }
 
+  /* a link to a card on the current paper, labelled with its question number */
+  function qLink(id, cls, tail) {
+    return "<a" + (cls ? ' class="' + cls + '"' : "") + ' href="#q-m-' + id + '">' + t("qn", { i: STATE.mock.paper.indexOf(id) + 1 }) + (tail || "") + "</a>";
+  }
   function flaggedIds() {
     var st = STATE.mock, f = st.flags || {};
     return st.paper.filter(function (id) { return f[id]; });
@@ -1216,13 +1215,13 @@
     box.innerHTML = "";
     if (!ids.length) { box.innerHTML = '<p class="flaghint">' + t("flagHintStrip") + "</p>"; box.hidden = false; return; }
     var links = ids.map(function (id) {
-      var idx = st.paper.indexOf(id), q = BANKS.mock.imap[id], cls = "flaglink";
-      if (st.submitted) cls += scoreOf(q, st.draft[id]) >= 0.999 ? " ok" : " bad";
+      var cls = "flaglink";
+      if (st.submitted) cls += scoreOf(BANKS.mock.imap[id], st.draft[id]) >= 0.999 ? " ok" : " bad";
       else if (!answeredDraft(st.draft[id])) cls += " blank";
-      return '<a class="' + cls + '" href="#q-m-' + id + '">' + t("qn", { i: idx + 1 }) + "</a>";
+      return qLink(id, cls);
     }).join(" ");
     var p = el("p", "flaglist", t("flagList", { n: ids.length }) + links);
-    var nb = el("button", "btn ghost small", t("nextFlag")); nb.type = "button";
+    var nb = button("btn ghost small", t("nextFlag"));
     nb.addEventListener("click", jumpToNextFlag);
     var cb = confirmBtn(t("clearFlags"), t("clearFlagsArmed"), function () { st.flags = {}; save("mock"); render("mock"); }, "btn ghost small", "btn warn small");
     var acts2 = el("div", "flagacts"); acts2.appendChild(nb); acts2.appendChild(cb);
@@ -1243,23 +1242,23 @@
     var started = !st.submitted && Object.keys(st.draft).some(function (k) { return answeredDraft(st.draft[k]); });
     var redo;
     if (started) redo = confirmBtn(t("redraw"), t("redrawArmed"), drawNew, "btn ghost", "btn warn");
-    else { redo = el("button", st.submitted ? "btn" : "btn ghost", t("redraw")); redo.type = "button"; redo.addEventListener("click", drawNew); }
+    else { redo = button(st.submitted ? "btn" : "btn ghost", t("redraw")); redo.addEventListener("click", drawNew); }
     if (!st.submitted) {
       var a = st.paper.filter(function (id) { return answeredDraft(st.draft[id]); }).length;
       var unseen = BANKS.mock.items.filter(function (q) { return st.seen[q.id] == null && st.paper.indexOf(q.id) < 0; }).length;
-      info.innerHTML = t("mockBar", { a: a, n: n }) + clockHtml() + '<span class="fresh">' + t("fresh", { u: unseen }) + "</span>";
+      info.innerHTML = t("mockBar", { a: a, n: n }) + clockHtml() + span("fresh", t("fresh", { u: unseen }));
       if (!st.timer.startedAt) {
         var lim = el("select", "limsel"); lim.setAttribute("aria-label", t("limitAria"));
-        MINUTES.forEach(function (x) { lim.appendChild(new Option(x.m ? t("limitMin", { m: x.m }) + (x.note ? (S === STR.zh ? "（" + x.note + "）" : " (" + x.note + ")") : "") : t("noLimit"), String(x.m))); });
+        MINUTES.forEach(function (x) { lim.appendChild(new Option(x.m ? t("limitMin", { m: x.m }) + (x.note ? (ZH ? "（" + x.note + "）" : " (" + x.note + ")") : "") : t("noLimit"), String(x.m))); });
         lim.value = String(st.timer.limit);
         lim.addEventListener("change", function () { st.timer.limit = +lim.value; save("mock"); });
-        var go = el("button", "btn", t("startTimer")); go.type = "button";
+        var go = button("btn", t("startTimer"));
         go.addEventListener("click", function () { st.timer.startedAt = new Date().toISOString(); save("mock"); updateMockBar(); });
         acts.appendChild(lim); acts.appendChild(go);
       }
       var left = n - a, sb;
       if (left) sb = confirmBtn(t("submitLeft", { n: left }), t("submitArmed", { n: left }), function () { submitMock(false); }, "btn", "btn warn");
-      else { sb = el("button", "btn", t("submitAll")); sb.type = "button"; sb.disabled = !n; sb.addEventListener("click", function () { submitMock(false); }); }
+      else { sb = button("btn", t("submitAll")); sb.disabled = !n; sb.addEventListener("click", function () { submitMock(false); }); }
       acts.appendChild(sb);
       acts.appendChild(redo);
     } else {
@@ -1277,11 +1276,11 @@
     var us = unitStats(items, function (q) { return scoreOf(q, st.draft[q.id]); });
     items.forEach(function (q) { var sc = scoreOf(q, st.draft[q.id]); s += sc; if (sc < 0.999) wrong.push(q.id); });
     var units = {};
-    LECS.forEach(function (u) { if (us[u].m) units[u] = { s: Math.round(us[u].s * 100) / 100, m: us[u].m }; });
+    LECS.forEach(function (u) { if (us[u].m) units[u] = { s: round2(us[u].s), m: us[u].m }; });
     var flags = flaggedIds(), picks = {};
     /* a fill that was typed and then cleared is blank, not an answer */
     wrong.concat(flags).forEach(function (id) { if (answeredDraft(st.draft[id])) picks[id] = st.draft[id]; });
-    var res = { at: new Date().toISOString(), s: Math.round(s * 100) / 100, m: items.length, units: units, wrong: wrong, flags: flags, picks: picks, used: used, limit: used != null ? limit : null, auto: !!auto };
+    var res = { at: new Date().toISOString(), s: round2(s), m: items.length, units: units, wrong: wrong, flags: flags, picks: picks, used: used, limit: used != null ? limit : null, auto: !!auto };
     st.result = res; st.submitted = true;
     var book = st.book = mockBook();
     bookAdd(book, res, ++book.papers);
@@ -1301,10 +1300,10 @@
       var r = st.result, p = pct(r.s, r.m), us = {};
       LECS.forEach(function (u) { us[u] = r.units[u] || { s: 0, m: 0 }; });
       var prev = hist.filter(function (h) { return h.at !== r.at; }).slice(-1)[0];
-      var cmp = prev ? '<span class="sub">' + t("prevPaper", { p: pct(prev.s, prev.m) }) + "</span>" : "";
+      var cmp = prev ? span("sub", t("prevPaper", { p: pct(prev.s, prev.m) })) : "";
       /* a question removed from the pool since this paper was handed in has no card to link to */
       var wrongHere = r.wrong.filter(function (id) { return st.paper.indexOf(id) >= 0; });
-      var wl = wrongHere.length ? wrongHere.map(function (id) { return '<a href="#q-m-' + id + '">' + t("qn", { i: st.paper.indexOf(id) + 1 }) + "</a>"; }).join(" ") : (r.wrong.length ? "" : t("allRight"));
+      var wl = wrongHere.length ? wrongHere.map(function (id) { return qLink(id); }).join(" ") : (r.wrong.length ? "" : t("allRight"));
       var ranked = LECS.filter(function (u) { return us[u].m > 0; }).sort(function (x, y) { return pct(us[x].s, us[x].m) - pct(us[y].s, us[y].m); });
       var weakest = ranked[0];
       var tip = weakest && pct(us[weakest].s, us[weakest].m) < 80 ? '<p style="margin:8px 0 0">' + t("weakest", { u: weakest }) + "</p>" : "";
@@ -1316,7 +1315,7 @@
         var unflaggedWrong = r.wrong.filter(function (id) { return fids.indexOf(id) < 0; }).length;
         var fl = fids.map(function (id) {
           var bad = r.wrong.indexOf(id) >= 0;
-          return '<a class="flaglink ' + (bad ? "bad" : "ok") + '" href="#q-m-' + id + '">' + t("qn", { i: st.paper.indexOf(id) + 1 }) + (bad ? " ✗" : " ✓") + "</a>";
+          return qLink(id, "flaglink " + (bad ? "bad" : "ok"), bad ? " ✗" : " ✓");
         }).join(" ");
         fline = '<p class="wrongs">' + t("flaggedList") + fl + "</p>" +
           '<p class="flagcal">' + t("flagCal", { n: fids.length, w: fwrong, u: unflaggedWrong }) + (unflaggedWrong > fwrong ? t("flagCalBad") : t("flagCalGood")) + "</p>";
@@ -1325,8 +1324,7 @@
       box.hidden = false;
     }
     if (hist.length > 1) {
-      var agg = {};
-      LECS.forEach(function (u) { agg[u] = { s: 0, m: 0 }; });
+      var agg = zeroByLec();
       hist.forEach(function (h) { Object.keys(h.units || {}).forEach(function (u) { if (agg[u]) { agg[u].s += h.units[u].s; agg[u].m += h.units[u].m; } }); });
       var trend = hist.slice(-8).map(function (h) { return pct(h.s, h.m) + "%"; }).join(" → ");
       box.appendChild(el("details", "weak", "<summary>" + t("history", { n: hist.length }) + '</summary><p class="empty" style="margin:8px 0 0">' + t("recent") + trend + "</p>" + statsTable(agg)));
@@ -1364,7 +1362,7 @@
     if (c.limit) return t("remain") + ' <b class="clock' + (c.left < 300 ? " low" : "") + '">' + mmss(c.left) + "</b>";
     return t("usedLbl") + ' <b class="clock">' + mmss(c.used) + "</b>";
   }
-  function clockHtml() { var c = clockState(); return c ? ' · <span class="clockwrap">' + clockText(c) + "</span>" : ""; }
+  function clockHtml() { var c = clockState(); return c ? " · " + span("clockwrap", clockText(c)) : ""; }
   setInterval(function () {
     var st = STATE.mock; if (!st || st.submitted) return;
     var c = clockState(); if (!c) return;
@@ -1384,9 +1382,9 @@
       var r = ps.ans[q.id], f = firstScore(q, r);
       if (f == null) return;
       lec[q.lec].answered++; lec[q.lec].firstScore += f;
-      if (f < 0.999) missed.push({ id: q.id, lec: q.lec, group: (BANKS.practice.gmap[q.g] || {}).title || q.g, type: q.type, stem: plain(q.stem).slice(0, 240), firstAnswer: plain(pickText(q, r.first)), correct: q.type === "fill" ? plain(q.answer || (q.accept || [])[0]) : plain(pickText(q, q.ans)), redoneRight: mastered(q) });
+      if (f < 0.999) missed.push({ id: q.id, lec: q.lec, group: (BANKS.practice.gmap[q.g] || {}).title || q.g, type: q.type, stem: plain(q.stem).slice(0, 240), firstAnswer: plain(pickText(q, r.first)), correct: plain(q.type === "fill" ? refAnswer(q) : pickText(q, q.ans)), redoneRight: mastered(q) });
     });
-    LECS.forEach(function (u) { lec[u].firstScore = Math.round(lec[u].firstScore * 100) / 100; });
+    LECS.forEach(function (u) { lec[u].firstScore = round2(lec[u].firstScore); });
     SA.forEach(function (s) {
       if (!saStarted(s)) return;
       var k = saScore(s), r = saRec(s);
@@ -1409,7 +1407,7 @@
     };
   }
   function exportPanel(host) {
-    var wrap = el("div", "export"), btn = el("button", "reset", t("export")); btn.type = "button";
+    var wrap = el("div", "export"), btn = button("reset", t("export"));
     var panel = el("div", "export-panel"); panel.hidden = true;
     btn.addEventListener("click", function () {
       panel.hidden = !panel.hidden;
@@ -1420,7 +1418,7 @@
       var ta = document.createElement("textarea"); ta.readOnly = true; ta.value = json; ta.rows = 6; ta.setAttribute("aria-label", t("export"));
       panel.appendChild(ta);
       var row = el("div", "qfoot");
-      var cp = el("button", "btn", t("exportCopy")); cp.type = "button";
+      var cp = button("btn", t("exportCopy"));
       cp.addEventListener("click", function () {
         function done() { cp.textContent = t("exportCopied"); setTimeout(function () { cp.textContent = t("exportCopy"); }, 1500); }
         try { navigator.clipboard.writeText(json).then(done, function () { ta.select(); document.execCommand("copy"); done(); }); }
@@ -1488,22 +1486,22 @@
       var sp = part.querySelector(".secprac[id]");
       if (sp) { var pa = el("a", "prac", t("railPrac")); pa.href = "#" + sp.id; rail.appendChild(pa); }
     }
+    /* the last of these elements whose top has scrolled above the line */
+    function lastAbove(list, line) {
+      var last = null;
+      for (var i = 0; i < list.length; i++) { if (list[i].getBoundingClientRect().top <= line) last = list[i]; else break; }
+      return last;
+    }
     function update() {
       ticking = false;
-      var line = window.innerHeight * 0.3, p = null, tp = null;
-      for (var i = 0; i < parts.length; i++) { if (parts[i].getBoundingClientRect().top <= line) p = parts[i]; else break; }
-      if (!p) p = parts[0];
+      var line = window.innerHeight * 0.3, p = lastAbove(parts, line) || parts[0];
       if (p !== curPart) {
         if (curPart && links[curPart.id]) links[curPart.id].classList.remove("on");
         curPart = p; curTopic = null;
         if (p && links[p.id]) links[p.id].classList.add("on");
         buildRail(p);
       }
-      if (p) {
-        var tps = p.querySelectorAll("article.topic[id]");
-        for (var j = 0; j < tps.length; j++) { if (tps[j].getBoundingClientRect().top <= line) tp = tps[j]; else break; }
-      }
-      var tid = tp ? tp.id : null;
+      var tp = p ? lastAbove(p.querySelectorAll("article.topic[id]"), line) : null, tid = tp ? tp.id : null;
       if (tid !== curTopic) {
         if (curTopic && items[curTopic]) items[curTopic].classList.remove("on");
         curTopic = tid;
@@ -1547,6 +1545,6 @@
     initSpy();
   }
 
-  window.StudyGuide = { t: t, el: el, renderTex: function (root) { renderTex(root || document.body); }, report: function () { return buildReport(); } };
+  window.StudyGuide = { t: t, el: el, renderTex: function (root) { renderTex(root || document.body); }, report: buildReport };
   boot();
 })();
