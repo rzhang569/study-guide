@@ -746,7 +746,7 @@ class Audits(unittest.TestCase):
         for qid, order in golden.items():
             self.assertEqual(b.seeded_order(f'{key}:{qid}', 4), order, qid)
         p1 = next(q for q in json.loads((DEMO / 'practice.json').read_text(encoding='utf-8'))['items'] if q['id'] == 'p1-1')
-        self.assertEqual(b.display_order(p1, key).index(p1['ans']), 'ABCD'.index(p1['show']))
+        self.assertEqual(b.display_order(p1, key), [3, 0, 1, 2])   # "show": "B" moves the answer (index 0) to B
 
 class EdgeCases(CourseCase):
     def test_non_json_numeric_constants_are_rejected(self):

@@ -75,8 +75,10 @@ export async function launch(chromePath, {blockUrls = []} = {}) {
   });
   const conn = await connect(wsUrl);
   return {
-    async newPage() {
-      const {targetId} = await conn.send('Target.createTarget', {url: 'about:blank'});
+    /* isolated: a separate browser context, so the page gets its own localStorage */
+    async newPage({isolated = false} = {}) {
+      const ctx = isolated ? await conn.send('Target.createBrowserContext') : {};
+      const {targetId} = await conn.send('Target.createTarget', {url: 'about:blank', ...ctx});
       const {sessionId} = await conn.send('Target.attachToTarget', {targetId, flatten: true});
       const page = new Page((method, params) => conn.send(method, params, sessionId));
       conn.on(msg => { if (msg.sessionId === sessionId) page.handle(msg); });

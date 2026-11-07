@@ -793,3 +793,17 @@ test('mock items without a lecture do not crash drawing, cards, hand-in, noteboo
   assert.deepEqual(bookIds(h), ['m9']);
   assert.equal(h.window.StudyGuide.report().mock.last.wrong[0].id, 'm9');
 });
+
+test('option order keeps its golden values, the same ones build.py pins (tests/test_build.py)', () => {
+  const read = f => JSON.parse(fs.readFileSync(path.join(DEMO, f), 'utf8'));
+  const course = read('course.json');
+  const h = load({data: {config: {storageKey: course.storageKey, lectures: course.lectures}, practice: read('practice.json'),
+    mock: read('mock.json'), short: read('short.json')}});
+  assert.deepEqual(clone(h.api.seededOrder('test:x', 8)), [1, 7, 6, 5, 4, 0, 3, 2]);
+  assert.deepEqual(clone(h.api.seededOrder('k:题😀', 6)), [1, 5, 3, 0, 4, 2]);
+  assert.deepEqual(clone(h.api.seededOrder('', 5)), [4, 0, 2, 1, 3]);
+  const golden = {'p1-1': [3, 1, 2, 0], 'p1-4': [0, 1, 2, 3], 'p1-6': [0, 3, 1, 2], 'm1-4': [0, 3, 1, 2], 'm1-5': [2, 3, 1, 0], 'm1-10': [2, 0, 3, 1]};
+  for (const [id, order] of Object.entries(golden)) assert.deepEqual(clone(h.api.seededOrder(`${course.storageKey}:${id}`, 4)), order, id);
+  // p1-1 has "show": "B", so its answer (stored index 0) moves to the second slot
+  assert.deepEqual(clone(h.api.displayOrder(h.api.BANKS.practice.imap['p1-1'])), [3, 0, 1, 2]);
+});
