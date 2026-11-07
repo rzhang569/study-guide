@@ -15,6 +15,20 @@ mistake notebook. CI runs all three suites (`.github/workflows/test.yml`) on Ubu
 3.9 and 3.13) and on Windows (Python 3.13), with `REQUIRE_BROWSER=1`, so a missing browser
 fails the job instead of skipping.
 
+For refactors of `engine.js`, `page.css` or `build.py` there is also a before/after check (not part of CI):
+
+```bash
+node tests/browser/compare.mjs main          # about 3 minutes; --quick: 1280 px only, about 1 minute
+```
+
+It builds the current demo with the skill folder from a git ref (default `main`) and with the
+working tree, drives both pages through the same scripted tour in headless Chrome (English and
+Chinese, six window widths and print media, with a seeded `Math.random` and a frozen clock) and
+compares every element's tag, attributes, text and full computed style, `::before`/`::after`
+included. It exits 1 at the first checkpoint that differs and prints what changed. A refactor
+should end with `same: N checkpoints match`; it only sees the states the tour reaches, so a CSS
+class that the demo never renders still needs a source search before it is removed.
+
 The Node side finds what it needs by itself:
 
 - Browser: `CHROME_PATH`, then the usual Chrome locations on macOS, Linux and Windows
