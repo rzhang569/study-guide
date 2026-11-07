@@ -405,9 +405,19 @@ def display_order(q, key):
     return order
 
 
+def chance_at_least(ps, k):
+    """Probability that at least k of these independent events happen, where event i has probability ps[i]."""
+    dist = [1.0]  # dist[j] = probability that exactly j have happened so far
+    for p in ps:
+        dist = [a * (1 - p) + b * p for a, b in zip(dist + [0.0], [0.0] + dist)]
+    return sum(dist[k:])
+
+
 def letter_audit(name, items, key, rep):
     """Warn when the correct answer is shown as the same letter too often. The engine shuffles options per
-    question, so a small bank can still come out lopsided (e.g. 8 of 15 answers shown as D)."""
+    question, so a small bank can still come out lopsided (e.g. 8 of 15 answers shown as D). A fair shuffle
+    often lands a small bank a little unevenly (4 of 9 at one letter happens more than half the time), so it
+    warns only when a fair shuffle would pile up this many at one letter less than 10% of the time."""
     singles = [q for q in items if q.get("type", "single") == "single" and isinstance(q.get("opts"), list)
                and len(q["opts"]) >= 3 and not q.get("fixed") and isinstance(q.get("ans"), int) and 0 <= q["ans"] < len(q["opts"])]
     if len(singles) < 8:
@@ -420,9 +430,10 @@ def letter_audit(name, items, key, rep):
         counts[pos] = counts.get(pos, 0) + 1
     top_pos = max(counts, key=counts.get)
     top, n = counts[top_pos], len(singles)
-    if top / n <= 0.4:
-        return
     width = max(len(q["opts"]) for q in singles)
+    fair = [1 / len(q["opts"]) for q in singles if top_pos < len(q["opts"])]
+    if top / n <= 0.4 or width * chance_at_least(fair, top) >= 0.1:  # width: any letter could be the one
+        return
     dist = ", ".join(f"{letters[p]} {counts.get(p, 0)}" for p in range(width))
     need = top - int(0.35 * n)
     tips = []

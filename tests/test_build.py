@@ -712,7 +712,9 @@ class Audits(unittest.TestCase):
             return [choice(str(i), opts=['one', 'two', 'three', 'four'],
                            show='A' if i < at_a else 'BCD'[i % 3]) for i in range(total)]
         self.assertEqual(warnings(lettered(4), b.letter_audit), '')        # 40% is allowed
-        self.assertIn('shown as A in 5/10', warnings(lettered(5), b.letter_audit))
+        self.assertEqual(warnings(lettered(4, 9), b.letter_audit), '')     # 4/9: a fair shuffle does this often
+        self.assertEqual(warnings(lettered(5), b.letter_audit), '')        # 5/10: also common by chance
+        self.assertIn('shown as A in 6/10', warnings(lettered(6), b.letter_audit))
         self.assertEqual(warnings(lettered(7, 7), b.letter_audit), '')     # fewer than 8 questions: no audit
 
     def test_true_false_labelled_single_is_audited_as_true_false(self):
