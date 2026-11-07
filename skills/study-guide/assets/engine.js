@@ -50,7 +50,7 @@
       noAnswer: "没作答", noPick: "没选",
       notePractice: "练习第一次没做对，当时答的是 {a}", noteMock: "第 {k} 套模考做错", notePick: "，当时答的是 {a}",
       noteFlag: "第 {k} 套模考标记过", noteFlagOk: "，当时做对了",
-      tagWrong: "错过", tagFlag: "🚩 标记过", tagOk: "重做对了", clearRedo: "清掉重做记录，再做一次",
+      tagWrong: "错过", tagFlag: "🚩 标记过", tagOk: "重做对了", clearRedo: "清掉重做记录，再做一次", bookRemove: "从错题本移除", bookRemoveArmed: "确定移除？再点一次",
       bookBar: "错题本 <b>{n}</b> 道（错过 {w} · 标记过 {f}）· 还没重做对 <b>{l}</b> 道",
       fTodo: "还没重做对", fWrong: "只看错过的", fFlag: "只看标记过的", fAll: "全部",
       bookEmptyF: "这一类没有题了。", bookEmpty: "还没有错题。练习题第一次做错、模考交卷后做错或标记过的题，都会自动收进来。",
@@ -121,7 +121,7 @@
       noAnswer: "no answer", noPick: "nothing picked",
       notePractice: "Missed on the first practice try; you answered {a}", noteMock: "Wrong on mock paper {k}", notePick: "; you answered {a}",
       noteFlag: "Flagged on mock paper {k}", noteFlagOk: ", answered correctly",
-      tagWrong: "missed", tagFlag: "🚩 flagged", tagOk: "mastered", clearRedo: "Clear the redo and try again",
+      tagWrong: "missed", tagFlag: "🚩 flagged", tagOk: "mastered", clearRedo: "Clear the redo and try again", bookRemove: "Remove from notebook", bookRemoveArmed: "Remove it? Click again",
       bookBar: "<b>{n}</b> questions (missed {w} · flagged {f}) · <b>{l}</b> not yet mastered",
       fTodo: "Not mastered", fWrong: "Missed", fFlag: "Flagged", fAll: "All",
       bookEmptyF: "Nothing left in this view.", bookEmpty: "No mistakes yet. First-try practice misses and wrong or flagged mock questions land here automatically.",
@@ -327,7 +327,7 @@
     function atom() {
       if (s[i] === "(" || s[i] === "[") { i++; var v = expr(); if (s[i] === ")" || s[i] === "]") i++; else fail(); return pc(v); }
       var m = s.slice(i).match(/^(\d+\.?\d*|\.\d+)(e[-+]?\d+)?/);
-      if (m) { i += m[0].length; return pc(parseFloat(m[0])); }
+      if (m) { i += m[0].length; if (s[i] === ".") fail(); return pc(parseFloat(m[0])); }  /* "2.5.3" is not 2.5 × .3 */
       var fn = s.slice(i).match(/^(sqrt|ln|log|exp|pi|e)/);
       if (!fn) fail();
       i += fn[0].length;
@@ -353,6 +353,8 @@
   function numsOf(v, want) {
     var s = String(v == null ? "" : v).replace(/[`'"“”‘’]/g, "").trim().split(/[=≈]/).pop().replace(/^[~～]/, "").trim();
     if (!s) return null;
+    /* "1,000" is one thousand when a single number is wanted; with a vector answer it stays the list (1, 0) */
+    if (!(want > 1) && /^[-+−]?[1-9]\d{0,2}(,\d{3})+(\.\d+)?$/.test(s)) s = s.replace(/,/g, "");
     var inner = s.replace(/^[(\[（［【{]/, "").replace(/[)\]）］】}]$/, "");
     var parts = splitTop(inner);
     if (parts.length === 1 && want > 1 && /\s/.test(inner.trim())) parts = inner.trim().split(/\s+/);
@@ -512,9 +514,10 @@
     c.appendChild(el("p", "qmeta", metaLine(q, badge)));
     c.appendChild(el("div", "qstem", num + ". " + q.stem));
     function rerender() { refreshQ(q); return document.getElementById("q-" + where + "-" + q.id); }
-    /* a slip of the finger: wipe this question's record so the next answer counts as the first */
+    /* a slip of the finger: wipe this question's record so the next answer counts as the first; outside the
+       notebook its notebook redo goes too, or a later miss would show up as already mastered */
     function undoBtn() {
-      var w = confirmBtn(t("undo"), t("undoArmed"), function () { delete store[q.id]; save(key); rerender(); }, "reset undo", "reset undo armed");
+      var w = confirmBtn(t("undo"), t("undoArmed"), function () { delete store[q.id]; if (where !== "b") delete st.redo[q.id]; save(key); rerender(); }, "reset undo", "reset undo armed");
       w.firstChild.title = t("undoTitle");
       return w;
     }
@@ -671,7 +674,11 @@
     var done = 0, s = 0;
     list.forEach(function (q) { var f = firstScore(q, st.ans[q.id]); if (f != null) { done++; s += f; } });
     info.innerHTML = t("practiceBar", { d: done, n: list.length, s: fmt(s) }) + (done ? t("pctParen", { p: pct(s, done) }) : "");
-    acts.appendChild(confirmBtn(t("clearPractice"), t("clearArmed"), function () { st.ans = {}; save("practice"); render("practice"); }, "reset", "reset armed"));
+    /* clears the practice bank (every scope) and its notebook redos; short answers and mock mistakes stay */
+    acts.appendChild(confirmBtn(t("clearPractice"), t("clearArmed"), function () {
+      Object.keys(st.ans).concat(BANKS.practice.items.map(function (q) { return q.id; })).forEach(function (id) { delete st.redo[id]; });
+      st.ans = {}; save("practice"); render("practice");
+    }, "reset", "reset armed"));
     var box = document.getElementById("sum-practice");
     var us = unitStats(BANKS.practice.items.filter(function (q) { return q.type !== "card"; }), function (q) { return firstScore(q, st.ans[q.id]); });
     var any = LECS.some(function (u) { return us[u].m > 0; });
@@ -707,12 +714,14 @@
     if (p.accept && rec.v != null && !rec.self) return fillOk(p, rec.v);
     return rec.ok == null ? null : rec.ok;
   }
+  /* first-try credit: right with no miss, or "count it" after one try (the checker misread a right answer) */
+  function stepFirst(p, rec) { return stepOk(p, rec) === true && (!rec.tries || (!!rec.fix && rec.tries <= 1)); }
   function saScore(s) {
     var r = saRec(s), sc = 0, mx = 0, fin = 0;
     s.steps.forEach(function (p, i) {
       var pts = p.pts || 1;
       mx += pts;
-      if (stepOk(p, r[i]) === true) { fin += pts; if (!r[i].tries || (r[i].fix && r[i].tries <= 1)) sc += pts; }
+      if (stepOk(p, r[i]) === true) { fin += pts; if (stepFirst(p, r[i])) sc += pts; }
     });
     return { s: sc, f: fin, m: mx };  /* s counts only steps right on the first try; f also counts steps fixed later */
   }
@@ -750,10 +759,11 @@
         order.forEach(function (j, n) {
           var b = optEl(), label = "", exp = "";
           if (rec.shown && j === p.ans) { b.classList.add("right"); label = t("right"); }
-          else if (rec.shown && tried.indexOf(j) >= 0) { b.classList.add("wrong"); label = "✗"; if (p.ow && p.ow[j]) exp = '<span class="oexp">' + p.ow[j] + "</span>"; }
+          else if (tried.indexOf(j) >= 0) { b.classList.add("wrong"); label = "✗"; if (p.ow && p.ow[j]) exp = '<span class="oexp">' + p.ow[j] + "</span>"; }
           b.innerHTML = '<span class="bub">' + L[n] + '</span><span class="obody"><span class="otext">' + p.opts[j] + (label ? '<span class="olabel">' + label + "</span>" : "") + "</span>" + exp + "</span>";
           b.addEventListener("click", function () {
-            if (!rec.shown) setStep(s, i, { v: j, ok: j === p.ans, shown: true, tried: [j] });
+            /* a reopened step keeps its earlier misses in tried */
+            if (!rec.shown) setStep(s, i, { v: j, ok: j === p.ans, shown: true, tried: tried.indexOf(j) < 0 ? tried.concat([j]) : tried });
             else if (tried.indexOf(j) < 0) setStep(s, i, { tried: tried.concat([j]) });
           });
           row.appendChild(b);
@@ -769,8 +779,9 @@
           if (rec.v != null && !rec.self) inp.className = stepOk(p, rec) ? "ok" : "bad";
           box.appendChild(fr);
         } else {
-          var msg = el("p", "fillhint");
-          if (rec.tries) { inp.className = "bad"; msg.textContent = t("tries", { n: rec.tries > 1 ? t("triesN", { k: rec.tries }) : "" }); }
+          /* tries without a typed value come from reopening a self-marked step: it is still done on paper */
+          var typedMiss = !!rec.tries && rec.v != null, msg = el("p", "fillhint");
+          if (typedMiss) { inp.className = "bad"; msg.textContent = t("tries", { n: rec.tries > 1 ? t("triesN", { k: rec.tries }) : "" }); }
           else msg.hidden = true;
           var chk = el("button", "btn", t("check")); chk.type = "button";
           var go = function () {
@@ -784,9 +795,9 @@
           };
           chk.addEventListener("click", go);
           inp.addEventListener("keydown", function (e) { if (e.key === "Enter") go(); });
-          var peek = el("button", "btn ghost", rec.tries ? t("peek") : t("peekPaper")); peek.type = "button";
+          var peek = el("button", "btn ghost", typedMiss ? t("peek") : t("peekPaper")); peek.type = "button";
           peek.addEventListener("click", function () {
-            if (rec.tries) setStep(s, i, { v: inp.value, ok: false, shown: true });
+            if (typedMiss) setStep(s, i, { v: inp.value, ok: false, shown: true });
             else setStep(s, i, { shown: true, self: true });
           });
           fr.appendChild(chk); fr.appendChild(peek);
@@ -810,11 +821,16 @@
           no.addEventListener("click", function () { setStep(s, i, { ok: false }); });
           sf.appendChild(yes); sf.appendChild(no); sf.appendChild(el("span", "empty", t("selfJudge")));
         } else if (okS === false) {
-          /* reopen just this step, keeping what was typed so it can be edited */
+          /* reopen just this step, keeping what was typed so it can be edited. The miss stays counted in tries
+             (a typed miss already was), so a later right answer earns "after fixes" credit, never first-try credit */
           var redo = el("button", "btn ghost", t("redoStep")); redo.type = "button";
           redo.addEventListener("click", function () {
             var r0 = STATE.practice.sa[s.id] || {};
-            if (p.accept && rec.v != null && !rec.self) r0[i] = { v: rec.v, tries: rec.tries || 1 }; else delete r0[i];
+            if (p.accept && rec.v != null && !rec.self) r0[i] = { v: rec.v, tries: rec.tries || 1 };
+            else {
+              r0[i] = { tries: (rec.tries || 0) + 1 };
+              if (p.opts) r0[i].tried = rec.tried || (rec.v != null ? [rec.v] : []);
+            }
             save("practice"); refreshSA(s);
             var e = document.getElementById("sa-in-" + where + "-" + s.id + "-" + i); if (e) { e.focus(); e.select(); }
           });
@@ -928,6 +944,30 @@
     if (Array.isArray(v)) return v.length ? v.map(function (i) { return letterOf(q, i); }).sort().join(", ") : t("noPick");
     return q.opts && q.opts[v] ? letterOf(q, v) + " (" + plain(q.opts[v].t).slice(0, 40) + ")" : t("noAnswer");
   }
+  /* Mock mistakes have their own store, so they outlast the 20-paper history and keep their paper numbers:
+     mock.book = { v: 1, papers: <papers handed in so far>, items: { id: [{ paper, wrong, flagged, pick? }] } }.
+     pick is the stored answer (original option indexes). An entry stays until the student removes it; a right
+     redo marks it mastered. A save from before the store is rebuilt from the history it still has: until the
+     next hand-in that is done on the fly, so loading never rewrites the old state. */
+  function bookAdd(book, h, k) {
+    var wrong = h.wrong || [], flags = h.flags || [];
+    wrong.concat(flags).forEach(function (id) {
+      var w = wrong.indexOf(id) >= 0, hit = { paper: k, wrong: w, flagged: flags.indexOf(id) >= 0 };
+      /* skip questions left blank, so an unfinished paper does not flood the notebook */
+      if (w && h.picks && !answeredDraft(h.picks[id])) return;
+      var list = book.items[id] = Array.isArray(book.items[id]) ? book.items[id] : [];
+      if (list.some(function (x) { return x.paper === k; })) return;
+      if (h.picks && answeredDraft(h.picks[id])) hit.pick = h.picks[id];
+      list.push(hit);
+    });
+  }
+  function mockBook() {
+    var st = STATE.mock, b = st.book;
+    if (b && b.v === 1 && b.items && typeof b.items === "object") return b;
+    b = { v: 1, papers: 0, items: {} };
+    (st.history || []).forEach(function (h) { bookAdd(b, h, ++b.papers); });
+    return b;
+  }
   function bookEntries() {
     var out = {}, order = [];
     function add(q, note, kind) {
@@ -943,19 +983,16 @@
       var r = ps.ans[q.id], f = firstScore(q, r);
       if (f != null && f < 0.999) add(q, t("notePractice", { a: pickText(q, r.first) }), "wrong");
     });
-    (STATE.mock.history || []).forEach(function (h, k) {
-      /* skip questions left blank, so an unfinished paper does not flood the notebook */
-      (h.wrong || []).forEach(function (id) {
-        if (h.picks && !(id in h.picks)) return;
+    var items = mockBook().items;
+    Object.keys(items).filter(function (id) { return BANKS.mock.imap[id] && Array.isArray(items[id]) && items[id].length; })
+      .sort(function (a, b) { return items[a][0].paper - items[b][0].paper; })
+      .forEach(function (id) {
         var q = BANKS.mock.imap[id];
-        if (q) add(q, t("noteMock", { k: k + 1 }) + (h.picks ? t("notePick", { a: pickText(q, h.picks[id]) }) : ""), "wrong");
+        items[id].forEach(function (h) {
+          if (h.wrong) add(q, t("noteMock", { k: h.paper }) + ("pick" in h ? t("notePick", { a: pickText(q, h.pick) }) : ""), "wrong");
+          if (h.flagged) add(q, t("noteFlag", { k: h.paper }) + (h.wrong ? "" : t("noteFlagOk")), "flag");
+        });
       });
-      (h.flags || []).forEach(function (id) {
-        var wrongToo = (h.wrong || []).indexOf(id) >= 0;
-        if (wrongToo && h.picks && !(id in h.picks)) return;
-        add(BANKS.mock.imap[id], t("noteFlag", { k: k + 1 }) + (wrongToo ? "" : t("noteFlagOk")), "flag");
-      });
-    });
     return order.map(function (id) { return out[id]; });
   }
   function mastered(q) { var r = (STATE.practice.redo || {})[q.id]; var f = firstScore(q, r); return f != null && f >= 0.999; }
@@ -970,6 +1007,12 @@
       again.addEventListener("click", function () { delete STATE.practice.redo[q.id]; save("practice"); refreshQ(q); });
       box.appendChild(again);
     }
+    if (mockBook().items[q.id]) box.appendChild(confirmBtn(t("bookRemove"), t("bookRemoveArmed"), function () {
+      var b = STATE.mock.book = mockBook();
+      delete b.items[q.id]; save("mock");
+      if (STATE.practice.redo[q.id]) { delete STATE.practice.redo[q.id]; save("practice"); }
+      renderBook();
+    }, "reset", "reset armed"));
     c.insertBefore(box, c.children[1]);
     return c;
   }
@@ -1043,7 +1086,7 @@
     st.timer = { limit: (st.timer && st.timer.limit != null) ? st.timer.limit : DEF_MIN, startedAt: "" };
     save("mock");
   }
-  function answeredDraft(d) { return d != null && d !== "" && !(Array.isArray(d) && !d.length); }
+  function answeredDraft(d) { return d != null && !(typeof d === "string" && !d.trim()) && !(Array.isArray(d) && !d.length); }
 
   function mockCard(q, num) {
     var key = "mock", st = STATE[key], locked = st.submitted;
@@ -1236,11 +1279,17 @@
     var units = {};
     LECS.forEach(function (u) { if (us[u].m) units[u] = { s: Math.round(us[u].s * 100) / 100, m: us[u].m }; });
     var flags = flaggedIds(), picks = {};
-    wrong.concat(flags).forEach(function (id) { if (st.draft[id] != null) picks[id] = st.draft[id]; });
+    /* a fill that was typed and then cleared is blank, not an answer */
+    wrong.concat(flags).forEach(function (id) { if (answeredDraft(st.draft[id])) picks[id] = st.draft[id]; });
     var res = { at: new Date().toISOString(), s: Math.round(s * 100) / 100, m: items.length, units: units, wrong: wrong, flags: flags, picks: picks, used: used, limit: used != null ? limit : null, auto: !!auto };
     st.result = res; st.submitted = true;
+    var book = st.book = mockBook();
+    bookAdd(book, res, ++book.papers);
+    /* a new miss makes a question a mistake again, even if it was redone right before */
+    var ps = STATE.practice, again = wrong.filter(function (id) { return id in picks && ps.redo[id]; });
+    again.forEach(function (id) { delete ps.redo[id]; });
     st.history = (st.history || []).concat([res]).slice(-20);
-    save("mock"); render("mock");
+    save("mock"); if (again.length) save("practice"); render("mock");
     var sum = document.getElementById("sum-mock"); if (sum) sum.scrollIntoView({ block: "start" });
   }
 
@@ -1341,7 +1390,7 @@
     SA.forEach(function (s) {
       if (!saStarted(s)) return;
       var k = saScore(s), r = saRec(s);
-      sa.push({ id: s.id, lec: s.lec, kind: s.kind, firstScore: k.s, afterFixes: k.f, max: k.m, missedSteps: s.steps.map(function (p, i) { return stepOk(p, r[i]) === true && !(r[i] || {}).tries ? null : i + 1; }).filter(Boolean) });
+      sa.push({ id: s.id, lec: s.lec, kind: s.kind, firstScore: k.s, afterFixes: k.f, max: k.m, missedSteps: s.steps.map(function (p, i) { return stepFirst(p, r[i]) ? null : i + 1; }).filter(Boolean) });
     });
     var hist = ms.history || [], agg = {};
     hist.forEach(function (h) { Object.keys(h.units || {}).forEach(function (u) { agg[u] = agg[u] || { s: 0, m: 0 }; agg[u].s += h.units[u].s; agg[u].m += h.units[u].m; }); });

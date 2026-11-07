@@ -5,7 +5,14 @@ Run from the repository root:
 ```bash
 python3 -m unittest -v
 node --test
+node tests/browser/run.mjs   # real headless Chrome; prints SKIP without Chrome
 ```
+
+The browser tests build the demo in English and Chinese into a temporary folder and drive
+headless Chrome over the DevTools protocol (`tests/browser/cdp.mjs`, no npm packages). They
+cover the practice center, short-answer redo, a full mock paper and its score report, and the
+mistake notebook. CI runs all three suites (`.github/workflows/test.yml`) with
+`REQUIRE_BROWSER=1`, so a missing browser fails the job instead of skipping.
 
 Python uses only the standard library. Node uses built-in modules (`node:test`,
 `node:vm`, filesystem/path loading, and assertions); there are no npm packages.
@@ -36,7 +43,7 @@ a complete closed JSON schema: unknown extension fields remain supported.
 | `lectures` recommended, ordered labels | No container/element type check | List-of-strings E; order retained; omission remains allowed |
 | `mock` optional object | No shape check | Object E, including absent pool |
 | `mock.sections`: tf/single/multi/fill categories, integer counts | Category E only with nonempty pool; counts unchecked | Shape/category/nonnegative-integer E even without pool; zero permitted |
-| Default mock layout: 10 tf, 10 single, 5 multi, 5 fill | Implemented | Default audit and runtime category/order/count tests; empty-array mismatch below |
+| Default mock layout: 10 tf, 10 single, 5 multi, 5 fill | Implemented | Default audit and runtime category/order/count tests; `sections: []` is now a build error and `n: 0` sections are dropped |
 | Section `title`, `desc`, `short` override text | Unchecked | String E if present; valid values embedded unchanged |
 | `mock.weights`: lecture-to-number draw proportions | Missing weight keys W; values unchecked | Object/finite nonnegative-number E, missing keys W (honors item lecture overrides); runtime weighted/capped/zero-weight draws tested |
 | `mock.minutes`: numbers or `{m,note}`, zero unlimited | Unchecked | Nonempty array, finite nonnegative m, string note E; timed/unlimited/unstarted runtime cases |
@@ -123,9 +130,6 @@ only the VM's in-memory copy exposes closure bindings before calling real boot()
 - The reference lists fill `answer` and two tf `opts`; code deliberately provides
   fallbacks for both. Mock flashcards are described as practice-only but code warns
   and skips them rather than rejecting the bank. Characterization tests retain this.
-- Empty `mock.sections: []` means default sections to build.py (`or`) but means no
-  sections to the engine (JavaScript truthiness). The spec defines only omission's
-  default. Both behaviors are pinned; neither spec nor implementation was changed.
 - `show` is ignored for two-option choices and when `fixed` is true. The spec does
   not define precedence between those display rules. Existing behavior is pinned.
 - Lecture membership is checked only when labels and the configured lecture list

@@ -1,0 +1,37 @@
+# Runs the Python, engine and browser tests on every push and pull request.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Install pypdf (count_exam.py only)
+        run: python -m pip install pypdf
+      - name: Python tests
+        run: python -m unittest -v
+      - name: Engine tests
+        run: node --test
+      - name: Browser tests
+        run: node tests/browser/run.mjs
+        env:
+          REQUIRE_BROWSER: "1"

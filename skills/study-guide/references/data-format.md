@@ -10,7 +10,7 @@ All files are UTF-8 JSON. Text fields that say HTML may contain inline markup (`
 | `lang` | no (`zh`) | interface language: `zh` or `en` |
 | `storageKey` | yes | progress namespace, letters/digits/`._-`; never change it after the student starts |
 | `lectures` | recommended | ordered lecture labels used by groups, e.g. `["L1", "L2", "L3–L4"]` |
-| `mock.sections` | no | paper layout: `[{ "cat": "tf"\|"single"\|"multi"\|"fill", "n": 10, "title"?: "…", "desc"?: "…", "short"?: "…" }]`. Default: 10 tf, 10 single, 5 multi, 5 fill |
+| `mock.sections` | no | paper layout: `[{ "cat": "tf"\|"single"\|"multi"\|"fill", "n": 10, "title"?: "…", "desc"?: "…", "short"?: "…" }]`. Default: 10 tf, 10 single, 5 multi, 5 fill. Sections with `n: 0` are skipped, but at least one section needs `n` > 0. An empty list is a build error; delete the key to get the default layout |
 | `mock.weights` | no | `{ "L1": 1, "L2": 2 }` draw proportions instead of pool sizes |
 | `mock.minutes` | no | time limit choices: numbers or `{ "m": 45, "note": "suggested" }`; `0` = no limit |
 | `mock.defaultMinutes` | no | preselected limit (default: the first entry) |
@@ -30,6 +30,7 @@ All files are UTF-8 JSON. Text fields that say HTML may contain inline markup (`
 ```
 
 - **Group fields:** `lec` must be one of `course.json` lectures. `sec` (practice only) is the id of the page section whose practice box shows this group. An item can override `lec` and `sec`.
+- **Mock `lec`:** every mock item needs a `lec`, on the item or its group. Mock papers are drawn and scored by lecture, so the build stops when one is missing.
 - **`id`:** unique across practice, mock and short. Records are keyed by it.
 - **`src`:** optional, shown in the question's meta line.
 
@@ -74,7 +75,8 @@ localStorage keys are `<storageKey>:practice` and `<storageKey>:mock`. When the 
   - `paper[]`: the current paper's ids.
   - `draft[id]`: answers on the current paper.
   - `flags`, `seen` and `pcount` track flags and draw history.
-  - `history[]`: one entry per handed-in paper, `{ at, s, m, units: {lec: {s, m}}, wrong[], flags[], picks{}, used, limit, auto }`.
+  - `history[]`: one entry per handed-in paper, `{ at, s, m, units: {lec: {s, m}}, wrong[], flags[], picks{}, used, limit, auto }`. Only the last 20 papers are kept.
+  - `book`: the mock part of the mistake notebook, kept separately so entries outlive the 20-paper history: `{ v: 1, papers, items: { id: [{ paper, wrong, flagged, pick }] } }`. `papers` counts every handed-in paper, so paper numbers never shift. An entry stays until the student removes it. A save without `book` is rebuilt from `history` when it is first read.
 
 ## Progress report (what you read)
 

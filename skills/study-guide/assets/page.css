@@ -12,6 +12,8 @@
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box}
+/* the hidden attribute always wins, even over rules that set display (.pnav, .flagbar, .rail) */
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.75}
 a{color:var(--accent)}
 code{font-family:var(--f-mono);font-size:.88em;background:var(--code-bg);padding:.08em .35em;border-radius:4px;overflow-wrap:anywhere}

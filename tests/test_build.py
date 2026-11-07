@@ -279,10 +279,16 @@ class DataRules(CourseCase):
                     self.invalid(message)
 
     def test_mock_pool_and_citation_policies(self):
-        # Citations are optional metadata, not parsed slide references.
-        for src in (None, '', 'Fictional L1 p.2', '<b>Source</b>'):
+        # Citations are optional HTML text shown in the meta line, not parsed slide references.
+        for src in ('', 'Fictional L1 p.2', '<b>Source</b>'):
             self.data['practice']['items'][0]['src'] = src
             self.assertEqual(self.check().errors, [])
+        for src in (None, 5, [], {}):
+            with self.subTest(src=src):
+                self.data = fixture()
+                self.data['mock']['items'][0]['src'] = src
+                self.invalid('src')
+        self.data = fixture()
         self.data['course']['mock'] = {'sections': [{'cat': 'single', 'n': 2}], 'weights': {'L2': 1}}
         warnings = '\n'.join(self.check().warnings)
         self.assertIn('wants 2 questions but the pool has 1', warnings)
@@ -298,15 +304,97 @@ class DataRules(CourseCase):
         rep = self.check()
         self.assertEqual(rep.errors, [])
         self.assertIn('flashcards are skipped', '\n'.join(rep.warnings))
-        self.data = fixture()
+
+    def test_empty_mock_sections_is_an_error_and_zero_sections_are_dropped(self):
         self.data['course']['mock'] = {'sections': []}
-        self.assertIn("section 'tf' wants 10", '\n'.join(self.check().warnings))
+        self.invalid('mock.sections is empty')
+        self.assertIn('delete the key', '\n'.join(self.check().errors))
+        self.assertNotIn('wants', '\n'.join(self.check().warnings))
+        # the engine drops n: 0 sections, so their pools are not audited
+        self.data = fixture()
+        self.data['course'].update(lectures=['L1', 'L2'], mock={
+            'sections': [{'cat': 'tf', 'n': 0}, {'cat': 'single', 'n': 1}], 'weights': {'L1': 1}})
+        self.data['mock']['groups'].append({'id': 'm2', 'lec': 'L2'})
+        self.data['mock']['items'] += [choice('m-tf', g='m2', type='tf', stem='A claim.'), choice('m-2', g='m', stem='Other value.')]
+        rep = self.check()
+        self.assertEqual(rep.errors, [])
+        self.assertNotIn('weights give no share', '\n'.join(rep.warnings))
+        self.assertNotIn("'tf'", '\n'.join(rep.warnings))
+
+    def test_a_mock_layout_with_only_zero_sections_is_an_error(self):
+        # one type may be 0, but the paper as a whole must ask something
+        self.data['course']['mock'] = {'sections': [{'cat': 'tf', 'n': 0}, {'cat': 'single', 'n': 0}]}
+        self.invalid('every mock section has n: 0')
+        self.assertIn("at least one section's n must be greater than 0", '\n'.join(self.check().errors))
+        self.data = fixture()
+        self.data['course']['mock'] = {'sections': [{'cat': 'tf', 'n': 0}, {'cat': 'single', 'n': 1}]}
+        self.assertNotIn('every mock section has n: 0', '\n'.join(self.check().errors))
+
+    def test_mock_items_need_a_lecture(self):
+        del self.data['mock']['groups'][0]['lec']
+        self.invalid("needs a 'lec'")
+        self.data['mock']['items'][0]['lec'] = 'L1'
+        self.assertEqual(self.check().errors, [])
+        # practice items may leave the lecture out
+        self.data = fixture()
+        del self.data['practice']['groups'][0]['lec']
+        self.assertEqual(self.check().errors, [])
+
+    def test_short_group_without_id_is_reported_with_its_items(self):
+        for gid in (None, ''):
+            with self.subTest(id=gid):
+                self.data = fixture()
+                group = self.data['short']['groups'][0]
+                group.pop('id') if gid is None else group.update(id=gid)
+                errors = '\n'.join(self.check().errors)
+                self.assertIn('short: a group has no id', errors)
+                self.assertIn("short item 's1': group 's' is not defined", errors)
+                self.data['short']['items'][0]['k'] = gid
+                if gid is None:
+                    self.data['short']['items'][0].pop('k')
+                self.invalid("short item 's1': needs 'k'")
+
+    def test_one_run_reports_errors_from_every_independent_file(self):
+        self.data['practice']['items'][0]['ans'] = 5
+        self.data['short']['items'][0]['stem'] = ''
+        self.write()
+        (self.course / 'mock.json').write_text('{"groups": [}')
+        errors = '\n'.join(b.check(self.course)[0].errors)
+        self.assertIn('mock.json: invalid JSON', errors)
+        self.assertIn("practice item 'q1': 'ans'", errors)
+        self.assertIn("short item 's1': empty stem", errors)
+        # a broken course.json still lets the banks be checked
+        self.data['course']['lang'] = []
+        self.write()
+        errors = '\n'.join(b.check(self.course)[0].errors)
+        self.assertIn("'lang' must be str", errors)
+        self.assertIn("practice item 'q1': 'ans'", errors)
+        # a file whose structure is broken is not checked any further
+        self.data = fixture()
+        self.data['practice']['groups'] = 'bad'
+        self.data['practice']['items'][0]['ans'] = 5
+        self.write()
+        errors = b.check(self.course)[0].errors
+        self.assertIn('practice.json: groups must be a list of objects', errors)
+        self.assertNotIn("'ans'", '\n'.join(errors))
+        self.assertNotIn('links practice group', '\n'.join(errors))
+
+    def test_json_with_a_byte_order_mark_is_accepted(self):
+        self.write()
+        for name in ('course', 'practice', 'mock', 'short'):
+            p = self.course / (name + '.json')
+            p.write_bytes(b'\xef\xbb\xbf' + p.read_bytes())
+        (self.course / 'sections/10-main.html').write_bytes(
+            b'\xef\xbb\xbf' + (self.course / 'sections/10-main.html').read_bytes())
+        self.assertEqual(b.check(self.course)[0].errors, [])
+        self.assertEqual(self.cli(self.course).returncode, 0)
+        self.assertNotIn('\ufeff', (self.course / 'review.html').read_text(encoding='utf-8'))
 
 
 class BuildOutput(CourseCase):
     def test_embeds_assets_data_sorted_sections_and_escapes_script_close(self):
         self.data['course'].update(title='<Fictional & title>', footer='<b>footer</b>', lang='en')
-        self.data['practice']['items'][0]['stem'] = '“数值” </script><script>bad()</script>'
+        self.data['practice']['items'][0]['stem'] = '“数值” </script><script>bad()</script> <!--<script>'
         (self.course / 'sections/00-first.html').write_text('<header id="exam">FIRST</header>')
         (self.course / 'extra.css').write_text('/* extra css */')
         (self.course / 'extra.js').write_text('/* extra js */')
@@ -325,7 +413,7 @@ class BuildOutput(CourseCase):
         self.assertEqual(page.count('id="practice"'), 1)
         self.assertNotRegex(page, r'(?:src|href)="(?:[^"\n]*/)?(?:engine.js|page.css)"')
         blob = re.search(r'window.STUDY_DATA = (.*?);</script>', page).group(1)
-        self.assertNotIn('</script>', blob)
+        self.assertNotIn('<', blob)
         self.assertEqual(json.loads(blob), dict(config=self.data['course'],
             **{k: self.data[k] for k in ('practice', 'mock', 'short')}))
         self.assertNotIn('tex-svg-full', page)
@@ -401,6 +489,46 @@ class BuildOutput(CourseCase):
         self.assertEqual(entries, [('exam', '0', 'Exam info'), ('x', '1', 'A &amp; B'),
                                    ('y', '!', 'Custom'), ('practice', '?', 'Practice and exams')])
 
+    def test_toc_stays_inside_top_level_sections(self):
+        entries = b.toc_entries(
+            '<section id="empty"></section><section id="next"><h2>Next</h2>'
+            '<section id="inner"><h2>Inner</h2></section></section>'
+            '<section data-id="fake" id="real"><h2>Real</h2></section>'
+            '<div><section data-id="no-id"><h2>No id</h2></section></div>'
+            '<!-- <section id="commented"> -->', b.UI['en'])
+        self.assertEqual(entries, [('empty', '1', 'empty'), ('next', '2', 'Next'), ('real', '3', 'Real')])
+        self.assertEqual(b.section_ids('<section data-id="x"></section><section id="y"><section id="z">'), {'y', 'z'})
+
+    def test_out_path_in_a_new_folder_and_unwritable_out(self):
+        self.write()
+        out = Path(self.tmp.name) / 'new' / 'deeper' / 'page.html'
+        built = self.cli(self.course, '-o', out)
+        self.assertEqual(built.returncode, 0, built.stdout + built.stderr)
+        self.assertTrue(out.exists())
+        blocked = self.cli(self.course, '-o', self.course / 'sections')
+        self.assertEqual(blocked.returncode, 1)
+        self.assertIn('error: cannot write', blocked.stdout)
+        self.assertNotIn('Traceback', blocked.stderr)
+
+    def test_demo_builds_with_no_warnings_into_a_temp_folder(self):
+        before = (DEMO / 'review.html').read_bytes()
+        out = Path(self.tmp.name) / 'demo-out' / 'review.html'
+        built = self.cli(DEMO, '-o', out)
+        self.assertEqual(built.returncode, 0, built.stdout + built.stderr)
+        self.assertNotIn('warning:', built.stdout)
+        self.assertNotIn('error:', built.stdout)
+        self.assertIn('; 0 warning(s))', built.stdout)
+        self.assertTrue(out.exists())
+        self.assertEqual((DEMO / 'review.html').read_bytes(), before)
+
+    def test_init_into_an_empty_temporary_folder(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            made = self.cli('--init', tmp)
+            self.assertEqual(made.returncode, 0, made.stdout + made.stderr)
+            self.assertFalse((Path(tmp) / 'review.html').exists())
+            self.assertTrue((Path(tmp) / 'sections').is_dir())
+            self.assertIn('check passed with 0 warning(s)', self.cli(tmp, '--check').stdout)
+
 
 class Audits(unittest.TestCase):
     def test_warning_patterns_and_small_bank_thresholds(self):
@@ -441,6 +569,91 @@ class Audits(unittest.TestCase):
         b.letter_audit('practice', items, 'test', rep)
         self.assertEqual(rep.warnings, [])
 
+    def assert_advice(self, rep):
+        for w in rep.warnings:
+            self.assertNotIn('\n', w)
+            self.assertNotRegex(w, r'[:;(,]\s*$', 'warning ends without its advice')
+
+    def test_letter_warning_advice_is_never_empty(self):
+        # every answer at the top letter got there through its own "show": advise changing those letters
+        items = [choice(str(i), opts=['one', 'two', 'three', 'four'], show='B') for i in range(8)]
+        rep = b.Report()
+        b.letter_audit('practice', items, 'test', rep)
+        self.assertIn('change some of them', rep.warnings[0])
+        self.assert_advice(rep)
+        # answers shuffled to the same letter: suggest "show" letters
+        at_a = [i for i in range(300) if b.seeded_order(f'test:q{i}', 4)[0] == 0][:8]
+        rep = b.Report()
+        b.letter_audit('practice', [choice(f'q{i}', opts=['one', 'two', 'three', 'four']) for i in at_a], 'test', rep)
+        self.assertIn('shown as A in 8/8', rep.warnings[0])
+        self.assertIn('"show": "', rep.warnings[0])
+        self.assert_advice(rep)
+
+    def test_warning_threshold_boundaries(self):
+        def warnings(items, fn=b.audit):
+            rep = b.Report()
+            fn('test', items, 'test', rep) if fn is b.letter_audit else fn('test', items, rep)
+            self.assert_advice(rep)
+            return '\n'.join(rep.warnings)
+
+        def singles(longest, total=10):  # the correct option is the single longest one in `longest` questions
+            return [choice(str(i), opts=[{'t': 'long answer', 'why': 'w'}, {'t': 'x', 'why': 'w'}],
+                           ans=0 if i < longest else 1) for i in range(total)]
+        self.assertNotIn('single longest', warnings(singles(3)))   # 30% is allowed
+        self.assertIn('single longest', warnings(singles(4)))      # 40% is not
+        self.assertNotIn('single longest', warnings(singles(5, 5)))  # fewer than 6 questions: no audit
+
+        def tfs(true, total=10):
+            return [choice(str(i), type='tf', ans=0 if i < true else 1) for i in range(total)]
+        for true, warned in ((2, True), (3, False), (7, False), (8, True)):
+            with self.subTest(true=true):
+                self.assertEqual('true/false' in warnings(tfs(true)), warned)
+        self.assertNotIn('true/false', warnings(tfs(5, 5)))
+
+        multis = [choice(str(i), type='multi', ans=[0]) for i in range(4)]
+        self.assertIn('exactly 1 correct', warnings(multis))
+        self.assertNotIn('exactly', warnings(multis[:3]))
+        multis[0]['ans'] = [0, 1]
+        self.assertNotIn('exactly', warnings(multis))
+
+        def lettered(at_a, total=10):  # `at_a` answers shown as A, the rest spread over B, C, D
+            return [choice(str(i), opts=['one', 'two', 'three', 'four'],
+                           show='A' if i < at_a else 'BCD'[i % 3]) for i in range(total)]
+        self.assertEqual(warnings(lettered(4), b.letter_audit), '')        # 40% is allowed
+        self.assertIn('shown as A in 5/10', warnings(lettered(5), b.letter_audit))
+        self.assertEqual(warnings(lettered(7, 7), b.letter_audit), '')     # fewer than 8 questions: no audit
+
+    def test_true_false_labelled_single_is_audited_as_true_false(self):
+        # engine.js treats a single-choice question whose options are exactly the tf labels as true/false
+        items = [choice(str(i), opts=[{'t': 'True', 'why': 'w'}, {'t': 'False', 'why': 'w'}], ans=1) for i in range(6)]
+        text = self.audit_text(items)
+        self.assertNotIn('single longest', text)
+        self.assertIn('0% of true/false answers are True', text)
+        labelled = [dict(q, opts=['Yes', 'No'], ans=0) for q in items]
+        self.assertIn('single longest', self.audit_text(labelled))
+        self.assertIn('100% of true/false answers are True', self.audit_text(labelled, ['Yes', 'No']))
+        self.assertEqual(b.cat_of(items[0]), 'tf')
+        self.assertEqual(b.cat_of(choice(type='multi', opts=['True', 'False'])), 'multi')
+
+    def audit_text(self, items, labels=None):
+        rep = b.Report()
+        b.audit('test', items, rep, labels)
+        return '\n'.join(rep.warnings)
+
+    def test_seeded_order_matches_engine_golden_values(self):
+        # values printed by engine.js seededOrder under node
+        self.assertEqual(b.seeded_order('test:x', 8), [1, 7, 6, 5, 4, 0, 3, 2])
+        self.assertEqual(b.seeded_order('k:题😀', 6), [1, 5, 3, 0, 4, 2])
+        self.assertEqual(b.seeded_order('', 5), [4, 0, 2, 1, 3])
+        key = json.loads((DEMO / 'course.json').read_text(encoding='utf-8'))['storageKey']
+        self.assertEqual(key, 'demo-prob101-mt1')
+        golden = {'p1-1': [3, 1, 2, 0], 'p1-4': [0, 1, 2, 3], 'p1-6': [0, 3, 1, 2],
+                  'm1-4': [0, 3, 1, 2], 'm1-5': [2, 3, 1, 0], 'm1-10': [2, 0, 3, 1]}
+        for qid, order in golden.items():
+            self.assertEqual(b.seeded_order(f'{key}:{qid}', 4), order, qid)
+        p1 = next(q for q in json.loads((DEMO / 'practice.json').read_text(encoding='utf-8'))['items'] if q['id'] == 'p1-1')
+        self.assertEqual(b.display_order(p1, key).index(p1['ans']), 'ABCD'.index(p1['show']))
+
 class EdgeCases(CourseCase):
     def test_non_json_numeric_constants_are_rejected(self):
         self.write()
@@ -454,6 +667,16 @@ class EdgeCases(CourseCase):
         self.write()
         (self.course / 'practice.json').write_bytes(b'{"bad": "\xff"}')
         self.assertIn('UTF-8', '\n'.join(b.check(self.course)[0].errors))
+
+    def test_non_utf8_sections_and_extras_are_one_line_errors(self):
+        files = ('sections/20-bad.html', 'extra.css', 'extra.js')
+        for rel in files:
+            with self.subTest(file=rel):
+                for other in files:
+                    (self.course / other).unlink(missing_ok=True)
+                (self.course / rel).write_bytes(b'/* \xff */')
+                self.invalid(rel + ': must be UTF-8')
+                self.assertNotIn('sections/ has no .html files', '\n'.join(self.check().errors))
 
     def test_unhashable_mock_category_and_oversized_show_do_not_crash(self):
         self.data['course']['mock'] = {'sections': [{'cat': [], 'n': 1}]}
@@ -472,7 +695,7 @@ class EdgeCases(CourseCase):
     def test_documented_optional_config_values_embed_without_loss(self):
         self.data['course'].update(lang='en', tfLabels=['是', '否'],
             practiceIntro='<b>Practice</b>', shortIntro='<i>Steps</i>', footer='<p>Fictional source</p>',
-            mock={'sections': [{'cat': 'single', 'n': 0, 'title': 'Part', 'desc': '<b>Choose</b>', 'short': 'choice'}],
+            mock={'sections': [{'cat': 'single', 'n': 1, 'title': 'Part', 'desc': '<b>Choose</b>', 'short': 'choice'}],
                   'weights': {'L1': 0.5}, 'minutes': [0, {'m': 2.5, 'note': 'test'}],
                   'defaultMinutes': 2.5, 'note': '<i>Intro</i>'})
         self.assertEqual(self.check().errors, [])
@@ -509,7 +732,8 @@ class EdgeCases(CourseCase):
         self.data['mock']['groups'].append({'id': 'm2', 'lec': 'L2'})
         self.data['mock']['items'].append(choice('m2-q', g='m2', stem='A second value.'))
         rep = self.check()
-        self.assertIn('weights give no share', '\n'.join(rep.warnings))
+        self.assertIn("mock item 'm1': needs a 'lec'", '\n'.join(rep.errors))
+        self.assertIn("weights give no share to ['L2']", '\n'.join(rep.warnings))
 
     def test_explicit_mock_object_types_and_section_metadata(self):
         for value in (None, [], 'mock'):

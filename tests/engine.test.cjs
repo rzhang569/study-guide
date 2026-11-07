@@ -525,3 +525,268 @@ test('omitted mock configuration draws the documented default 10/10/5/5 layout',
     ...Array(10).fill('tf'), ...Array(10).fill('single'), ...Array(5).fill('multi'), ...Array(5).fill('fill')]);
   assert.equal(h.api.STATE.mock.timer.limit, 45);
 });
+
+/* ---------- batch 1: golden orders, languages, notebook store, regression tests ---------- */
+const DEMO = path.join(ROOT, 'skills/study-guide/examples/demo');
+function demoData() {
+  return Object.fromEntries([['config', 'course'], ['practice', 'practice'], ['mock', 'mock'], ['short', 'short']]
+    .map(([key, file]) => [key, JSON.parse(fs.readFileSync(path.join(DEMO, file + '.json'), 'utf8'))]));
+}
+const byText = (card, text) => card.querySelectorAll('.opt').find(o => o.innerHTML.includes('<span class="otext">' + text));
+const bubble = opt => opt.innerHTML.match(/<span class="bub[^"]*">(\w)<\/span>/)[1];
+const whyText = card => card.querySelectorAll('.why').map(x => x.textContent).join(' | ');
+const inStep = (card, i) => card.querySelectorAll('.sastep')[i];
+const bookView = h => clone(h.api.bookEntries().map(e => [e.q.id, e.notes]));
+const bookIds = (h, keep = () => true) => clone(h.api.bookEntries().filter(keep).map(e => e.q.id));
+
+// Changing the shuffle would relabel the letters students saw (and the letters in reports); stored indexes
+// would stay right. These values pin the current algorithm; build.py's Python port gives the same ones.
+test('golden shuffle orders: seededOrder, fixture and demo display orders are pinned', () => {
+  const h = load();
+  assert.deepEqual(clone(h.api.seededOrder('test:x', 8)), [1, 7, 6, 5, 4, 0, 3, 2]);
+  assert.deepEqual(clone(h.api.seededOrder('test:x', 4)), [2, 0, 3, 1]);
+  assert.deepEqual(clone(h.api.displayOrder(h.api.BANKS.practice.imap.p1)), [2, 0, 1]);
+  const d = load({data: demoData()}), p = d.api.BANKS.practice.imap['p1-1'];
+  assert.deepEqual(clone(d.api.displayOrder(p)), [3, 0, 1, 2]);           // show: "B" puts the answer (1/6) at B
+  assert.deepEqual(['A', 'B', 'C', 'D'].map((_, pos) => p.opts[d.api.displayOrder(p)[pos]].t), ['1/12', '1/6', '1/11', '7/36']);
+  assert.deepEqual(clone(d.api.displayOrder(d.api.BANKS.mock.imap['m1-1'])), [0, 1]);   // first mock item: tf, never shuffled
+  assert.deepEqual(clone(d.api.displayOrder(d.api.BANKS.mock.imap['m1-4'])), [0, 3, 1, 2]); // first shuffled mock item
+  assert.deepEqual(clone(d.api.seededOrder('demo-prob101-mt1:sa-a1:3', 4)), [3, 1, 0, 2]); // short-answer choice step
+});
+
+test('clicking an option by its visible text stores the original index and restores the same feedback after reload', () => {
+  const data = demoData(), h = load({data}), p = h.api.BANKS.practice.imap['p1-1'];
+  const pick = byText(h.api.practiceCard(p, 1), '1/11');
+  assert.equal(bubble(pick), 'C');
+  pick.click();
+  assert.deepEqual(clone(h.api.STATE.practice.ans['p1-1']), {first: 1, tried: [1]});
+  assert.deepEqual(JSON.parse(h.storage.get('demo-prob101-mt1:practice')).ans['p1-1'], {first: 1, tried: [1]});
+  const before = h.api.practiceCard(p, 1);
+  assert.match(whyText(before), /First pick was C; the answer is B\./);
+  const again = load({data, storage: h.storage}), card = again.api.practiceCard(again.api.BANKS.practice.imap['p1-1'], 1);
+  assert.ok(byText(card, '1/11').classList.contains('wrong'));
+  assert.ok(byText(card, '1/6').classList.contains('right'));
+  assert.equal(bubble(byText(card, '1/11')), 'C');
+  assert.equal(whyText(card), whyText(before));
+  const missed = again.window.StudyGuide.report().practice.missed[0];
+  assert.equal(missed.firstAnswer, 'C (1/11)'); assert.equal(missed.correct, 'B (1/6)');
+});
+
+test('zh boot renders Chinese strings and an unknown lang falls back to zh', () => {
+  const data = fixture(); data.config.lang = 'zh';
+  const h = load({data}), p = h.api.BANKS.practice.imap.p1;
+  assert.equal(h.window.StudyGuide.t('tabPractice'), '练习题');
+  option(h.api.practiceCard(p, 1), h, p, 1).click();
+  assert.match(whyText(h.api.practiceCard(p, 1)), /第一次选了 [AC]，正确答案是 B。/);
+  assert.equal(h.window.StudyGuide.report().practice.missed.length, 1);
+  data.config.lang = 'fr';
+  const f = load({data});
+  assert.equal(f.window.StudyGuide.t('tabMock'), '模拟考试');
+  assert.equal(f.window.StudyGuide.t('secMeta', {n: 3, d: 1}), '3 道题 · 已做 1');
+});
+
+test('zh and en string tables have the same keys and the same {placeholders}', () => {
+  const {zh, en} = load().api.STR, holes = s => [...String(s).matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort();
+  assert.deepEqual(Object.keys(en).sort(), Object.keys(zh).sort());
+  for (const key of Object.keys(zh)) {
+    const a = zh[key], b = en[key];
+    assert.equal(typeof a, typeof b, key);
+    if (Array.isArray(a)) assert.equal(a.length, b.length, key);
+    else if (typeof a === 'object') {
+      assert.deepEqual(Object.keys(b).sort(), Object.keys(a).sort(), key);
+      for (const k of Object.keys(a)) assert.deepEqual(holes(b[k]), holes(a[k]), key + '.' + k);
+    } else assert.deepEqual(holes(b), holes(a), key);
+  }
+});
+
+test('bug 1: redoing a wrong short-answer choice step never restores first-try credit', () => {
+  const h = load(), s = h.api.SA[0], order = h.api.seededOrder('test:s1:1', 2);
+  const opt = (card, j) => inStep(card, 1).querySelectorAll('.opt')[order.indexOf(j)];
+  opt(h.api.saCard(s, 1, 'p'), 1).click();
+  assert.deepEqual(clone(h.api.saScore(s)), {s: 0, f: 0, m: 6});
+  button(inStep(h.api.saCard(s, 1, 'p'), 1), 'Redo this step').click();
+  assert.deepEqual(clone(h.api.STATE.practice.sa.s1[1]), {tries: 1, tried: [1]});
+  const reopened = h.api.saCard(s, 1, 'p');
+  assert.ok(opt(reopened, 1).classList.contains('wrong'));      // the earlier miss stays visible
+  assert.ok(!opt(reopened, 0).classList.contains('right'));     // the answer is not revealed yet
+  opt(reopened, 0).click();
+  assert.deepEqual(clone(h.api.STATE.practice.sa.s1[1]), {tries: 1, tried: [1, 0], v: 0, ok: true, shown: true});
+  assert.deepEqual(clone(h.api.saScore(s)), {s: 0, f: 3, m: 6});
+  assert.match(whyText(inStep(h.api.saCard(s, 1, 'p'), 1)), /fixed after 1 wrong tries/);
+  assert.deepEqual(clone(load({storage: h.storage}).api.saScore(s)), {s: 0, f: 3, m: 6});
+});
+
+test('bug 1: redoing self-marked and done-on-paper steps keeps the miss counted', () => {
+  const h = load(), s = h.api.SA[0], step = i => inStep(h.api.saCard(s, 1, 'p'), i);
+  button(step(2), 'Done, show answer').click();
+  button(step(2), 'I missed it').click();
+  button(step(2), 'Redo this step').click();
+  assert.deepEqual(clone(h.api.STATE.practice.sa.s1[2]), {tries: 1});
+  button(step(2), 'Done, show answer').click();
+  button(step(2), 'I got it').click();
+  assert.deepEqual(clone(h.api.saScore(s)), {s: 0, f: 1, m: 6});
+  button(step(0), 'Done on paper, show answer').click();
+  button(step(0), 'I missed it').click();
+  button(step(0), 'Redo this step').click();
+  // reopened on paper: no "Not right" message or red input, and it is still marked by hand
+  assert.equal(step(0).querySelector('input').className, '');
+  assert.equal(button(step(0), 'Show answer'), undefined);
+  button(step(0), 'Done on paper, show answer').click();
+  button(step(0), 'I got it').click();
+  assert.deepEqual(clone(h.api.saScore(s)), {s: 0, f: 3, m: 6});
+  assert.deepEqual(clone(h.window.StudyGuide.report().shortAnswer[0].missedSteps), [1, 2, 3]);
+});
+
+test('bug 2: report missedSteps agrees with saScore for an override after one try', () => {
+  const h = load(), s = h.api.SA[0], step = () => inStep(h.api.saCard(s, 1, 'p'), 0);
+  const first = step(); first.querySelector('input').value = '0.9'; button(first, 'Check').click();
+  button(step(), 'Show answer').click();
+  button(step(), 'My answer is right, count it').click();
+  assert.deepEqual(clone(h.api.STATE.practice.sa.s1[0]), {v: '0.9', tries: 1, ok: true, shown: true, fix: true});
+  assert.equal(h.api.saScore(s).s, 2);
+  const row = h.window.StudyGuide.report().shortAnswer[0];
+  assert.equal(row.firstScore, 2);
+  assert.deepEqual(clone(row.missedSteps), [2, 3]);
+  // the same rule for every step: a step is missed exactly when it earns no first-try points
+  const pts = s.steps.reduce((a, p, i) => a + (row.missedSteps.includes(i + 1) ? 0 : p.pts), 0);
+  assert.equal(pts, row.firstScore);
+});
+
+test('bug 3: a mock fill typed and then cleared is blank, not an answer for the notebook', () => {
+  for (const cleared of ['', '   ']) {
+    const h = load(), st = h.api.STATE.mock;
+    st.paper = ['m1', 'm2', 'm3', 'm4']; st.draft = {m1: 1, m4: 0}; st.flags = {m3: 1};
+    const input = h.api.mockCard(h.api.BANKS.mock.imap.m3, 3).querySelector('input');
+    input.value = '0.7'; input.emit('input'); input.value = cleared; input.emit('input'); h.flush(400);
+    assert.equal(h.api.answeredDraft(st.draft.m3), false);
+    h.api.submitMock(false);
+    assert.ok(st.result.wrong.includes('m3'));
+    assert.equal('m3' in st.result.picks, false);
+    assert.deepEqual(bookIds(h), ['m1']);
+    const last = h.window.StudyGuide.report().mock.last;
+    assert.equal(last.wrong.find(x => x.id === 'm3').answered, null);
+  }
+});
+
+test('bug 4: Clear practice record clears notebook redos of practice questions, not short answers or mock redos', () => {
+  const h = load(), ps = h.api.STATE.practice, p = h.api.BANKS.practice.imap.p1;
+  ps.ans.p1 = {first: 1, tried: [1]}; ps.redo = {p1: {first: 0, tried: [0]}, m1: {first: 0, tried: [0]}};
+  h.api.setStep(h.api.SA[0], 0, {v: '0.5', ok: true, shown: true});
+  assert.equal(h.api.mastered(p), true);
+  const bar = new Element(), score = new Element('p'), acts = new Element(), sum = new Element();
+  score.className = 'score'; acts.className = 'acts'; bar.appendChild(score); bar.appendChild(acts);
+  h.document.getElementById = id => ({'bar-practice': bar, 'sum-practice': sum})[id] || null;
+  h.api.updatePracticeBar();
+  const clear = () => button(acts, 'Clear practice record') || button(acts, 'Clear everything? Click again');
+  clear().click(); clear().click();
+  assert.deepEqual(clone(ps.ans), {});
+  assert.deepEqual(clone(Object.keys(ps.redo)), ['m1']);
+  assert.equal(ps.sa.s1[0].ok, true);
+  option(h.api.practiceCard(p, 1), h, p, 1).click();          // missed again after clearing
+  assert.equal(h.api.mastered(p), false);
+  assert.deepEqual(bookIds(h, e => !h.api.mastered(e.q)), ['p1']);
+  // the per-question reset clears the notebook redo too
+  option(h.api.practiceCard(p, 1, 'b'), h, p, 0).click();
+  assert.equal(h.api.mastered(p), true);
+  const undo = button(h.api.practiceCard(p, 1), 'Misclick: reset this question'); undo.click(); undo.click();
+  assert.equal(ps.redo.p1, undefined);
+});
+
+test('bug 5: thousands separators count as one number; malformed decimals are unreadable', () => {
+  const h = load();
+  for (const [ref, value] of [['1000', '1,000'], ['1000000', '1,000,000'], ['1234.5', '1,234.5'], ['-2500', '-2,500'],
+      ['1,000', '1000'], ['0.5', '1/2']]) assert.equal(fill(h, ref, value), true, `${value} for ${ref}`);
+  assert.equal(fill(h, '1000', '1,00'), false);                // not a thousands pattern: still a list of two
+  assert.equal(fill(h, '(1,0)', '1,000'), true);               // vector answers keep list semantics
+  assert.equal(fill(h, '(3,100)', '3,100'), true);
+  assert.equal(h.api.evalExpr('2.5.3'), null);
+  assert.equal(fill(h, '0.75', '2.5.3'), null);
+  assert.equal(fill(h, '2.5', '2.5.3'), null);
+  assert.equal(h.api.evalExpr('2.5'), 2.5); assert.equal(h.api.evalExpr('3.'), 3); assert.equal(h.api.evalExpr('.5'), 0.5);
+});
+
+const RIGHT = {m1: 0, m2: [0, 2], m3: '0.5', m4: 0};
+function hand(h, draft = RIGHT, flags = {}) {
+  const st = h.api.STATE.mock;
+  st.paper = ['m1', 'm2', 'm3', 'm4']; st.draft = clone(draft); st.flags = clone(flags); st.submitted = false;
+  h.advance(1000); h.api.submitMock(false);
+}
+test('notebook keeps mock mistakes past the 20-paper history, with paper numbers that never shift', () => {
+  const h = load(), letter = h.api.letterOf(h.api.BANKS.mock.imap.m1, 1);
+  hand(h, {...RIGHT, m1: 1});
+  for (let i = 2; i <= 21; i++) hand(h);
+  hand(h, {...RIGHT, m2: [0]}, {m4: 1});
+  for (let i = 23; i <= 30; i++) hand(h);
+  const st = h.api.STATE.mock;
+  assert.equal(st.history.length, 20);
+  assert.equal(st.book.papers, 30);
+  assert.equal(st.history.some(x => x.wrong.includes('m1')), false);   // paper 1 left the history long ago
+  assert.deepEqual(bookView(h), [
+    ['m1', [`Wrong on mock paper 1; you answered ${letter} (two)`]],
+    ['m2', [`Wrong on mock paper 22; you answered ${h.api.letterOf(h.api.BANKS.mock.imap.m2, 0)}`]],
+    ['m4', ['Flagged on mock paper 22, answered correctly']]]);
+  const reloaded = load({storage: h.storage});
+  assert.deepEqual(bookView(reloaded), bookView(h));
+  assert.equal(reloaded.window.StudyGuide.report().mock.papers, 20);
+});
+
+test('an old save (no notebook store) migrates its history entries; loading alone leaves the state unchanged', () => {
+  const h0 = load(), m1 = h0.api.BANKS.mock.imap.m1, m2 = h0.api.BANKS.mock.imap.m2;
+  const units = {L1: {s: 1, m: 4}};
+  const paper = (day, extra) => ({at: `2026-10-0${day}T12:00:00.000Z`, s: 1, m: 4, units, used: null, limit: null, auto: false, ...extra});
+  // exactly what the previous engine stored: history entries are its submitMock results
+  const oldMock = {v: 1, paper: ['m1', 'm2', 'm3', 'm4'], draft: {m1: 1, m2: [0], m3: '', m4: 0}, flags: {m4: 1},
+    seen: {m1: 1, m2: 1, m3: 1, m4: 1}, pcount: 2, submitted: true,
+    history: [
+      paper(1, {wrong: ['m2'], flags: []}),                                            // oldest format: no picks
+      paper(2, {wrong: ['m1', 'm3'], flags: ['m1', 'm4'], picks: {m1: 2, m4: 0}}),     // m3 blank
+      paper(3, {wrong: ['m1', 'm2', 'm3'], flags: ['m4'], picks: {m1: 1, m2: [0], m3: '', m4: 0}})], // m3 typed+cleared
+    timer: {limit: 1, startedAt: ''}, updatedAt: '2026-10-03T12:00:00.000Z'};
+  oldMock.result = oldMock.history[2];
+  const storage = new Map([['test:mock', JSON.stringify(oldMock)]]), h = load({storage});
+  assert.deepEqual(clone(h.api.STATE.mock), oldMock);
+  const L = i => h.api.letterOf(m1, i), names = ['one', 'two', 'three'];
+  const expected = [
+    ['m2', ['Wrong on mock paper 1', `Wrong on mock paper 3; you answered ${h.api.letterOf(m2, 0)}`]],
+    ['m1', [`Wrong on mock paper 2; you answered ${L(2)} (${names[2]})`, 'Flagged on mock paper 2',
+            `Wrong on mock paper 3; you answered ${L(1)} (${names[1]})`]],
+    ['m4', ['Flagged on mock paper 2, answered correctly', 'Flagged on mock paper 3, answered correctly']]];
+  assert.deepEqual(bookView(h), expected);
+  // the first hand-in writes the store; later papers push the old history out without losing these entries
+  for (let i = 0; i < 20; i++) hand(h);
+  const st = h.api.STATE.mock, saved = JSON.parse(storage.get('test:mock'));
+  assert.equal(st.book.v, 1); assert.equal(st.book.papers, 23); assert.deepEqual(saved.book, clone(st.book));
+  assert.equal(st.history[0].at > oldMock.history[2].at, true);
+  assert.deepEqual(bookView(h), expected);
+  assert.deepEqual(clone(st.book.items.m1[0]), {paper: 2, wrong: true, flagged: true, pick: 2});
+});
+
+test('a student can remove a mock mistake; a new miss after mastery brings it back to the todo list', () => {
+  const h = load(), q = h.api.BANKS.mock.imap.m1;
+  hand(h, {...RIGHT, m1: 1});
+  option(h.api.bookCard(q, 1), h, q, 0).click();                 // redo in the notebook, right
+  assert.equal(h.api.mastered(q), true);
+  hand(h, {...RIGHT, m1: 2});                                     // wrong again on paper 2
+  assert.equal(h.api.mastered(q), false);
+  assert.equal(h.api.bookEntries()[0].notes.length, 2);
+  const card = h.api.bookCard(q, 1), remove = button(card, 'Remove from notebook');
+  remove.click(); assert.ok(h.api.STATE.mock.book.items.m1);     // asks once first
+  remove.click();
+  assert.equal(h.api.STATE.mock.book.items.m1, undefined);
+  assert.equal(h.api.bookEntries().length, 0);
+  assert.equal(JSON.parse(h.storage.get('test:mock')).book.items.m1, undefined);
+  assert.equal(button(h.api.bookCard(h.api.BANKS.practice.imap.p1, 1), 'Remove from notebook'), undefined);
+});
+
+test('mock items without a lecture do not crash drawing, cards, hand-in, notebook or report', () => {
+  const data = fixture(); data.mock.groups.push({id: 'nolec'});
+  data.mock.items.push({id: 'm9', g: 'nolec', stem: 'No lecture', opts: data.mock.items[0].opts, ans: 0});
+  const h = load({data}), st = h.api.STATE.mock;
+  assert.equal(clone(h.api.drawPaper()).includes('m9'), false);
+  st.paper = ['m9', 'm1']; st.draft = {m9: 1, m1: 0};
+  h.api.mockCard(h.api.BANKS.mock.imap.m9, 1);
+  h.api.submitMock(false);
+  assert.deepEqual(clone(st.result.units), {L1: {s: 1, m: 1}});
+  assert.deepEqual(bookIds(h), ['m9']);
+  assert.equal(h.window.StudyGuide.report().mock.last.wrong[0].id, 'm9');
+});
