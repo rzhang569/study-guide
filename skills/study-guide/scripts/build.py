@@ -180,6 +180,13 @@ def toc_entries(body, ui):
     return out
 
 
+def answerable(accept):
+    """A non-empty list whose entries a student can match: non-empty text or numbers. The engine can never
+    mark "", null or an object right."""
+    return isinstance(accept, list) and bool(accept) and all(
+        (isinstance(a, str) and a.strip()) or (type(a) in (int, float) and abs(a) < float("inf")) for a in accept)
+
+
 def check_bank(name, bank, rep, ids, lectures, sec_ids):
     if bank is None:
         return []
@@ -228,9 +235,8 @@ def check_bank(name, bank, rep, ids, lectures, sec_ids):
                 rep.err(f"{where}: card needs 'answer'")
             return
         if t == "fill":
-            acc = q.get("accept")
-            if not isinstance(acc, list) or not acc:
-                rep.err(f"{where}: fill-in needs a non-empty 'accept' list")
+            if not answerable(q.get("accept")):
+                rep.err(f"{where}: fill-in needs an 'accept' list of answers, each a non-empty text or a number")
             return
         opts = q.get("opts")
         if t == "tf" and opts is None:
@@ -310,8 +316,8 @@ def check_short(short, rep, ids, lectures, sec_ids, practice_groups):
             if p.get("opts") is not None:
                 if type(p.get("ans")) is not int or not 0 <= p["ans"] < len(p["opts"]):
                     rep.err(f"{where} step {i}: 'ans' must index into 'opts'")
-            elif p.get("accept") is not None and (not isinstance(p["accept"], list) or not p["accept"]):
-                rep.err(f"{where} step {i}: 'accept' must be a non-empty list")
+            elif p.get("accept") is not None and not answerable(p["accept"]):
+                rep.err(f"{where} step {i}: 'accept' must be a list of answers, each a non-empty text or a number")
 
 
 def cat_of(q, tf_labels=None):

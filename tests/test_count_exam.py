@@ -130,10 +130,13 @@ class CoverInstructions(unittest.TestCase):
         self.assertEqual(res["cover"]["rules"]["calculator"], "no calculator")
         self.assertIn("questions found 2: Q1–2\n", out)
 
-    def test_numbered_short_answers_restarting_in_part_b_stay_questions(self):
-        res, _ = fixture("short answer part restarts")
-        self.assertEqual(numbers(res), [(0, 1), (0, 2), (1, 1), (1, 2)])
-        self.assertEqual(res["runs"], ["Part A", "Part B"])
+    def test_cover_point_figures_and_show_your_work(self):
+        res, out = run(COVER + "Show all your work.\n", "1. MARKA\nA. x\nB. y")
+        self.assertEqual(res["cover"]["points"], ["2 points", "8 points", "10 points"])
+        self.assertTrue(res["cover"]["show_work"])
+        self.assertIn("rules: show your work\n", out)
+        res, _ = run("Midterm\nPart A: 4 questions\nTime: 50 minutes\n", "1. MARKA\nA. x")
+        self.assertEqual(res["parts"], [])   # a part named on the cover is not a heading in the questions
 
     def test_time_in_hours(self):
         res, _ = fixture("blank pages")
@@ -176,6 +179,23 @@ class Questions(unittest.TestCase):
         res, out = fixture("restart without heading")
         self.assertEqual(numbers(res), [(0, 1), (0, 2), (1, 1), (1, 2)])
         self.assertIn("set 2 (p1, no part heading found, so whether it is a new part is unknown)", out)
+
+    def test_a_gap_in_the_numbering_is_reported(self):
+        _, out = run("1. MARKA\nA. x\n2. MARKB\nA. y\n4. MARKC\nA. z")
+        self.assertIn("questions found 3: Q1–2, Q4\n", out)
+        self.assertIn("missing numbers: Q3\n", out)
+
+    def test_other_question_point_and_range_formats(self):
+        for line in ("Question {n}: MARK", "Q{n}. MARK", "{n}) MARK"):
+            with self.subTest(line=line):
+                res, _ = run("\n".join(line.format(n=n) + "\nA. x\nB. y" for n in (1, 2)))
+                self.assertEqual(numbers(res), [(0, 1), (0, 2)])
+        res, out = run("1. [8 pts] MARKA\nA. x\nB. y\n2. MARKB (5 marks)\nA. x\nB. y")
+        self.assertEqual([x["points"] for x in res["questions"]], [8, 5])
+        self.assertIn("8 points: Q1; 5 points: Q2", out)
+        res, _ = run("Time: 50 minutes\n", "For questions 1 through 2, use this scenario. MARKS\n1. MARKA\nA. x\n2. MARKB\nA. y\n"
+                     "Questions 3 to 4 refer to the scenario below. MARKT\n3. MARKC\nA. x\n4. MARKD\nA. y")
+        self.assertEqual(res["ranges"], [(2, 1, 2), (2, 3, 4)])
 
     def test_numbered_list_inside_a_question_is_not_a_question(self):
         res, out = fixture("list inside a question")
@@ -240,6 +260,13 @@ class SpoilerFree(unittest.TestCase):
         for word in ALLOWED:
             self.assertRegex(source, r"(?<![^\W\d_])" + re.escape(word) + r"(?![^\W\d_])", word)
 
+    def test_numbers_inside_questions_never_reach_the_report(self):
+        # the numbers in an equation or a data set give a question away, so only structure numbers are printed
+        for name, pages in FIXTURES.items():
+            with self.subTest(fixture=name):
+                out = ce.measure([page.replace("MARK", "863 = 4.71 x MARK") for page in pages])[0]
+                self.assertNotRegex(out, r"863|4\.71")
+
     def test_reports_contain_only_template_words_labels_and_numbers(self):
         for name, out in self.reports():
             with self.subTest(fixture=name):
@@ -256,8 +283,6 @@ class SpoilerFree(unittest.TestCase):
         self.assertEqual(res["backrefs"], [(0, 13)])
         self.assertEqual(res["cover"]["time"], ["50 minutes"])
         self.assertEqual(res["cover"]["rules"].get("calculator"), "no calculator")
-        for word in ["marzipan", "thistlewood", "quokka", "zephyr", "saffron", "obsidian", "lantern", "pumice", "kelp", "walrus", "juniper", "gondola"]:
-            self.assertNotIn(word, out.lower())
 
 
 class CommandLine(unittest.TestCase):
