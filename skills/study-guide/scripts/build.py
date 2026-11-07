@@ -97,13 +97,8 @@ def load_json(path, rep, required=False):
         if required:
             rep.err(f"{path.name} is missing")
         return None, not required
-    try:
-        raw = path.read_text(encoding="utf-8-sig")
-    except UnicodeDecodeError:
-        rep.err(f"{path.name}: must be UTF-8 JSON")
-        return None, False
-    except OSError as e:
-        rep.err(f"{path.name}: cannot read it ({e.strerror or e})")
+    raw = read_text(path, rep, path.name)
+    if raw is None:
         return None, False
     try:
         return json.loads(raw, parse_constant=reject_constant), True
@@ -362,24 +357,14 @@ def audit(name, items, rep, tf_labels=None):
             rep.warn(f"{name}: {true_share:.0%} of true/false answers are True; keep it between 30% and 70%")
 
 
-def _utf16_units(s):
-    for ch in s:
-        c = ord(ch)
-        if c > 0xFFFF:
-            c -= 0x10000
-            yield 0xD800 + (c >> 10)
-            yield 0xDC00 + (c & 0x3FF)
-        else:
-            yield c
-
-
 def seeded_order(seed, n):
     """The engine's display order for n options (engine.js seeded/seededOrder), so the build can see
     which letter each correct answer is shown as. order[position] = stored option index."""
     M = 0xFFFFFFFF
     h = 2166136261
-    for unit in _utf16_units(seed):
-        h = ((h ^ unit) * 16777619) & M
+    units = seed.encode("utf-16-le")  # JavaScript strings are UTF-16, so hash the same code units
+    for i in range(0, len(units), 2):
+        h = ((h ^ (units[i] | units[i + 1] << 8)) * 16777619) & M
 
     def rnd():
         nonlocal h
