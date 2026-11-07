@@ -32,13 +32,20 @@ if (typeof WebSocket === 'undefined') {
 const {findChrome, launch} = await import('./cdp.mjs');
 const chrome = findChrome();
 if (!chrome) skip('Chrome, Chromium or Edge not found (set CHROME_PATH)');
-const {findPython, buildDemo} = (await import('../build-demo.cjs')).default;
+const {DEMO, findPython, buildDemo} = (await import('../build-demo.cjs')).default;
 if (!findPython()) skip('Python not found (set PYTHON; needed to build the pages)');
 console.log(`# browser: ${chrome}\n# python: ${findPython().join(' ')}`);
 
 const {test, before, after, afterEach} = await import('node:test');
 const assert = (await import('node:assert/strict')).default;
 const KEY = 'demo-prob101-mt1';
+/* expected counts come from the demo files, so editing the demo questions does not break the tests */
+const demo = name => JSON.parse(fs.readFileSync(path.join(DEMO, name + '.json'), 'utf8'));
+const PRACTICE = demo('practice'), COURSE = demo('course'), MOCK = demo('mock');
+const SCORED = PRACTICE.items.filter(q => q.type !== 'card').length;        // flashcards are not scored
+const secOf = Object.fromEntries(PRACTICE.groups.map(g => [g.id, g.sec]));
+const IN_L1 = PRACTICE.items.filter(q => (q.sec || secOf[q.g]) === 'l1').length;
+const PAPER = COURSE.mock.sections.reduce((n, sec) => n + Math.min(sec.n, MOCK.items.filter(q => (q.type || 'single') === sec.cat).length), 0);
 
 /* fallback when localStorage does not work on file://: a static server on 127.0.0.1 with an ephemeral port */
 function serve(dir) {
@@ -92,9 +99,9 @@ test('en page loads with no console errors; the practice center, section boxes a
     mockHidden: getComputedStyle(document.getElementById('wrap-mock')).display,
   }));
   assert.deepEqual(info.tabs, ['Practice', 'Short answer', 'Mock exam', 'Mistakes']);
-  assert.equal(info.cards, 24);
+  assert.equal(info.cards, PRACTICE.items.length);
   assert.deepEqual(info.boxes, Array(3).fill('Practice for this section'));
-  assert.match(info.bar, /^Answered 0 \/ 23/);
+  assert.match(info.bar, new RegExp(`^Answered 0 / ${SCORED}`));
   assert.equal(info.mockHidden, 'none');
   // display:flex rules must not beat the hidden attribute
   const shown = await page.eval(() => ['pnav', 'flagbar'].map(cls => {
@@ -117,7 +124,7 @@ test('a practice answer (clicked by its visible text) shows feedback and survive
   assert.equal(await page.text('[id="q-p-p1-1"] .why'), why);
   assert.deepEqual(await optionsOf('[id="q-p-p1-1"]'), opts);
   assert.match(opts[2][2], /\bwrong\b/); assert.match(opts[1][2], /\bright\b/);
-  assert.match(await page.text('#sp-l1 .sp-meta'), /8 questions · 1 done · first-try accuracy 0%/);
+  assert.match(await page.text('#sp-l1 .sp-meta'), new RegExp(`${IN_L1} questions · 1 done · first-try accuracy 0%`));
 });
 
 test('short-answer redo after a miss never restores first-try credit (choice and self-marked steps)', async () => {
@@ -146,7 +153,7 @@ test('a full mock paper is handed in, the score report has the per-lecture table
     const qs = [...document.querySelectorAll('#bank-mock .q')];
     return qs.length && qs.map(c => [c.id, !!c.querySelector('input')]);
   });
-  assert.equal(cards.length, 11);
+  assert.equal(cards.length, PAPER);
   await page.click(`[id="${cards[0][0]}"] .flagbtn`);
   for (const [id, isFill] of cards) {
     if (isFill) await page.type(`[id="${id}"] input`, '0');    // every demo fill answer is nonzero
@@ -186,7 +193,7 @@ test('the zh build renders Chinese UI strings', async () => {
   assert.equal(info.lang, 'zh-CN');
   assert.deepEqual(info.tabs, ['练习题', '简答分步', '模拟考试', '错题本']);
   assert.equal(info.box, '本节练习');
-  assert.match(info.bar, /^已答 0 \/ 23/);
+  assert.match(info.bar, new RegExp(`^已答 0 / ${SCORED}`));
   await page.click('[id="q-p-p1-1"] .otext', '1/11');
   assert.match(await page.waitFor(() => document.querySelector('[id="q-p-p1-1"] .why')?.textContent), /^第一次选了 C，正确答案是 B。/);
 });

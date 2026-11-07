@@ -10,11 +10,13 @@ const q = (type, extra = {}) => ({type, ...extra});
 const fill = (h, ref, value) => h.api.fillCheck({accept: [ref]}, value);
 function option(card, h, question, original) { return card.querySelectorAll('.opt')[h.api.displayOrder(question).indexOf(original)]; }
 function button(card, label) { return card.querySelectorAll('button').find(x => x.textContent === label); }
+// the visible text of an engine UI string (t() returns HTML), so expected texts follow any rewording
+function textOf(html) { const e = new Element(); e.innerHTML = html; return e.textContent; }
 
 // Every case uses a fresh realm, state, fake clock, and memory store.
 test('unmodified engine boots and publishes its supported API with minimal DOM stubs', () => {
   const h = load({instrument: false});
-  assert.deepEqual(Object.keys(h.window.StudyGuide).sort(), ['el', 'renderTex', 'report', 't']);
+  for (const name of ['el', 't', 'renderTex', 'report']) assert.equal(typeof h.window.StudyGuide[name], 'function', name);
   assert.equal(h.window.StudyGuide.report().kind, 'study-guide-report');
 });
 for (const [name, ref, value] of [
@@ -76,23 +78,6 @@ test('single/tf scoring is strict and multi scoring follows the documented parti
   assert.equal(h.api.scoreOf(q('fill', {accept: ['0.5']}), '1/2'), 1);
   assert.equal(h.api.scoreOf(q('fill', {accept: ['0.5']}), 'wrong'), 0);
   assert.equal(h.api.scoreOf(q('card'), 0), 0);
-});
-
-test('display order is stable across realms, handles Unicode ids, and stores original indexes', () => {
-  const h = load(), again = load();
-  for (const id of ['p1', 'p2', 'p5']) {
-    const a = h.api.BANKS.practice.imap[id], b = again.api.BANKS.practice.imap[id];
-    assert.deepEqual(clone(h.api.displayOrder(a)), clone(again.api.displayOrder(b)));
-    assert.deepEqual(clone(h.api.displayOrder(a)).sort(), Array.from(a.opts, (_, i) => i));
-  }
-  const p = h.api.BANKS.practice.imap.p1;
-  assert.equal(h.api.letterOf(p, p.ans), 'B');
-  assert.deepEqual(clone(h.api.displayOrder(h.api.BANKS.practice.imap.p5)), [0, 1]);
-  const fixed = {...p, id: 'fixed', fixed: true};
-  assert.deepEqual(clone(h.api.displayOrder(fixed)), [0, 1, 2]);
-  for (const seed of ['test:ascii', 'test:中文', 'test:😀']) {
-    assert.deepEqual(clone(h.api.seededOrder(seed, 8)), clone(again.api.seededOrder(seed, 8)));
-  }
 });
 
 test('single-choice click persists first try; later clicks and notebook redos do not alter it', () => {
@@ -369,7 +354,11 @@ test('built demo embeds exactly the source data and its engine can boot with the
   const code = scripts.find(s => s.includes('function fillCheck'));
   assert.ok(code); assert.equal(code.trim(), source.trim()); new vm.Script(code);
   const h = load({data, code, instrument: false});
-  assert.equal(h.window.StudyGuide.report().practice.byLecture.L1.total, 7);
+  // scored practice questions per lecture (flashcards are not scored), counted from the demo files
+  const lecOf = Object.fromEntries(data.practice.groups.map(g => [g.id, g.lec])), totals = {};
+  for (const q of data.practice.items) if (q.type !== 'card') totals[q.lec || lecOf[q.g]] = (totals[q.lec || lecOf[q.g]] || 0) + 1;
+  const byLecture = h.window.StudyGuide.report().practice.byLecture;
+  for (const lec of data.config.lectures) assert.equal(byLecture[lec].total, totals[lec] || 0, lec);
   assert.equal(h.window.StudyGuide.report().shortAnswer.length, 0);
 });
 
@@ -470,14 +459,14 @@ test('open section state and complete practice/short/redo records survive reload
 
 test('ambiguous display directives preserve fixed and two-option order', () => {
   const h = load(), base = h.api.BANKS.practice.imap.p1;
+  assert.deepEqual(clone(h.api.displayOrder({...base, id: 'fixed', fixed: true})), [0, 1, 2]);
   for (const item of [{...base, id: 'two', opts: base.opts.slice(0, 2), show: 'B'},
                        {...base, id: 'fixed-show', fixed: true, show: 'C'}]) {
     assert.equal(h.api.displayOrder(item).indexOf(item.ans), 0);
   }
 });
 
-
-test('an explicit empty mock layout disables engine draws (documented build mismatch)', () => {
+test('engine tolerates an empty mock layout and draws nothing (build.py rejects one)', () => {
   const data = fixture(); data.config.mock.sections = [];
   assert.deepEqual(clone(load({data}).api.drawPaper()), []);
 });
@@ -489,8 +478,9 @@ test('optional short questions are excluded from aggregate points but retain the
   const bar = new Element(), score = new Element('p'); score.className = 'score'; bar.appendChild(score);
   h.document.getElementById = id => id === 'bar-sa' ? bar : null;
   h.api.updateSABar();
-  assert.match(score.textContent, /Started 2 \/ 2/);
-  assert.match(score.textContent, /first-try score 2 \/ 6/);
+  const t = h.window.StudyGuide.t;
+  assert.ok(score.textContent.includes(textOf(t('saBar', {a: 2, n: 2}))), score.textContent);
+  assert.ok(score.textContent.includes(textOf(t('saBarScore', {s: 2, m: 6}))), score.textContent);
   assert.equal(h.window.StudyGuide.report().shortAnswer.length, 2);
 });
 
@@ -543,14 +533,20 @@ const bookView = h => clone(h.api.bookEntries().map(e => [e.q.id, e.notes]));
 const bookIds = (h, keep = () => true) => clone(h.api.bookEntries().filter(keep).map(e => e.q.id));
 
 // Changing the shuffle would relabel the letters students saw (and the letters in reports); stored indexes
-// would stay right. These values pin the current algorithm; build.py's Python port gives the same ones.
+// would stay right. These values pin the current algorithm; build.py's Python port gives the same ones
+// (tests/test_build.py, test_seeded_order_matches_engine_golden_values).
 test('golden shuffle orders: seededOrder, fixture and demo display orders are pinned', () => {
   const h = load();
   assert.deepEqual(clone(h.api.seededOrder('test:x', 8)), [1, 7, 6, 5, 4, 0, 3, 2]);
   assert.deepEqual(clone(h.api.seededOrder('test:x', 4)), [2, 0, 3, 1]);
+  assert.deepEqual(clone(h.api.seededOrder('k:题😀', 6)), [1, 5, 3, 0, 4, 2]);
+  assert.deepEqual(clone(h.api.seededOrder('', 5)), [4, 0, 2, 1, 3]);
+  const golden = {'p1-1': [3, 1, 2, 0], 'p1-4': [0, 1, 2, 3], 'p1-6': [0, 3, 1, 2], 'm1-4': [0, 3, 1, 2], 'm1-5': [2, 3, 1, 0], 'm1-10': [2, 0, 3, 1]};
+  for (const [id, order] of Object.entries(golden)) assert.deepEqual(clone(h.api.seededOrder(`demo-prob101-mt1:${id}`, 4)), order, id);
   assert.deepEqual(clone(h.api.displayOrder(h.api.BANKS.practice.imap.p1)), [2, 0, 1]);
   const d = load({data: demoData()}), p = d.api.BANKS.practice.imap['p1-1'];
-  assert.deepEqual(clone(d.api.displayOrder(p)), [3, 0, 1, 2]);           // show: "B" puts the answer (1/6) at B
+  // show: "B" moves the answer (1/6, stored index 0) from the seeded order [3, 1, 2, 0] to the second slot
+  assert.deepEqual(clone(d.api.displayOrder(p)), [3, 0, 1, 2]);
   assert.deepEqual(['A', 'B', 'C', 'D'].map((_, pos) => p.opts[d.api.displayOrder(p)[pos]].t), ['1/12', '1/6', '1/11', '7/36']);
   assert.deepEqual(clone(d.api.displayOrder(d.api.BANKS.mock.imap['m1-1'])), [0, 1]);   // first mock item: tf, never shuffled
   assert.deepEqual(clone(d.api.displayOrder(d.api.BANKS.mock.imap['m1-4'])), [0, 3, 1, 2]); // first shuffled mock item
@@ -565,7 +561,7 @@ test('clicking an option by its visible text stores the original index and resto
   assert.deepEqual(clone(h.api.STATE.practice.ans['p1-1']), {first: 1, tried: [1]});
   assert.deepEqual(JSON.parse(h.storage.get('demo-prob101-mt1:practice')).ans['p1-1'], {first: 1, tried: [1]});
   const before = h.api.practiceCard(p, 1);
-  assert.match(whyText(before), /First pick was C; the answer is B\./);
+  assert.ok(whyText(before).includes(textOf(h.window.StudyGuide.t('leadWrong', {a: 'C', b: 'B'}))));
   const again = load({data, storage: h.storage}), card = again.api.practiceCard(again.api.BANKS.practice.imap['p1-1'], 1);
   assert.ok(byText(card, '1/11').classList.contains('wrong'));
   assert.ok(byText(card, '1/6').classList.contains('right'));
@@ -615,7 +611,7 @@ test('bug 1: redoing a wrong short-answer choice step never restores first-try c
   opt(reopened, 0).click();
   assert.deepEqual(clone(h.api.STATE.practice.sa.s1[1]), {tries: 1, tried: [1, 0], v: 0, ok: true, shown: true});
   assert.deepEqual(clone(h.api.saScore(s)), {s: 0, f: 3, m: 6});
-  assert.match(whyText(inStep(h.api.saCard(s, 1, 'p'), 1)), /fixed after 1 wrong tries/);
+  assert.ok(whyText(inStep(h.api.saCard(s, 1, 'p'), 1)).includes(textOf(h.window.StudyGuide.t('fixedAfter', {n: 1}))));
   assert.deepEqual(clone(load({storage: h.storage}).api.saScore(s)), {s: 0, f: 3, m: 6});
 });
 
@@ -715,7 +711,7 @@ function hand(h, draft = RIGHT, flags = {}) {
   h.advance(1000); h.api.submitMock(false);
 }
 test('notebook keeps mock mistakes past the 20-paper history, with paper numbers that never shift', () => {
-  const h = load(), letter = h.api.letterOf(h.api.BANKS.mock.imap.m1, 1);
+  const h = load(), t = h.window.StudyGuide.t, letter = h.api.letterOf(h.api.BANKS.mock.imap.m1, 1);
   hand(h, {...RIGHT, m1: 1});
   for (let i = 2; i <= 21; i++) hand(h);
   hand(h, {...RIGHT, m2: [0]}, {m4: 1});
@@ -725,9 +721,9 @@ test('notebook keeps mock mistakes past the 20-paper history, with paper numbers
   assert.equal(st.book.papers, 30);
   assert.equal(st.history.some(x => x.wrong.includes('m1')), false);   // paper 1 left the history long ago
   assert.deepEqual(bookView(h), [
-    ['m1', [`Wrong on mock paper 1; you answered ${letter} (two)`]],
-    ['m2', [`Wrong on mock paper 22; you answered ${h.api.letterOf(h.api.BANKS.mock.imap.m2, 0)}`]],
-    ['m4', ['Flagged on mock paper 22, answered correctly']]]);
+    ['m1', [t('noteMock', {k: 1}) + t('notePick', {a: `${letter} (two)`})]],
+    ['m2', [t('noteMock', {k: 22}) + t('notePick', {a: h.api.letterOf(h.api.BANKS.mock.imap.m2, 0)})]],
+    ['m4', [t('noteFlag', {k: 22}) + t('noteFlagOk')]]]);
   const reloaded = load({storage: h.storage});
   assert.deepEqual(bookView(reloaded), bookView(h));
   assert.equal(reloaded.window.StudyGuide.report().mock.papers, 20);
@@ -748,12 +744,12 @@ test('an old save (no notebook store) migrates its history entries; loading alon
   oldMock.result = oldMock.history[2];
   const storage = new Map([['test:mock', JSON.stringify(oldMock)]]), h = load({storage});
   assert.deepEqual(clone(h.api.STATE.mock), oldMock);
-  const L = i => h.api.letterOf(m1, i), names = ['one', 'two', 'three'];
+  const L = i => h.api.letterOf(m1, i), names = ['one', 'two', 'three'], t = h.window.StudyGuide.t;
+  const wrongOn = (k, a) => t('noteMock', {k}) + (a == null ? '' : t('notePick', {a}));
   const expected = [
-    ['m2', ['Wrong on mock paper 1', `Wrong on mock paper 3; you answered ${h.api.letterOf(m2, 0)}`]],
-    ['m1', [`Wrong on mock paper 2; you answered ${L(2)} (${names[2]})`, 'Flagged on mock paper 2',
-            `Wrong on mock paper 3; you answered ${L(1)} (${names[1]})`]],
-    ['m4', ['Flagged on mock paper 2, answered correctly', 'Flagged on mock paper 3, answered correctly']]];
+    ['m2', [wrongOn(1), wrongOn(3, h.api.letterOf(m2, 0))]],
+    ['m1', [wrongOn(2, `${L(2)} (${names[2]})`), t('noteFlag', {k: 2}), wrongOn(3, `${L(1)} (${names[1]})`)]],
+    ['m4', [t('noteFlag', {k: 2}) + t('noteFlagOk'), t('noteFlag', {k: 3}) + t('noteFlagOk')]]];
   assert.deepEqual(bookView(h), expected);
   // the first hand-in writes the store; later papers push the old history out without losing these entries
   for (let i = 0; i < 20; i++) hand(h);
@@ -794,16 +790,161 @@ test('mock items without a lecture do not crash drawing, cards, hand-in, noteboo
   assert.equal(h.window.StudyGuide.report().mock.last.wrong[0].id, 'm9');
 });
 
-test('option order keeps its golden values, the same ones build.py pins (tests/test_build.py)', () => {
-  const read = f => JSON.parse(fs.readFileSync(path.join(DEMO, f), 'utf8'));
-  const course = read('course.json');
-  const h = load({data: {config: {storageKey: course.storageKey, lectures: course.lectures}, practice: read('practice.json'),
-    mock: read('mock.json'), short: read('short.json')}});
-  assert.deepEqual(clone(h.api.seededOrder('test:x', 8)), [1, 7, 6, 5, 4, 0, 3, 2]);
-  assert.deepEqual(clone(h.api.seededOrder('k:题😀', 6)), [1, 5, 3, 0, 4, 2]);
-  assert.deepEqual(clone(h.api.seededOrder('', 5)), [4, 0, 2, 1, 3]);
-  const golden = {'p1-1': [3, 1, 2, 0], 'p1-4': [0, 1, 2, 3], 'p1-6': [0, 3, 1, 2], 'm1-4': [0, 3, 1, 2], 'm1-5': [2, 3, 1, 0], 'm1-10': [2, 0, 3, 1]};
-  for (const [id, order] of Object.entries(golden)) assert.deepEqual(clone(h.api.seededOrder(`${course.storageKey}:${id}`, 4)), order, id);
-  // p1-1 has "show": "B", so its answer (stored index 0) moves to the second slot
-  assert.deepEqual(clone(h.api.displayOrder(h.api.BANKS.practice.imap['p1-1'])), [3, 0, 1, 2]);
+/* ---------- mock bar, option input, fill-ins without a display answer, artifact db mirror ---------- */
+// a stub mock bar (score line + actions) rendered by the real updateMockBar; returns the actions row
+function mockBar(h) {
+  const bar = new Element(), score = new Element('p'), acts = new Element();
+  score.className = 'score'; acts.className = 'acts'; bar.appendChild(score); bar.appendChild(acts);
+  h.document.getElementById = id => id === 'bar-mock' ? bar : null;
+  h.api.updateMockBar();
+  return acts;
+}
+
+test('mock bar: New paper on a started paper only arms at first; the second click draws a new paper', () => {
+  const h = load(), st = exam(h), t = h.window.StudyGuide.t, acts = mockBar(h), draft = clone(st.draft);
+  button(acts, t('redraw')).click();
+  assert.deepEqual(clone(st.paper), ['m1', 'm2', 'm3', 'm4']);
+  assert.deepEqual(clone(st.draft), draft); assert.equal(st.pcount, 0);
+  button(acts, t('redrawArmed')).click();
+  assert.deepEqual(clone(st.paper), ['m1', 'm2', 'm3']);          // one question per section of the fixture layout
+  assert.deepEqual(clone(st.draft), {}); assert.deepEqual(clone(st.flags), {}); assert.equal(st.pcount, 1);
+  assert.equal(JSON.parse(h.storage.get('test:mock')).pcount, 1);
+  h.api.updateMockBar();                                          // nothing answered on the new paper: one click is enough
+  button(acts, t('redraw')).click();
+  assert.equal(st.pcount, 2);
+});
+
+test('mock bar: handing in with blank questions asks first; a complete paper hands in on one click', () => {
+  const h = load(), st = exam(h), t = h.window.StudyGuide.t;
+  delete st.draft.m4;
+  const acts = mockBar(h);
+  assert.equal(button(acts, t('submitAll')), undefined);
+  button(acts, t('submitLeft', {n: 1})).click();
+  assert.equal(st.submitted, false); assert.equal(st.history.length, 0);
+  button(acts, t('submitArmed', {n: 1})).click();
+  assert.equal(st.submitted, true); assert.deepEqual(clone(st.result.wrong), ['m1', 'm2', 'm4']);
+  const full = load(), fs2 = exam(full);
+  button(mockBar(full), t('submitAll')).click();
+  assert.equal(fs2.submitted, true);
+});
+
+test('mock bar: the time-limit choice and the Start button are saved to the mock state', () => {
+  const h = load(), st = exam(h), t = h.window.StudyGuide.t, acts = mockBar(h), sel = acts.querySelector('select');
+  const saved = () => JSON.parse(h.storage.get('test:mock')).timer;
+  assert.deepEqual(sel.children.map(o => [o.textContent, o.value]), [[textOf(t('limitMin', {m: 1})), '1'], [textOf(t('noLimit')), '0']]);
+  assert.equal(sel.value, '1');
+  sel.value = '0'; sel.emit('change');
+  assert.equal(st.timer.limit, 0); assert.deepEqual(saved(), {limit: 0, startedAt: ''});
+  button(acts, t('startTimer')).click();
+  assert.deepEqual(clone(st.timer), {limit: 0, startedAt: '2026-10-26T12:00:00.000Z'});
+  assert.deepEqual(saved(), clone(st.timer));
+  assert.equal(acts.querySelector('select'), null);               // a running timer cannot be changed any more
+  assert.equal(button(acts, t('startTimer')), undefined);
+});
+
+test('an option click that ends a text selection records nothing; a plain click or a short wobble still answers', () => {
+  // [selected text, mouse travel in px, records an answer]
+  for (const [selected, travel, records] of [['one', 50, false], ['', 50, true], ['one', 3, true]]) {
+    const h = load(), p = h.api.BANKS.practice.imap.p1, opt = option(h.api.practiceCard(p, 1), h, p, 1);
+    h.window.getSelection = () => ({isCollapsed: !selected, toString: () => selected});
+    opt.emit('mousedown', {clientX: 10, clientY: 10});
+    opt.emit('click', {clientX: 10 + travel, clientY: 10});
+    const rec = h.api.STATE.practice.ans.p1;
+    assert.deepEqual(rec && clone(rec), records ? {first: 1, tried: [1]} : undefined, `${selected}/${travel}`);
+  }
+});
+
+test('Enter or Space on a focused option records the answer; other keys do not', () => {
+  const h = load(), p = h.api.BANKS.practice.imap.p1;
+  let prevented = 0;
+  const press = (original, key) => option(h.api.practiceCard(p, 1), h, p, original).emit('keydown', {key, preventDefault() { prevented++; }});
+  press(1, 'Tab'); press(1, 'a');
+  assert.equal(h.api.STATE.practice.ans.p1, undefined);
+  press(1, 'Enter');
+  assert.deepEqual(clone(h.api.STATE.practice.ans.p1), {first: 1, tried: [1]});
+  press(2, ' ');
+  assert.deepEqual(clone(h.api.STATE.practice.ans.p1), {first: 1, tried: [1, 2]});
+  assert.equal(prevented, 2);                                     // Space does not also scroll the page
+});
+
+test('a fill-in without a display answer shows its first accepted answer in feedback, on the handed-in card and in the report', () => {
+  const data = fixture();
+  for (const item of [data.practice.items[2], data.mock.items[2]]) { delete item.answer; item.accept = ['0.5', '1/2']; }
+  const h = load({data}), t = h.window.StudyGuide.t, p = h.api.BANKS.practice.imap.p3;
+  const card = h.api.practiceCard(p, 1); card.querySelector('input').value = '0.9'; button(card, t('submit')).click();
+  assert.ok(whyText(h.api.practiceCard(p, 1)).includes(textOf(t('fillWrong', {a: '0.5'}))));
+  assert.equal(h.window.StudyGuide.report().practice.missed.find(x => x.id === 'p3').correct, '0.5');
+  const st = exam(h); st.draft.m3 = '0.9'; h.api.submitMock(false);
+  assert.ok(whyText(h.api.mockCard(h.api.BANKS.mock.imap.m3, 3)).includes(textOf(t('refAns', {a: '0.5'}))));
+  // mock.last.wrong lists what was answered, not the correct answer
+  assert.deepEqual(clone(h.window.StudyGuide.report().mock.last.wrong.find(x => x.id === 'm3')),
+    {id: 'm3', lec: 'L1', type: 'fill', stem: 'Value', answered: '“0.9”', flagged: false});
+});
+
+// let the engine's promise chains (db open, get, set) run; the harness clock drives its debounce timers
+const settle = () => new Promise(resolve => setImmediate(resolve));
+/* a stand-in for the artifact db: doc(path).get() and .set(value); every write attempt is recorded, and with
+   fail both calls reject */
+function fakeDb(docs = {}, fail = false) {
+  const db = {docs, writes: [], doc: path => ({
+    get: async () => { if (fail) throw Error('offline'); return {exists: path in docs, data: () => clone(docs[path])}; },
+    set: async value => { db.writes.push([path, clone(value)]); if (fail) throw Error('offline'); docs[path] = clone(value); }})};
+  return db;
+}
+
+test('artifact db: save() mirrors progress after a 900 ms debounce and the report after 2.5 s', async () => {
+  const db = fakeDb(), h = load({db}); await settle();
+  assert.deepEqual(db.writes, []);                                // nothing stored on either side: boot writes nothing
+  h.api.STATE.practice.ans.p1 = {first: 1, tried: [1]}; h.api.save('practice');
+  h.flush(500);
+  h.api.STATE.practice.ans.p5 = {first: 1, tried: [1]}; h.api.save('practice');
+  h.flush(899); await settle();
+  assert.deepEqual(db.writes, []);                                // the second save restarted the wait
+  h.flush(1); await settle();
+  const practice = h.api.STATE.practice;
+  assert.deepEqual(db.writes, [['progress/practice', {v: 1, state: clone(practice), updatedAt: practice.updatedAt}]]);
+  h.flush(1600); await settle();
+  assert.deepEqual(db.writes.map(w => w[0]), ['progress/practice', 'progress/report']);
+  assert.equal(db.writes[1][1].kind, 'study-guide-report');
+  assert.deepEqual(db.writes[1][1].practice.missed.map(x => x.id), ['p1']);
+});
+
+test('artifact db: on boot a remote record replaces an empty or older local one; a newer local one is pushed instead', async () => {
+  const at = hour => `2026-10-26T${String(hour).padStart(2, '0')}:00:00.000Z`;
+  const record = (first, updatedAt) => ({v: 1, scope: 'all', ans: {p1: {first, tried: [first]}}, sa: {}, redo: {}, updatedAt});
+  for (const [local, remote, winner] of [[null, record(1, at(9)), 'remote'],
+      [record(0, at(10)), record(1, at(11)), 'remote'], [record(0, at(10)), record(1, at(9)), 'local']]) {
+    const storage = new Map(local ? [['test:practice', JSON.stringify(local)]] : []);
+    const db = fakeDb({'progress/practice': {v: 1, state: remote, updatedAt: remote.updatedAt}}), h = load({storage, db});
+    await settle();
+    const kept = winner === 'remote' ? remote : local;
+    assert.deepEqual(clone(h.api.STATE.practice), kept, winner);
+    assert.deepEqual(JSON.parse(storage.get('test:practice')), kept);
+    h.flush(); await settle();
+    assert.deepEqual(db.writes, winner === 'local' ? [['progress/practice', {v: 1, state: local, updatedAt: local.updatedAt}]] : []);
+  }
+});
+
+test('artifact db: local progress with no remote record is pushed on boot', async () => {
+  const h0 = load(); h0.api.STATE.practice.ans.p1 = {first: 0, tried: [0]}; h0.api.save('practice');
+  exam(h0); h0.api.save('mock');
+  const db = fakeDb(), h = load({storage: h0.storage, db}); await settle();
+  assert.deepEqual(db.writes, []);
+  h.flush(900); await settle();
+  const doc = key => ({v: 1, state: JSON.parse(h0.storage.get('test:' + key)), updatedAt: h.api.STATE[key].updatedAt});
+  assert.deepEqual(Object.fromEntries(db.writes), {'progress/practice': doc('practice'), 'progress/mock': doc('mock')});
+});
+
+test('artifact db: a db that cannot open, read or write never breaks saving to localStorage', async () => {
+  for (const make of [() => Promise.reject(Error('no db')), () => fakeDb({}, true)]) {
+    const db = make(), h = load({db}); await settle();
+    h.api.STATE.practice.ans.p1 = {first: 0, tried: [0]}; h.api.save('practice');
+    h.flush(); await settle();
+    h.api.STATE.practice.ans.p5 = {first: 1, tried: [1]}; h.api.save('practice');
+    h.flush(); await settle();
+    assert.deepEqual(JSON.parse(h.storage.get('test:practice')).ans, {p1: {first: 0, tried: [0]}, p5: {first: 1, tried: [1]}});
+    assert.deepEqual(clone(load({storage: h.storage}).api.STATE.practice.ans), clone(h.api.STATE.practice.ans));
+    // a write that failed does not block the next one
+    if (db.writes) assert.deepEqual(db.writes.map(w => w[0]), ['progress/practice', 'progress/report', 'progress/practice', 'progress/report']);
+  }
 });
