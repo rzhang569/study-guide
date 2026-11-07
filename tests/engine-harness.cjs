@@ -51,6 +51,9 @@ class Element {
   querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }
   focus() {} select() {} scrollIntoView() {}
 }
+class Option extends Element {
+  constructor(text = '', value = text) { super('option'); this.textContent = text; this.value = String(value); }
+}
 function fixture() {
   const opts = [{t: 'one', why: 'First.'}, {t: 'two', why: 'Second.'}, {t: 'three', why: 'Third.'}];
   const groups = [{id: 'g', lec: 'L1', sec: 'l1', title: 'Test values'}];
@@ -72,14 +75,17 @@ function fixture() {
       {ask: 'Pick?', pts: 3, opts: ['one', 'two'], ans: 0, sol: 'one'},
       {ask: 'Explain?', pts: 1, sol: 'Reason'}]}]}};
 }
-function load({data = fixture(), storage = new Map(), failStorage = false, code = source, instrument = true} = {}) {
+/* db: what window.claude.use("db") resolves to, for the artifact db mirror (a rejected promise makes use() fail);
+   left out, the page has no window.claude, as outside an artifact */
+function load({data = fixture(), storage = new Map(), failStorage = false, code = source, instrument = true, db} = {}) {
   let now = Date.parse('2026-10-26T12:00:00Z'), next = 0;
   const timeouts = new Map(), intervals = [];
   class Clock extends Date { constructor(...args) { super(...(args.length ? args : [now])); } static now() { return now; } }
   const document = {createElement: tag => new Element(tag), getElementById: () => null,
     querySelector: () => null, querySelectorAll: () => [], body: new Element('body'), head: new Element('head')};
   const window = {STUDY_DATA: clone(data), addEventListener() {}, innerHeight: 800};
-  const context = vm.createContext({window, document, Date: Clock,
+  if (db !== undefined) window.claude = {use: name => name === 'db' ? Promise.resolve(db) : Promise.reject(Error('unknown ' + name))};
+  const context = vm.createContext({window, document, Date: Clock, Option,
     localStorage: {getItem(k) { if (failStorage) throw Error('blocked'); return storage.get(k) ?? null; },
       setItem(k, v) { if (failStorage) throw Error('full'); storage.set(k, v); }},
     setTimeout(fn, ms) { const id = ++next; timeouts.set(id, {fn, due: now + ms}); return id; },
@@ -89,7 +95,7 @@ function load({data = fixture(), storage = new Map(), failStorage = false, code 
     'firstScore', 'displayOrder', 'letterOf', 'seededOrder', 'saScore', 'stepOk', 'saStarted', 'setStep',
     'practiceCard', 'saCard', 'updateSABar', 'mockCard', 'drawPaper', 'newPaper', 'submitMock', 'answeredDraft',
     'clockState', 'mmss', 'save', 'bookEntries', 'mastered', 'exportPanel', 'plain', 'setOpen', 'openMap',
-    'STR', 'mockBook', 'bookCard', 'updatePracticeBar'];
+    'STR', 'mockBook', 'bookCard', 'updatePracticeBar', 'updateMockBar'];
   const end = '  boot();\n})();';
   if (instrument) {
     if (!code.includes(end)) throw Error('engine boot marker changed; update test instrumentation');
