@@ -83,7 +83,7 @@ New papers prefer questions not drawn before, so the pool should hold at least t
 - (W) the right answer is the single longest option in at most about 30% of single-choice questions;
 - (W) multi-select questions don't all have the same number of correct answers;
 - (W) true/false answers are between 30% and 70% True;
-- (W) no letter is the shown correct answer in more than 40% of single-choice questions. The engine shuffles options per question with a fixed seed, so a small bank can still come out lopsided. The warning suggests a `"show"` letter for a few questions. `show` moves the answer on screen without touching the stored options, so it is safe even for questions students have already answered;
+- (W) no letter is the shown correct answer in more than 40% of single-choice questions, counting only pile-ups a fair shuffle would produce less than 10% of the time (4 of 9 at one letter is normal; 6 of 10 is not). The engine shuffles options per question with a fixed seed, so a small bank can still come out lopsided. The warning suggests a `"show"` letter for a few questions. `show` moves the answer on screen without touching the stored options, so it is safe even for questions students have already answered;
 - (W) no mock stem is a practice stem with only numbers or a word or two changed;
 - (W) each mock section's pool can fill the paper, ideally twice over.
 
