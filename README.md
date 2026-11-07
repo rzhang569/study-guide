@@ -6,9 +6,9 @@ An [Agent Skill](https://agentskills.io) that turns a course's slides and notes 
 
 > **Status: v0.1.0, early release.** Feedback and issues are welcome.
 >
-> - **Tested:** building pages; using them locally in a browser; the Export progress → paste to Claude loop; installing the Claude Code plugin from GitHub; a small with/without-skill comparison of an earlier version (see [Evaluation](#evaluation)).
-> - **Documented by each agent but not tested end to end:** Codex, Gemini CLI, Cursor and GitHub Copilot (see [Install](#install)).
-> - **Experimental, not yet tested end to end:** uploading to claude.ai; automatic progress sync when the page runs as a Claude artifact; whether an agent picks the skill on its own in a normal conversation.
+> - **Tested:** building pages; using them locally in a browser; the Export progress → paste to Claude loop; installing the Claude Code plugin from GitHub; Codex CLI and the Codex app on macOS (calling `$study-guide`, and picking the skill on its own in a new chat); a small with/without-skill comparison of an earlier version (see [Evaluation](#evaluation)).
+> - **Documented by each agent but not tested end to end:** Gemini CLI, Cursor and GitHub Copilot (see [Install](#install)).
+> - **Experimental, not yet tested end to end:** uploading to claude.ai; automatic progress sync when the page runs as a Claude artifact; whether agents other than Codex pick the skill on their own in a normal conversation.
 
 ![Notes: each topic has a one-line lead, a formula, a worked figure and a plain-language box](docs/notes.png)
 
@@ -48,7 +48,7 @@ claude plugin install study-guide@study-guide
 
 Inside a session the commands are `/plugin marketplace add rzhang569/study-guide`, then `/plugin install study-guide@study-guide`. Or install it as a plain skill: copy `skills/study-guide` to `~/.claude/skills/study-guide`.
 
-**Codex, Gemini CLI, Cursor and GitHub Copilot in VS Code (documented, not tested end to end):** all four read skills from `~/.agents/skills/`, so one copy serves them all:
+**Codex (tested on macOS), Gemini CLI, Cursor and GitHub Copilot in VS Code (documented, not tested end to end):** all four read skills from `~/.agents/skills/`, so one copy serves them all:
 
 ```bash
 git clone https://github.com/rzhang569/study-guide.git
