@@ -41,7 +41,8 @@ python3 evals/ab.py grade OUT         # one grader per run, then blind pairwise 
 - Graders see only the page's rendered text and figure screenshots, so they cannot tell how a page was authored. Pairwise comparisons also hide which side is which.
 - The grading prompt is written for `builds-page-from-slides` only.
 - `grade` stops before any grader runs if a slide PDF cannot be read or has a page without text, because the graders check citations and answers against the slides.
-- A grader that fails or writes no usable result is reported as `FAILED`, with its error kept in `<file>.error.txt`; `grade` then exits with an error, and running it again retries only those.
+- A grader result counts only when every field the prompt asks for is there with the right type: a true/false `pass` and a non-empty `why` for each of A–F, three scores that are whole numbers from 1 to 5, and comments; for a comparison, `better`, `margin` and `why`.
+- A grader that fails or writes an incomplete result is reported as `FAILED`, with its error kept in `<file>.error.txt` and the result renamed to `*.invalid.json`; `grade` then exits with an error. Results from an earlier `grade` are checked the same way before they are reused, so running it again redoes only the missing or incomplete ones.
 - The reload check answers the bank's first question the way its type needs (choice, multi-select, fill-in or flashcard) and compares its saved record and card before and after the reload.
 - `run` and `grade` call Claude and cost money; `--prepare-only`, `report` and `ab_check.mjs` do not.
 

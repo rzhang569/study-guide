@@ -113,31 +113,89 @@ class Grading(unittest.TestCase):
                 mock.patch.object(ab.subprocess, 'run', side_effect=fake):
             return run('grade', self.out)
 
-    def test_a_failed_grader_is_reported_with_its_error(self):
-        good = {k: {'pass': True, 'why': 'ok'} for k in 'ABCDEF'}
-        good['scores'] = {'notes_clarity': 5}
+    def test_a_failed_or_incomplete_grader_is_reported_with_its_error(self):
         cases = (
             (lambda cmd, cwd, **kw: subprocess.CompletedProcess(cmd, 1, '', 'rate limited'), 'exited with 1: rate limited'),
             (lambda cmd, cwd, **kw: subprocess.CompletedProcess(cmd, 0, '{"total_cost_usd": 0.4}', ''), 'wrote no grade.json'),
-            (lambda cmd, cwd, **kw: (Path(cwd, 'grade.json').write_text('{"A": 1}', encoding='utf-8'),
-                                     subprocess.CompletedProcess(cmd, 0, '{"total_cost_usd": 0.4}', ''))[1],
-             'does not have the fields'),
-        )
+            (writes('grade.json', '{"A": '), 'not valid JSON'),
+            (writes('grade.json', {'A': 1}), "'A' needs a true/false 'pass'"))
+        cases += tuple((writes('grade.json', grade), words) for grade, words in INCOMPLETE_GRADES)
         for fake, words in cases:
             with self.subTest(words=words):
                 code, log = self.grade_with(fake)
                 self.assertIn('1 grader(s) failed', str(code))
-                self.assertIn(f'FAILED A-1: ', log)
+                self.assertIn('FAILED A-1: ', log)
                 self.assertIn(words, log)
                 self.assertNotIn('graded A-1', log)
                 self.assertIn(words, (self.out / 'grade/A-1/grade.json.error.txt').read_text(encoding='utf-8'))
-                self.assertFalse((self.out / 'grade/A-1/grade.json').exists())  # a later run retries it
-        code, log = self.grade_with(lambda cmd, cwd, **kw: (
-            Path(cwd, 'grade.json').write_text(json.dumps(good), encoding='utf-8'),
-            subprocess.CompletedProcess(cmd, 0, '{"total_cost_usd": 0.4}', ''))[1])
+                self.assertFalse((self.out / 'grade/A-1/grade.json').exists())  # renamed, so a later run retries it
+        code, log = self.grade_with(writes('grade.json', GOOD_GRADE, cost=0.4))
         self.assertEqual((code, log.strip()), (0, 'graded A-1 ($0.40)'))
         self.assertFalse((self.out / 'grade/A-1/grade.json.error.txt').exists())  # the earlier failure is cleared
         self.assertTrue((self.out / 'grade/A-1/slides.txt').read_text(encoding='utf-8').startswith('=== s.pdf p.1'))
+
+    def test_an_earlier_result_is_reused_only_when_complete(self):
+        path = self.out / 'grade/A-1/grade.json'
+        path.write_text(json.dumps(GOOD_GRADE), encoding='utf-8')
+        fake = mock.Mock(side_effect=writes('grade.json', GOOD_GRADE))
+        self.assertEqual(self.grade_with(fake), (0, ''))
+        fake.assert_not_called()
+        for grade, words in INCOMPLETE_GRADES:
+            with self.subTest(words=words):
+                path.write_text(json.dumps(grade), encoding='utf-8')
+                fake = mock.Mock(side_effect=writes('grade.json', GOOD_GRADE))
+                code, log = self.grade_with(fake)
+                self.assertEqual(code, 0, log)
+                self.assertIn(f'regrading A-1: its earlier grade.json was unusable ({words}', log)
+                self.assertEqual(fake.call_count, 1)
+                self.assertEqual(json.loads(path.read_text(encoding='utf-8')), GOOD_GRADE)
+                self.assertEqual(json.loads((path.parent / 'grade.invalid.json').read_text(encoding='utf-8')), grade)
+
+    def test_pairwise_results_need_better_margin_and_why(self):
+        (self.out / 'grade/B-1').mkdir()
+        (self.out / 'grade/B-1/notes.md').write_text('notes', encoding='utf-8')
+
+        def fake(pair):
+            def run_grader(cmd, cwd, **kw):
+                name = 'pair.json' if Path(cwd).name.startswith('pair') else 'grade.json'
+                return writes(name, pair if name == 'pair.json' else GOOD_GRADE)(cmd, cwd)
+            return run_grader
+        for pair, words in (({'better': 'X'}, "'margin' must be slight, clear or large"),
+                            ({'better': 'X', 'margin': 'clear'}, "'why' must be a non-empty text"),
+                            ({'better': 'A', 'margin': 'clear', 'why': 'w'}, "'better' must be X, Y or tie")):
+            with self.subTest(words=words):
+                code, log = self.grade_with(fake(pair))
+                self.assertIn('1 grader(s) failed', str(code))
+                self.assertIn(f'FAILED pair-1: pair.json is incomplete: {words}', log)
+        code, log = self.grade_with(fake({'better': 'tie', 'margin': 'slight', 'why': 'Both teach it equally.'}))
+        self.assertEqual(code, 0, log)
+        self.assertIn('compared pair-1', log)
+        sides = json.loads((self.out / 'grade/pair-1.sides.json').read_text(encoding='utf-8'))
+        self.assertEqual(sorted(sides.values()), ['A-1', 'B-1'])
+        self.assertFalse(list((self.out / 'grade/pair-1').rglob('*.error.txt')))
+
+
+GOOD_GRADE = dict({k: {'pass': True, 'why': 'Checked.'} for k in 'ABCDEF'},
+                  scores={'notes_clarity': 5, 'figure_value': 4, 'coverage': 5}, comments='Fine.')
+INCOMPLETE_GRADES = (
+    (dict(GOOD_GRADE, A={'pass': True}), "'A' needs a non-empty 'why'"),
+    (dict(GOOD_GRADE, F={'pass': 'yes', 'why': 'w'}), "'F' needs a true/false 'pass'"),
+    (dict(GOOD_GRADE, scores={}), "'scores' must have exactly"),
+    (dict(GOOD_GRADE, scores={'notes_clarity': 5}), "'scores' must have exactly"),
+    (dict(GOOD_GRADE, scores=dict(GOOD_GRADE['scores'], coverage=6)), "'scores.coverage' must be a whole number from 1 to 5"),
+    (dict(GOOD_GRADE, scores=dict(GOOD_GRADE['scores'], coverage=4.5)), "'scores.coverage' must be a whole number"),
+    (dict(GOOD_GRADE, scores=dict(GOOD_GRADE['scores'], notes_clarity=True)), "'scores.notes_clarity' must be a whole"),
+    ({k: v for k, v in GOOD_GRADE.items() if k != 'comments'}, "'comments' must be a non-empty text"),
+)
+
+
+def writes(name, content, cost=0.4):
+    """A stand-in for the claude process that writes name (a dict as JSON, or raw text) into its folder."""
+    def run_grader(cmd, cwd, **kw):
+        body = content if isinstance(content, str) else json.dumps(content)
+        Path(cwd, name).write_text(body, encoding='utf-8')
+        return subprocess.CompletedProcess(cmd, 0, json.dumps({'total_cost_usd': cost}), '')
+    return run_grader
 
 
 class Metrics(unittest.TestCase):

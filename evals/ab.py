@@ -214,7 +214,7 @@ D. mock_shape: does the mock mirror the real exam (a multiple-choice part plus c
 E. answer_keys: re-solve 6 questions across both lectures (include equilibrium P* = 20, Q* = 60 or the midpoint elasticity example if they appear). Are all keys right?
 F. figures_correct: is every figure correct for the slides (right numbers, curves, labels) and legible (no overlapping text, nothing cut off)?
 
-Then score 1-5 (5 best) for:
+Then score each as a whole number from 1 to 5 (5 best):
 - notes_clarity: could a struggling student learn both lectures from the notes alone in one pass?
 - figure_value: do the figures show the mechanisms with real numbers and help understanding?
 - coverage: are all exam-relevant slide points covered, weighted sensibly?
@@ -259,12 +259,54 @@ def slides_text(folder):
     return "\n".join(out) + "\n"
 
 
-def valid_result(name, data):
-    """True when a grader's JSON file has the shape the prompt asks for."""
-    if name == "grade.json":
-        return (isinstance(data, dict) and all(isinstance(data.get(k), dict) and isinstance(data[k].get("pass"), bool)
-                                               for k in "ABCDEF") and isinstance(data.get("scores"), dict))
-    return isinstance(data, dict) and data.get("better") in ("X", "Y", "tie")
+SCORES = ("notes_clarity", "figure_value", "coverage")
+
+
+def result_problem(name, data):
+    """None when a grader's JSON has every field the prompt asks for, with the right type and range; otherwise
+    what is wrong."""
+    def text(v):
+        return isinstance(v, str) and v.strip()
+
+    if not isinstance(data, dict):
+        return "it is not a JSON object"
+    if name == "pair.json":
+        if data.get("better") not in ("X", "Y", "tie"):
+            return "'better' must be X, Y or tie"
+        if data.get("margin") not in ("slight", "clear", "large"):
+            return "'margin' must be slight, clear or large"
+        return None if text(data.get("why")) else "'why' must be a non-empty text"
+    for k in "ABCDEF":
+        item = data.get(k)
+        if not isinstance(item, dict) or not isinstance(item.get("pass"), bool):
+            return f"'{k}' needs a true/false 'pass'"
+        if not text(item.get("why")):
+            return f"'{k}' needs a non-empty 'why'"
+    scores = data.get("scores")
+    if not isinstance(scores, dict) or sorted(scores) != sorted(SCORES):
+        return f"'scores' must have exactly {', '.join(SCORES)}"
+    bad = [k for k in SCORES if type(scores[k]) is not int or not 1 <= scores[k] <= 5]
+    if bad:
+        return f"'scores.{bad[0]}' must be a whole number from 1 to 5"
+    return None if text(data.get("comments")) else "'comments' must be a non-empty text"
+
+
+def usable(folder, expect):
+    """True when folder already holds a complete result. An incomplete one is renamed, with the reason written next
+    to it, so this run grades that folder again."""
+    target = Path(folder) / expect
+    if not target.exists():
+        return False
+    try:
+        problem = result_problem(expect, json.loads(target.read_text(encoding="utf-8")))
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        problem = f"not valid JSON ({e})"
+    if problem is None:
+        return True
+    target.replace(target.with_name(target.stem + ".invalid.json"))
+    target.with_name(expect + ".error.txt").write_text(f"earlier {expect} was unusable: {problem}\n", encoding="utf-8")
+    print(f"regrading {Path(folder).name}: its earlier {expect} was unusable ({problem})")
+    return False
 
 
 def claude(prompt, folder, model, expect, timeout=1200):
@@ -292,9 +334,9 @@ def claude(prompt, folder, model, expect, timeout=1200):
     target = Path(folder) / expect
     if error is None:
         try:
-            data = json.loads(target.read_text(encoding="utf-8"))
-            if not valid_result(expect, data):
-                error = f"{expect} does not have the fields the grading prompt asks for"
+            problem = result_problem(expect, json.loads(target.read_text(encoding="utf-8")))
+            if problem:
+                error = f"{expect} is incomplete: {problem}"
         except FileNotFoundError:
             error = f"the grader finished but wrote no {expect}"
         except (json.JSONDecodeError, UnicodeDecodeError) as e:
@@ -333,7 +375,7 @@ def cmd_grade(a):
     for p in packets:
         (p / "request.txt").write_text(meta["prompt"], encoding="utf-8")
         (p / "slides.txt").write_text(slides, encoding="utf-8")
-    todo = [p for p in packets if not (p / "grade.json").exists()]
+    todo = [p for p in packets if not usable(p, "grade.json")]
     with cf.ThreadPoolExecutor(max(1, len(todo))) as pool:
         failed = report_graders([p.name for p in todo],
                                 list(pool.map(lambda p: claude(GRADE, p, a.model, "grade.json"), todo)), "graded")
@@ -347,7 +389,7 @@ def cmd_grade(a):
             if not (a_dir.exists() and b_dir.exists()):
                 continue
             folder = out / "grade" / f"pair-{n}"
-            if (folder / "pair.json").exists():
+            if usable(folder, "pair.json"):
                 continue
             if folder.exists():
                 shutil.rmtree(folder)
