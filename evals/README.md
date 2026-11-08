@@ -23,6 +23,80 @@ Keep the run folders outside this repository, so that runs without the skill can
 
 The cases follow the `claude plugin eval` layout, but running them through that CLI from this location has not been tried.
 
+### Comparing two versions of the skill
+
+`ab.py` and `ab_check.mjs` run one case with two versions of the skill and compare them. They need the Claude Code CLI (`claude`), Python with pypdf, Node 22 (or 20) and Chrome.
+
+```bash
+python3 evals/ab.py run OUT --config A=git:main --config B=git:some-branch --runs 2   # --prepare-only: set up, run nothing
+python3 evals/ab.py report OUT        # cost, output tokens, turns, time, builds, characters written per kind of file
+node evals/ab_check.mjs OUT           # browser checks, plus the material the graders read
+python3 evals/ab.py grade OUT         # one grader per run, then blind pairwise comparisons
+```
+
+- A version is `NAME=git:REF` (a branch, tag or commit of this repository) or `NAME=PATH` (a skill folder).
+- Each run gets exactly one version in `.claude/skills/`.
+- The user's CLAUDE.md and auto-memory are switched off. `open` is blocked, so no browser window pops up.
+- OUT must be outside the repository.
+- Graders see only the page's rendered text and figure screenshots, so they cannot tell how a page was authored. Pairwise comparisons also hide which side is which.
+- The grading prompt is written for `builds-page-from-slides` only.
+- `run` and `grade` call Claude and cost money; `--prepare-only`, `report` and `ab_check.mjs` do not.
+
+## Authoring-format experiment (2026-11-07 to 11-08): HTML vs Markdown sections
+
+**Decision: HTML stays the default.** Markdown sections and figure templates stay an experiment on the branch `batch4`.
+
+The question was whether writing sections in Markdown, with templates for figures, saves tokens and rework without hurting the page. Everything below comes from one case, `builds-page-from-slides` (ECON 150), on claude-opus-5-5, and holds for that case only.
+
+The versions:
+- **A:** HTML sections (`main` at `c2ce954`).
+- **Old B:** Markdown sections plus figure templates (`batch4` at `7448e41`).
+- **New B:** old B after a label-placement change (`08cd156`).
+
+### Full runs
+
+Each column averages two runs.
+
+| Measure | A | Old B | New B |
+|---|---|---|---|
+| Cost | $5.19 | $4.96 | $5.04 |
+| Output tokens | 120.5k | 104.4k | 104.8k |
+| Turns | 44.5 | 67.5 | 73.5 |
+| Time | 1082 s | 1017 s | 1012 s |
+| Characters written into sections | 40.4k | 27.5k | 27.9k |
+| Characters written into the banks | 58.4k | 58.7k | 59.0k |
+| Figures on the page | 5 | 7.5 | 6.5 |
+| Figure warnings on the first build | – | 6, 6 | 1, 3 |
+
+- **Writing:** Markdown cut what went into sections by about a third and output tokens by about 13%. The banks, which are JSON either way, are most of the writing. Cost, time and turns did not go down.
+- **Turns:** the extra turns were mostly screenshot checks of the larger number of figures. Starting a browser and looking at screenshots took 15–17 tool calls per A run and 28–30 per B run. B runs also read the template source a few times to learn options the docs left out.
+
+Every quality failure, by run (the browser checks found no script errors, no sideways scroll at 375 px, no lost answers after a reload and no overlapping figure text in any of the six runs):
+- **A-1:** failed "mock uses its own questions": some mock items reskin practice items.
+- **A-2:** passed everything.
+- **Old B-1:** passed everything.
+- **Old B-2:** failed "mock uses its own questions".
+- **New B-1:** failed "mock uses its own questions".
+- **New B-2:** failed "mock uses its own questions". It also failed "figures correct and legible": some curve labels were crossed by their own curve, a template bug.
+- **Scores** (clarity, figure value, coverage, each out of 5): A 5/4/5 and 5/4/5; old B 5/4/5 and 5/5/5; new B 5/5/5 and 5/4/5.
+- **Blind pairwise comparisons** (notes and figures only): old B-1 slightly better than A-1; A-2 slightly better than old B-2.
+
+Cost: $30.35 for the six runs, $7.92 for grading.
+
+### Replay (not a full run)
+
+The template code was run on the old B runs' first-draft sections, with no agent involved. Label problems went from 24 (old B) to 1 (`08cd156`). This does not stand in for the full runs above: there, turns still went up.
+
+### Fixed after the runs, not re-run end to end
+
+Both fixes are on `batch4`, with tests. They are checked only on the saved pages, not in new runs.
+- `5bc6888`: a label must clear its own line. New B-2's final sections, rebuilt, give no warnings, and a screenshot shows the labels off their curves.
+- `82e5ee5`: a position hint written without a space ("A@sw") was shown as label text.
+
+### If this is picked up again
+
+Test it on a real course that needs many figures, with the same checks and grading, before changing the default.
+
 ## Iteration 1 (2026-10-22): the version at commit e980bb9
 
 These results describe the skill as it was at commit `e980bb9`, before the changes listed at the end of this section. **They do not test the current version.** Iteration 2 has not been run yet.
