@@ -23,6 +23,7 @@ import argparse
 import concurrent.futures as cf
 import io
 import json
+import logging
 import random
 import re
 import shutil
@@ -69,7 +70,7 @@ def skill_source(name, spec, out):
     if spec.startswith("git:"):
         ref = spec[4:]
         sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--verify", ref + "^{commit}"],
-                             capture_output=True, text=True)
+                             capture_output=True, text=True, encoding="utf-8")
         if sha.returncode:
             sys.exit(f"{name}: '{ref}' is not a branch, tag or commit here")
         data = subprocess.run(["git", "-C", str(REPO), "archive", sha.stdout.strip(), "skills/study-guide"],
@@ -234,14 +235,89 @@ Write ONLY this JSON (no prose) to pair.json in this folder:
 {"better": "X" or "Y" or "tie", "margin": "slight" or "clear" or "large", "why": "three or four sentences"}"""
 
 
-def claude(prompt, folder, model, timeout=1200):
+def slides_text(folder):
+    """The text of every slide PDF in folder, page by page. Graders check citations and answers against it, so a
+    PDF that cannot be read, or a page with no text, stops the grading."""
+    try:
+        import pypdf
+    except ImportError:
+        sys.exit("grading needs pypdf (python3 -m pip install pypdf) to give the graders the slides as text")
+    logging.getLogger("pypdf").setLevel(logging.CRITICAL)  # its complaints about a damaged file are in the error below
+    files = sorted(Path(folder).glob("*.pdf"))
+    if not files:
+        sys.exit(f"no slide PDFs in {folder}; the graders would have nothing to check the page against")
+    out = []
+    for f in files:
+        try:
+            texts = [(page.extract_text() or "").strip() for page in pypdf.PdfReader(str(f)).pages]
+        except Exception as e:  # pypdf raises many kinds of errors on a damaged file
+            sys.exit(f"cannot read {f.name} ({type(e).__name__}: {e}); not grading without the slides")
+        empty = [str(i) for i, t in enumerate(texts, 1) if not t]
+        if not texts or empty:
+            sys.exit(f"{f.name}: no text on page {', '.join(empty) or '1'}; not grading without the slides")
+        out += [f"=== {f.name} p.{i}\n{t}" for i, t in enumerate(texts, 1)]
+    return "\n".join(out) + "\n"
+
+
+def valid_result(name, data):
+    """True when a grader's JSON file has the shape the prompt asks for."""
+    if name == "grade.json":
+        return (isinstance(data, dict) and all(isinstance(data.get(k), dict) and isinstance(data[k].get("pass"), bool)
+                                               for k in "ABCDEF") and isinstance(data.get("scores"), dict))
+    return isinstance(data, dict) and data.get("better") in ("X", "Y", "tie")
+
+
+def claude(prompt, folder, model, expect, timeout=1200):
+    """Run one grader in folder; it must write the JSON file expect. Returns (cost, error message or None).
+    A failure is also written to <expect>.error.txt, and an unusable result is renamed so the next run retries it."""
     cmd = ["claude", "-p", prompt, "--model", model, "--output-format", "json", "--max-turns", "60",
            "--allowedTools", "Read", "Glob", "Grep", "Write", "--settings", settings(), "--no-session-persistence"]
-    p = subprocess.run(cmd, cwd=folder, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+    cost, error = None, None
     try:
-        return json.loads(p.stdout).get("total_cost_usd")
-    except json.JSONDecodeError:
-        return None
+        p = subprocess.run(cmd, cwd=folder, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                           timeout=timeout, stdin=subprocess.DEVNULL)
+    except subprocess.TimeoutExpired:
+        p, error = None, f"timed out after {timeout} s"
+    except OSError as e:
+        p, error = None, f"cannot start claude: {e}"
+    if p is not None:
+        try:
+            info = json.loads(p.stdout)
+        except json.JSONDecodeError:
+            info = None
+        cost = info.get("total_cost_usd") if isinstance(info, dict) else None
+        if p.returncode != 0 or not isinstance(info, dict) or info.get("is_error"):
+            tail = (p.stderr or p.stdout or "").strip()[-600:]
+            error = f"claude exited with {p.returncode}: {tail or 'no output'}"
+    target = Path(folder) / expect
+    if error is None:
+        try:
+            data = json.loads(target.read_text(encoding="utf-8"))
+            if not valid_result(expect, data):
+                error = f"{expect} does not have the fields the grading prompt asks for"
+        except FileNotFoundError:
+            error = f"the grader finished but wrote no {expect}"
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            error = f"{expect} is not valid JSON ({e})"
+    log = target.with_name(expect + ".error.txt")
+    if error:
+        if target.exists():
+            target.replace(target.with_name(target.stem + ".invalid.json"))
+        log.write_text(error + "\n", encoding="utf-8")
+    elif log.exists():
+        log.unlink()  # an earlier attempt failed; this one worked
+    return cost, error
+
+
+def report_graders(names, results, verb):
+    failed = 0
+    for name, (cost, error) in zip(names, results):
+        if error:
+            failed += 1
+            print(f"FAILED {name}: {error}")
+        else:
+            print(f"{verb} {name} (${cost or 0:.2f})")
+    return failed
 
 
 def cmd_grade(a):
@@ -252,13 +328,15 @@ def cmd_grade(a):
     packets = sorted(p for p in (out / "grade").iterdir() if p.is_dir() and (p / "notes.md").exists())
     if not packets:
         sys.exit("no grading packets; run node evals/ab_check.mjs OUT first")
+    slides = slides_text(HERE / meta["case"] / "files" / "slides")  # stops here, before any grader runs
+    (out / "grade" / "slides.txt").write_text(slides, encoding="utf-8")
     for p in packets:
         (p / "request.txt").write_text(meta["prompt"], encoding="utf-8")
-        shutil.copy(out / "grade" / "slides.txt", p / "slides.txt")
+        (p / "slides.txt").write_text(slides, encoding="utf-8")
     todo = [p for p in packets if not (p / "grade.json").exists()]
     with cf.ThreadPoolExecutor(max(1, len(todo))) as pool:
-        for p, cost in zip(todo, pool.map(lambda p: claude(GRADE, p, a.model), todo)):
-            print(f"graded {p.name} (${cost or 0:.2f})")
+        failed = report_graders([p.name for p in todo],
+                                list(pool.map(lambda p: claude(GRADE, p, a.model, "grade.json"), todo)), "graded")
     # blind pairwise: run n of config A against run n of config B, sides shuffled with a fixed seed
     names = sorted({p.name.split("-")[0] for p in packets})
     if len(names) == 2:
@@ -275,15 +353,18 @@ def cmd_grade(a):
                 shutil.rmtree(folder)
             x, y = (a_dir, b_dir) if rnd.random() < 0.5 else (b_dir, a_dir)
             for side, src in (("X", x), ("Y", y)):
-                shutil.copytree(src, folder / side, ignore=shutil.ignore_patterns("*.json", "slides.txt", "request.txt"))
-            shutil.copy(out / "grade" / "slides.txt", folder / "slides.txt")
+                shutil.copytree(src, folder / side,
+                                ignore=shutil.ignore_patterns("*.json", "*.error.txt", "slides.txt", "request.txt"))
+            (folder / "slides.txt").write_text(slides, encoding="utf-8")
             (folder / "request.txt").write_text(meta["prompt"], encoding="utf-8")
             # which run is X and which is Y, kept outside the folder the grader reads
             (out / "grade" / f"pair-{n}.sides.json").write_text(json.dumps({"X": x.name, "Y": y.name}), encoding="utf-8")
             pairs.append(folder)
         with cf.ThreadPoolExecutor(max(1, len(pairs))) as pool:
-            for f, cost in zip(pairs, pool.map(lambda f: claude(PAIR, f, a.model), pairs)):
-                print(f"compared {f.name} (${cost or 0:.2f})")
+            failed += report_graders([f.name for f in pairs],
+                                     list(pool.map(lambda f: claude(PAIR, f, a.model, "pair.json"), pairs)), "compared")
+    if failed:
+        sys.exit(f"{failed} grader(s) failed; their errors are in the .error.txt files. Run grade again to retry them.")
 
 
 def main():

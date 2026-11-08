@@ -43,7 +43,10 @@ Python uses only the standard library. Node uses built-in modules (`node:test`,
 `test_count_exam.py`. That existing test retains its optional pypdf/eval PDF check.
 
 `test_ab.py` covers the eval runner `evals/ab.py` without calling Claude: setting up runs from a git ref
-or a folder, refusing bad names and places, and reading cost, builds and writes from an event stream.
+or a folder, refusing bad names and places, reading cost, builds and writes from an event stream,
+stopping before any grader when the slides cannot be read, and reporting a failed grader as failed.
+The browser suite also runs `evals/ab_check.mjs` on demo pages whose first practice question is a
+single choice, true/false, multi-select, fill-in or flashcard, and expects each answer to survive a reload.
 
 All authored test courses are tiny fictional fixtures in `TemporaryDirectory`.
 The demo and drills-from-progress files are read-only test inputs. Demo builds and

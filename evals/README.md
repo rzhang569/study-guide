@@ -25,7 +25,7 @@ The cases follow the `claude plugin eval` layout, but running them through that 
 
 ### Comparing two versions of the skill
 
-`ab.py` and `ab_check.mjs` run one case with two versions of the skill and compare them. They need the Claude Code CLI (`claude`), Python with pypdf, Node 22 (or 20) and Chrome.
+`ab.py` and `ab_check.mjs` run one case with two versions of the skill and compare them. They need the Claude Code CLI (`claude`), Python with pypdf, Node 20 or newer (on Node 20 `ab_check.mjs` turns on WebSocket itself) and Chrome.
 
 ```bash
 python3 evals/ab.py run OUT --config A=git:main --config B=git:some-branch --runs 2   # --prepare-only: set up, run nothing
@@ -40,6 +40,9 @@ python3 evals/ab.py grade OUT         # one grader per run, then blind pairwise 
 - OUT must be outside the repository.
 - Graders see only the page's rendered text and figure screenshots, so they cannot tell how a page was authored. Pairwise comparisons also hide which side is which.
 - The grading prompt is written for `builds-page-from-slides` only.
+- `grade` stops before any grader runs if a slide PDF cannot be read or has a page without text, because the graders check citations and answers against the slides.
+- A grader that fails or writes no usable result is reported as `FAILED`, with its error kept in `<file>.error.txt`; `grade` then exits with an error, and running it again retries only those.
+- The reload check answers the bank's first question the way its type needs (choice, multi-select, fill-in or flashcard) and compares its saved record and card before and after the reload.
 - `run` and `grade` call Claude and cost money; `--prepare-only`, `report` and `ab_check.mjs` do not.
 
 ## Authoring-format experiment (2026-11-07 to 11-08): HTML vs Markdown sections
