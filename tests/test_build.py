@@ -730,7 +730,7 @@ class EdgeCases(CourseCase):
                     (self.course / other).unlink(missing_ok=True)
                 (self.course / rel).write_bytes(b'/* \xff */')
                 self.invalid(rel + ': must be UTF-8')
-                self.assertNotIn('sections/ has no .html files', '\n'.join(self.check().errors))
+                self.assertNotIn('sections/ has no .html or .md files', '\n'.join(self.check().errors))
 
     def test_unhashable_mock_category_and_oversized_show_do_not_crash(self):
         self.data['course']['mock'] = {'sections': [{'cat': [], 'n': 1}]}

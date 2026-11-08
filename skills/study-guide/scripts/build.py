@@ -8,7 +8,8 @@
 
 A course folder holds:
     course.json      config: title, lang, storageKey, lectures, mock exam layout
-    sections/*.html  page content in file-name order (<header> hero, <section class="part" id=...> per lecture)
+    sections/*.html  page content in file-name order (<header> hero, <section class="part" id=...> per lecture);
+    sections/*.md    the same content in Markdown, turned into HTML by sectionmd.py (the two can be mixed)
     practice.json    practice bank {groups, items}
     mock.json        mock exam pool {groups, items}; never shares questions with practice.json
     short.json       optional step-by-step short answers {groups, items}
@@ -109,13 +110,42 @@ def load_json(path, rep, required=False):
     return None, False
 
 
-def read_sections(course, rep):
-    sections = []
-    for f in sorted((course / "sections").glob("*.html")):
+def section_files(course):
+    folder = course / "sections"
+    return sorted((f for f in folder.glob("*") if f.suffix in (".html", ".md") and f.is_file()), key=lambda f: f.name)
+
+
+def read_sections(course, rep, lang):
+    """(file name, html) in file-name order; .md files are converted, and a broken one is reported and left out."""
+    sections, files = [], section_files(course)
+    stems = {}
+    for f in files:
+        stems.setdefault(f.stem, []).append(f.name)
+    for names in stems.values():
+        if len(names) > 1:
+            rep.warn(f"sections/{names[0]} and sections/{names[1]} share a name, so both are on the page; delete the "
+                     "one you replaced")
+    for f in files:
         text = read_text(f, rep, f"sections/{f.name}")
+        if text is not None and f.suffix == ".md":
+            text = sectionmd().convert(text, f.name, lang, rep)
         if text is not None:
             sections.append((f.name, text))
     return sections
+
+
+_SECTIONMD = []
+
+
+def sectionmd():
+    """sectionmd.py from this folder, loaded only when a course has Markdown sections."""
+    if not _SECTIONMD:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("study_sectionmd", HERE / "sectionmd.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _SECTIONMD.append(mod)
+    return _SECTIONMD[0]
 
 
 def strip_comments(body):
@@ -566,14 +596,15 @@ def check(course):
         cfg = {}
     banks = {name: None if name in broken else bank for name, bank in banks.items()}
     practice, mock, short = banks["practice"], banks["mock"], banks["short"]
-    has_sections = any((course / "sections").glob("*.html"))
-    sections = read_sections(course, rep)
+    has_sections = bool(section_files(course))
+    lang = cfg.get("lang", "zh") if cfg_ok else "zh"
+    sections = read_sections(course, rep, lang if lang in UI else "en")
     extras = {}
     for name in ("extra.css", "extra.js"):
         if (course / name).exists():
             extras[name] = read_text(course / name, rep, name)
     if not has_sections:
-        rep.err("sections/ has no .html files")
+        rep.err("sections/ has no .html or .md files")
     sec_ids = section_ids("\n".join(s for _, s in sections))
 
     tf_labels, key = TF_LABELS, None

@@ -78,7 +78,7 @@ Under the hood, the skill keeps each exam in a plain folder and builds it with o
 ```text
 my-course/
   course.json      title, language (en/zh), lectures, mock exam layout and time limits
-  sections/        one HTML file per lecture
+  sections/        one Markdown file per lecture (HTML also works)
   practice.json    practice bank
   mock.json        mock exam pool (its own questions)
   short.json       step-by-step short answers (optional)

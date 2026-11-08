@@ -118,6 +118,7 @@ figcaption{font-size:14px;color:var(--muted);margin-top:8px;line-height:1.6}
 .dia .curve.w{stroke:var(--warn)}
 .dia .curve.m{stroke:var(--muted);stroke-dasharray:5 4}
 .dia .band{fill:var(--accent-soft)}
+.dia .band.w{fill:var(--warn-soft)}
 .dia .bar{fill:var(--accent)}
 .dia .bar.w{fill:var(--warn)}
 .dia .bar.l{fill:var(--accent-soft);stroke:var(--accent)}

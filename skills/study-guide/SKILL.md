@@ -27,7 +27,7 @@ The engine (`assets/engine.js`) and the styles (`assets/page.css`) are finished 
 | write or audit questions, or calibrate the mock exam | `references/question-bank.md` |
 | check a field name, the progress format or the db docs | `references/data-format.md` |
 
-`examples/demo/` is a complete small course (fictional PROB 101, three lectures). When unsure how something should look, copy the pattern from its sources: `sections/*.html`, `practice.json`, `mock.json` and `short.json`.
+`examples/demo/` is a complete small course (fictional PROB 101, three lectures). When unsure how something should look, copy the pattern from its sources: `sections/*.md`, `practice.json`, `mock.json` and `short.json`.
 
 Don't read `assets/engine.js`, `assets/page.css` or any built `review.html`. `build.py` inlines them, they are tens of thousands of tokens, and nothing in them needs your edits.
 
@@ -83,9 +83,9 @@ Delete the demo's sections and questions as you replace them. See `references/da
 
 ## 4. Write the sections
 
-Write one file per lecture in `sections/` (`10-l1.html`, `20-l2.html`, …), plus `00-hero.html` for logistics and a final traps list. Each lecture is a `<section class="part" id="...">`. Its practice box appears automatically when a practice group points at that id with `"sec"`.
+Write one Markdown file per lecture in `sections/` (`10-l1.md`, `20-l2.md`, …), plus `00-hero.md` for logistics and a final traps list. Each starts with front matter giving its section `id`; its practice box appears automatically when a practice group points at that id with `"sec"`. `build.py` turns the Markdown into the page's HTML; `.html` sections still work and can be mixed in.
 
-`references/content-standard.md` has the full recipe and the HTML for every component. In short: cite every claim, open hard lectures with a glossary and analogies, give each topic a one-line lead, a concrete example before any formula, a plain-language box, a figure where a picture helps, and a trap box for what true/false questions twist.
+`references/content-standard.md` has the full recipe, the Markdown blocks and the figure templates (grid, tree, bars, plot: you write numbers and labels, the build draws the SVG). In short: cite every claim, open hard lectures with a glossary and analogies, give each topic a one-line lead, a concrete example before any formula, a plain-language box, a figure where a picture helps, and a trap box for what true/false questions twist.
 
 ## 5. Write the questions
 
@@ -101,19 +101,20 @@ There are three banks. `references/question-bank.md` has the rules and the audit
 python3 <skill-dir>/scripts/build.py <course-dir>
 ```
 
-Errors stop the build. Warnings come from the question-bank checks; fix them unless you have a reason not to. They flag patterns such as:
+Errors stop the build, naming the file and line. Warnings come from the question-bank checks and the figure templates; fix them unless you have a reason not to. They flag patterns such as:
 
 - the correct answer is the longest option in too many questions;
 - one letter is the shown answer too often;
 - every multi-select has the same number of answers;
 - a mock question is a practice question with new numbers.
+- a figure label overlaps a line, a dot or another label.
 
 Add `--strict` to make warnings end the build with exit code 2 (the page is still written), so you can keep fixing until it is clean. Then open `<course-dir>/review.html` in a browser and check:
 
 - the console shows no errors and formulas render;
 - answering a practice question, a short-answer step and a full mock paper works;
 - at 375 px width nothing scrolls the page sideways (figures and tables scroll inside their own boxes);
-- no text in a figure overlaps a line, an arrowhead or other text (take a screenshot).
+- no text in a figure overlaps a line, an arrowhead or other text. The build warns about this for template figures; check hand-drawn SVG with a screenshot.
 
 ## 7. Deliver
 
@@ -147,7 +148,7 @@ Records are keyed by `storageKey`, question `id` and **original option index**. 
 - don't reuse an old id for a different question;
 - if a question's meaning or answer changes, give it a new id and remove the old one. Records for removed ids are ignored, not misread.
 
-The engine shuffles the order options are shown in with a seed from the id, so the stored indexes stay correct. To change which letter an answer is shown as, set `"show"` (see `references/data-format.md`) instead of reordering options. Fixing typos or wording in stems and explanations is always safe, and so is editing section HTML.
+The engine shuffles the order options are shown in with a seed from the id, so the stored indexes stay correct. To change which letter an answer is shown as, set `"show"` (see `references/data-format.md`) instead of reordering options. Fixing typos or wording in stems and explanations is always safe, and so is editing the sections.
 
 ## What students asked for
 

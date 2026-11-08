@@ -197,3 +197,23 @@ test('the zh build renders Chinese UI strings', async () => {
   await page.click('[id="q-p-p1-1"] .otext', '1/11');
   assert.match(await page.waitFor(() => document.querySelector('[id="q-p-p1-1"] .why')?.textContent), /^第一次选了 C，正确答案是 B。/);
 });
+
+test('figures drawn from templates keep their text apart and inside the figure', async () => {
+  await fresh('en');
+  const figs = await page.eval(() => [...document.querySelectorAll('.dia svg')].map(svg => {
+    const s = svg.getBoundingClientRect(), problems = [];
+    const boxes = [...svg.querySelectorAll('text')].map(t => ({s: t.textContent, r: t.getBoundingClientRect()}));
+    boxes.forEach((a, i) => {
+      if (a.r.left < s.left - 1 || a.r.right > s.right + 1 || a.r.top < s.top - 1 || a.r.bottom > s.bottom + 1) problems.push(a.s + ' leaves the figure');
+      boxes.slice(i + 1).forEach(b => {
+        if (a.r.left < b.r.right - 1 && b.r.left < a.r.right - 1 && a.r.top < b.r.bottom - 2 && b.r.top < a.r.bottom - 2) problems.push(a.s + ' x ' + b.s);
+      });
+    });
+    return {id: svg.closest('article').id, texts: boxes.length, problems};
+  }));
+  assert.deepEqual(figs.map(f => f.id), ['l1-equally', 'l2-bayes', 'l3-var']);
+  for (const f of figs) {
+    assert.ok(f.texts > 5, f.id);
+    assert.deepEqual(f.problems, [], f.id);
+  }
+});
