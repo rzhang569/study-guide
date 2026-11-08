@@ -44,7 +44,8 @@ Python uses only the standard library. Node uses built-in modules (`node:test`,
 
 `test_ab.py` covers the eval runner `evals/ab.py` without calling Claude: setting up runs from a git ref
 or a folder, refusing bad names and places, reading cost, builds and writes from an event stream,
-stopping before any grader when the slides cannot be read, and reporting a failed grader as failed.
+stopping before any grader when the slides cannot be read, reporting a failed or incomplete grader result
+as failed, and reusing an earlier result only when it is complete.
 The browser suite also runs `evals/ab_check.mjs` on demo pages whose first practice question is a
 single choice, true/false, multi-select, fill-in or flashcard, and expects each answer to survive a reload.
 
