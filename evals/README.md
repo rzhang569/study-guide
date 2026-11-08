@@ -62,6 +62,32 @@ What the numbers say:
 
 Cost of this experiment: $20.28 for the four runs, $5.74 for grading.
 
+### Confirmation round (2026-11-08): new B at commit `08cd156`
+
+Two more runs of B after the label-placement change, with the same case, model, settings and grading rubric. The results above are unchanged.
+
+| Measure | A | old B | new B |
+|---|---|---|---|
+| Cost | $5.19 | $4.96 | $5.04 |
+| Output tokens | 120.5k | 104.4k | 104.8k |
+| Turns | 44.5 | 67.5 | 73.5 |
+| Time | 1082 s | 1017 s | 1012 s |
+| Figure warnings on the first build | 0 (no templates) | 6, 6 | 1, 3 |
+| Figures on the page | 5 | 7.5 | 6.5 |
+
+- **Turns did not go down.** Fewer warnings reached the runs, but the extra turns were mostly screenshot checks: starting a browser and looking at figure screenshots took 15–17 tool calls per A run and 28–30 per B run, old and new. Both B versions also read the template source a few times (0–4 calls) to learn options the docs leave out.
+- **Quality:** both new runs passed the browser checks. The graders failed both on "mock uses its own questions" (reskinned practice items, as in one run of each earlier version). One run also failed "figures correct and legible": some curve labels were crossed by their own curve. The overlap check skipped a label's own line; `5bc6888` fixes that.
+- Scores: 5/5/5 and 5/4/5 (clarity, figure value, coverage).
+- The runs found a second template bug: a position hint written without a space ("A@sw") was shown as label text. `82e5ee5` fixes it.
+- Neither fix has been run end to end.
+
+Replay, listed separately because it is not a full run: the template code was run on the B runs' first-draft sections, with no agent involved. Label problems went from 24 to 1 with `08cd156`. On the new runs' final pages, `5bc6888` gives no warnings and no label crossing its own line (checked by screenshot).
+
+Conclusion for this ECON task only:
+- Markdown sections cut what the agent writes into sections by about a third and output tokens by about 13%.
+- They did not cut cost, time or turns, and quality was the same apart from the template bug above.
+- The cost of this round: $10.07 for the two runs, $2.18 for grading.
+
 ## Iteration 1 (2026-10-22): the version at commit e980bb9
 
 These results describe the skill as it was at commit `e980bb9`, before the changes listed at the end of this section. **They do not test the current version.** Iteration 2 has not been run yet.
