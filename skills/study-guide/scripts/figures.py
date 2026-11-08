@@ -153,7 +153,7 @@ class Canvas:
             return False
         if any(hit(box, b["box"]) for b in self.boxes if owner is None or b["owner"] != owner):
             return False
-        if any(seg_hits(box, sg) for sg in self.segs if owner is None or sg[5] != owner):
+        if any(seg_hits(box, sg) for sg in self.segs):  # a label must clear its own line too
             return False
         return not any(hit(box, (cx - r, cy - r, cx + r, cy + r), 0) for cx, cy, r, _, o in self.dots if o != owner)
 
@@ -193,8 +193,6 @@ class Canvas:
                 if hit(bx, b["box"]):
                     found.append(f'"{a["name"]}" overlaps "{b["name"]}"')
             for sg in self.segs:
-                if sg[5] is not None and sg[5] == a["owner"]:
-                    continue
                 if seg_hits(bx, sg):
                     found.append(f'"{a["name"]}" overlaps {sg[4]}')
                     break
@@ -706,7 +704,13 @@ def plot(c, p, items, plain):
                 for (ax, ay), (bx, by) in zip(r, r[1:]):
                     c.seg(ax, ay, bx, by, name, owner=k)
             if it["label"]:
-                cand = [pt for r in runs for pt in r]
+                # points every few pixels along the drawn line (a curve given as "0,50 100,0" has only two)
+                cand = []
+                for r in runs:
+                    for (ax, ay), (bx, by) in zip(r, r[1:]):
+                        steps = max(1, int(math.hypot(bx - ax, by - ay) / 4))
+                        cand += [(ax + (bx - ax) * t / steps, ay + (by - ay) * t / steps) for t in range(steps)]
+                    cand.append(r[-1])
                 anchors = []
                 if it["at"]:  # the author's spot first; if it is taken, the usual ones
                     xa = px(number(it["at"], line, "@x"))

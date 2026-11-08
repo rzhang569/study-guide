@@ -173,6 +173,12 @@ class Figures(unittest.TestCase):
                                   '- point: 5, 5 | where they cross @ne\n- point: 5, 5 | same spot @ne\ncaption: c')
         self.assertEqual(warns, [])  # @ne is taken by the first label and crossed by both lines: both move
         self.assertEqual(len(re.findall(r'class="halo"', h)), 2)
+        h, warns = figure('plot', 'x: 0..100 | Q\ny: 0..50 | P\n- curve: 0,50 100,0 | Demand: Qd = 100 − 2P @15\ncaption: c')
+        self.assertEqual(warns, [])  # a label must clear its own line too, also on a curve given as two points
+        m = re.search(r'<text x="([\d.]+)" y="([\d.]+)" class="atxt halo"(?: text-anchor="(\w+)")?>([^<]+)<', h)
+        box = figures.Canvas.box_of(float(m[1]), float(m[2]), m[4], 'atxt halo', m[3] or 'start')
+        line = [tuple(map(float, p.split(','))) for p in re.search(r'class="curve a" d="M([^"]+)"', h)[1].split(' L')]
+        self.assertFalse(figures.seg_hits(box, (*line[0], *line[1])), (box, line))
         h, _ = figure('plot', 'x: 0..10 | x\ny: 0..10 | y\n- curve: x | D₁@8\n- point: 5, 5 | A@sw\n- hline: 3 | P @ 2\ncaption: c')
         self.assertEqual(re.findall(r'halo"[^>]*>([^<]+)<', h), ['D₁', 'A', 'P'])  # hints without a space are read too
         _, warns = figure('plot', 'x: 0..10 | x\ny: 0..10 | y\nheight: 180\n' + ''.join(
