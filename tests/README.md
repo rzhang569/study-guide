@@ -42,6 +42,9 @@ Python uses only the standard library. Node uses built-in modules (`node:test`,
 `tests/__init__.py` enables discovery with the exact Python command above, including
 `test_count_exam.py`. That existing test retains its optional pypdf/eval PDF check.
 
+`test_ab.py` covers the eval runner `evals/ab.py` without calling Claude: setting up runs from a git ref
+or a folder, refusing bad names and places, and reading cost, builds and writes from an event stream.
+
 All authored test courses are tiny fictional fixtures in `TemporaryDirectory`.
 The demo and drills-from-progress files are read-only test inputs. Demo builds and
 `--init` tests target temporary copies. Tests never edit eval fixtures or source
