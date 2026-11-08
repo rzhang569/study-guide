@@ -23,6 +23,45 @@ Keep the run folders outside this repository, so that runs without the skill can
 
 The cases follow the `claude plugin eval` layout, but running them through that CLI from this location has not been tried.
 
+## Authoring format A/B (2026-11-07): HTML vs Markdown sections
+
+The question: does writing sections in Markdown with figure templates (commit `7448e41`) instead of HTML (`main` at `c2ce954`) save tokens and rework without hurting the page? Same case (`builds-page-from-slides`), two runs per version, claude-opus-5-5, run with `ab.py` and checked with `ab_check.mjs`:
+
+```bash
+python3 evals/ab.py run OUT --config A=<html skill> --config B=<markdown skill> --runs 2
+python3 evals/ab.py report OUT
+node evals/ab_check.mjs OUT
+python3 evals/ab.py grade OUT
+```
+
+Each run had one version of the skill in `.claude/skills/`, the user's CLAUDE.md and memory switched off, and the prompt plus "Use the study-guide skill." Graders saw only the page's rendered text and figure screenshots, so they could not tell the formats apart; the two pairwise comparisons also hid which side was which.
+
+Averages of the two runs (A = HTML, B = Markdown):
+
+| Measure | A | B |
+|---|---|---|
+| Cost | $5.19 | $4.96 |
+| Output tokens | 120.5k | 104.4k |
+| Turns | 44.5 | 67.5 |
+| Time | 1082 s | 1017 s |
+| Characters written into sections | 40.4k | 27.5k |
+| Characters written into the banks | 58.4k | 58.7k |
+| Figures on the page | 5 | 7.5 |
+| Builds (failed) | 3.5 (0) | 6 (0) |
+
+Quality was the same:
+- Both versions passed the browser checks in every run: no script errors, no sideways scroll at 375 px, answers kept after a reload, no overlapping figure text.
+- Graded checks: every run passed citations, option explanations, mock shape, answer keys and figure correctness. One run of each version failed "mock uses its own questions": a few mock items reskin practice items. That is a question-writing weakness, not a format one.
+- Scores: 5/5 for clarity and coverage in all four runs; figure value 4, 4 for A and 4, 5 for B. The blind pairwise comparisons split 1–1, both "slight".
+
+What the numbers say:
+- Markdown cut the characters written into sections by a third while the pages carried more figures. Static count on the demo: 8,885 tokens of HTML vs 4,110 of Markdown.
+- The whole task saved less (13% of output tokens, 4% of cost), because the question banks are most of the writing and they are JSON either way. Writing the banks one item per line saves only about 7.5% of their tokens on the demo, so that was not adopted.
+- B took more turns: the figure templates warned about labels that touched lines, mostly at line crossings, and the runs moved them by hand. `08cd156` now tries farther and flipped spots before warning, and treats `@` as a preference. Replaying the two B runs' first drafts, label problems went from 24 to 1. This has not been re-run end to end yet.
+- With two runs per version, none of these gaps is a measured effect.
+
+Cost of this experiment: $20.28 for the four runs, $5.74 for grading.
+
 ## Iteration 1 (2026-10-22): the version at commit e980bb9
 
 These results describe the skill as it was at commit `e980bb9`, before the changes listed at the end of this section. **They do not test the current version.** Iteration 2 has not been run yet.
