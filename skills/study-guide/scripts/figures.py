@@ -605,9 +605,10 @@ def plot(c, p, items, plain):
         data, _, label = m.group(3).partition("|")
         label = label.strip()
         at = None
-        am = re.search(r"\s@(\S+)$", " " + label)
+        # "label @ne", "label@ne", "label @85" or "label @30,40": the position hint at the end, with or without a space
+        am = re.search(r"\s*@\s*((?:ne|nw|se|sw|n|s|e|w)|-?[\d.]+(?:\s*,\s*-?[\d.]+)?)$", label, re.I)
         if am:
-            at, label = am.group(1), label[:len(label) - len(am.group(0)) + 1].strip()
+            at, label = am.group(1), label[:am.start()].strip()
         parsed.append({"kind": m.group(1), "style": set(m.group(2).split()), "data": data.strip(),
                        "label": plain(label), "at": at, "line": line})
     if "grid" in p and p["grid"][0].lower() in ("yes", "on", "true"):

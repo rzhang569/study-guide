@@ -173,6 +173,8 @@ class Figures(unittest.TestCase):
                                   '- point: 5, 5 | where they cross @ne\n- point: 5, 5 | same spot @ne\ncaption: c')
         self.assertEqual(warns, [])  # @ne is taken by the first label and crossed by both lines: both move
         self.assertEqual(len(re.findall(r'class="halo"', h)), 2)
+        h, _ = figure('plot', 'x: 0..10 | x\ny: 0..10 | y\n- curve: x | D₁@8\n- point: 5, 5 | A@sw\n- hline: 3 | P @ 2\ncaption: c')
+        self.assertEqual(re.findall(r'halo"[^>]*>([^<]+)<', h), ['D₁', 'A', 'P'])  # hints without a space are read too
         _, warns = figure('plot', 'x: 0..10 | x\ny: 0..10 | y\nheight: 180\n' + ''.join(
             f'- point: 5, 5 | a long label number {k}\n' for k in range(30)) + 'caption: c')
         self.assertEqual(len(warns), 1)
