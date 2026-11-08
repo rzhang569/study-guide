@@ -3,6 +3,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -59,6 +60,84 @@ class Prepare(unittest.TestCase):
                 self.assertIn(words, str(code))
         code, _ = run('run', ROOT / 'evals/out', '--config', 'A=git:HEAD', '--prepare-only')
         self.assertIn('outside the repository', str(code))
+
+
+class Grading(unittest.TestCase):
+    """grade never runs on missing material and never reports a failed grader as done; no Claude is called."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.out = Path(self.tmp.name) / 'out'
+        (self.out / 'grade/A-1').mkdir(parents=True)
+        (self.out / 'grade/A-1/notes.md').write_text('notes', encoding='utf-8')
+        (self.out / 'meta.json').write_text(json.dumps({'case': 'builds-page-from-slides', 'runs': 1, 'prompt': 'p'}),
+                                            encoding='utf-8')
+
+    def test_slides_are_read_page_by_page(self):
+        try:
+            import pypdf  # noqa: F401
+        except ImportError:
+            self.skipTest('needs pypdf')
+        text = ab.slides_text(ROOT / 'evals/builds-page-from-slides/files/slides')
+        self.assertIn('=== L01-supply-and-demand.pdf p.5\n', text)
+        self.assertIn('=== L02-elasticity.pdf p.8\n', text)
+
+    def test_unreadable_slides_stop_before_any_grader(self):
+        folder = Path(self.tmp.name) / 'slides'
+        folder.mkdir()
+        for setup, words in ((lambda: None, 'no slide PDFs'),
+                             (lambda: (folder / 'L1.pdf').write_bytes(b'not a pdf'), 'cannot read L1.pdf')):
+            with self.subTest(words=words):
+                setup()
+                if words != 'no slide PDFs':
+                    try:
+                        import pypdf  # noqa: F401
+                    except ImportError:
+                        self.skipTest('needs pypdf')
+                with self.assertRaises(SystemExit) as e:
+                    ab.slides_text(folder)
+                self.assertIn(words, str(e.exception.code))
+        with mock.patch.dict(sys.modules, {'pypdf': None}), self.assertRaises(SystemExit) as e:
+            ab.slides_text(folder)
+        self.assertIn('needs pypdf', str(e.exception.code))
+        with mock.patch.object(ab, 'slides_text', side_effect=SystemExit('cannot read L1.pdf')), \
+                mock.patch.object(ab, 'claude') as grader:
+            code, _ = run('grade', self.out)
+        self.assertIn('cannot read', str(code))
+        grader.assert_not_called()
+        self.assertFalse((self.out / 'grade/A-1/slides.txt').exists())
+
+    def grade_with(self, fake):
+        with mock.patch.object(ab, 'slides_text', return_value='=== s.pdf p.1\ntext\n'), \
+                mock.patch.object(ab.subprocess, 'run', side_effect=fake):
+            return run('grade', self.out)
+
+    def test_a_failed_grader_is_reported_with_its_error(self):
+        good = {k: {'pass': True, 'why': 'ok'} for k in 'ABCDEF'}
+        good['scores'] = {'notes_clarity': 5}
+        cases = (
+            (lambda cmd, cwd, **kw: subprocess.CompletedProcess(cmd, 1, '', 'rate limited'), 'exited with 1: rate limited'),
+            (lambda cmd, cwd, **kw: subprocess.CompletedProcess(cmd, 0, '{"total_cost_usd": 0.4}', ''), 'wrote no grade.json'),
+            (lambda cmd, cwd, **kw: (Path(cwd, 'grade.json').write_text('{"A": 1}', encoding='utf-8'),
+                                     subprocess.CompletedProcess(cmd, 0, '{"total_cost_usd": 0.4}', ''))[1],
+             'does not have the fields'),
+        )
+        for fake, words in cases:
+            with self.subTest(words=words):
+                code, log = self.grade_with(fake)
+                self.assertIn('1 grader(s) failed', str(code))
+                self.assertIn(f'FAILED A-1: ', log)
+                self.assertIn(words, log)
+                self.assertNotIn('graded A-1', log)
+                self.assertIn(words, (self.out / 'grade/A-1/grade.json.error.txt').read_text(encoding='utf-8'))
+                self.assertFalse((self.out / 'grade/A-1/grade.json').exists())  # a later run retries it
+        code, log = self.grade_with(lambda cmd, cwd, **kw: (
+            Path(cwd, 'grade.json').write_text(json.dumps(good), encoding='utf-8'),
+            subprocess.CompletedProcess(cmd, 0, '{"total_cost_usd": 0.4}', ''))[1])
+        self.assertEqual((code, log.strip()), (0, 'graded A-1 ($0.40)'))
+        self.assertFalse((self.out / 'grade/A-1/grade.json.error.txt').exists())  # the earlier failure is cleared
+        self.assertTrue((self.out / 'grade/A-1/slides.txt').read_text(encoding='utf-8').startswith('=== s.pdf p.1'))
 
 
 class Metrics(unittest.TestCase):

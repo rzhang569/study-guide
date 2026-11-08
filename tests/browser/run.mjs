@@ -197,3 +197,31 @@ test('the zh build renders Chinese UI strings', async () => {
   await page.click('[id="q-p-p1-1"] .otext', '1/11');
   assert.match(await page.waitFor(() => document.querySelector('[id="q-p-p1-1"] .why')?.textContent), /^第一次选了 C，正确答案是 B。/);
 });
+
+test('evals/ab_check.mjs answers the first practice question the way its type needs and finds it kept after a reload', async () => {
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'sg-abcheck-'));
+  const skill = path.resolve(DEMO, '../..'), types = {Single: 'single', Tf: 'tf', Multi: 'multi', Fill: 'fill', Card: 'card'};
+  try {
+    fs.writeFileSync(path.join(out, 'meta.json'), JSON.stringify({case: 'builds-page-from-slides', runs: 1, prompt: 'x'}));
+    const [py, ...pyArgs] = findPython();
+    for (const [name, type] of Object.entries(types)) {
+      const run = path.join(out, `${name}-1`), course = path.join(run, 'econ150-review');
+      fs.cpSync(skill, path.join(run, '.claude/skills/study-guide'), {recursive: true, filter: f => !f.includes('__pycache__')});
+      fs.cpSync(DEMO, course, {recursive: true, filter: f => path.basename(f) !== 'review.html'});
+      const bank = JSON.parse(fs.readFileSync(path.join(course, 'practice.json'), 'utf8'));
+      bank.items.unshift(...bank.items.splice(bank.items.findIndex(q => (q.type || 'single') === type), 1));
+      fs.writeFileSync(path.join(course, 'practice.json'), JSON.stringify(bank));
+      const b = spawnSync(py, [...pyArgs, path.join(skill, 'scripts/build.py'), course], {encoding: 'utf8'});
+      assert.equal(b.status, 0, b.stdout + b.stderr);
+    }
+    const r = spawnSync(process.execPath, [path.resolve(skill, '../../evals/ab_check.mjs'), out], {encoding: 'utf8'});
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    const checks = JSON.parse(fs.readFileSync(path.join(out, 'checks.json'), 'utf8'));
+    for (const [name, type] of Object.entries(types)) {
+      const c = checks[`${name}-1`];
+      assert.deepEqual([c.reload_check.type, c.reload_check.answered, c.answer_survives_reload], [type, 'yes', true], name);
+    }
+  } finally {
+    fs.rmSync(out, {recursive: true, force: true, maxRetries: 5});
+  }
+});
