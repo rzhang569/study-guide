@@ -110,10 +110,24 @@ def labels(spec, line, what):
         if b < a or b - a > 60:
             raise Fig(line, f"{what} range '{spec}' should go up, with at most 60 steps")
         return [str(k) for k in range(a, b + 1)]
-    parts = [p.strip() for p in (spec.split(",") if "," in spec else spec.split())]
+    parts = [p.strip() for p in (top_level_split(spec) if "," in spec else spec.split())]
     if not all(parts):
         raise Fig(line, f"{what} '{spec}' has an empty entry")
     return parts
+
+
+def top_level_split(spec):
+    """Split at commas that are not inside parentheses or brackets: 'a (x, y), b' -> ['a (x, y)', 'b']."""
+    out, cur, depth = [], "", 0
+    for ch in spec:
+        depth += ch in "([{"
+        depth -= ch in ")]}"
+        if ch == "," and depth <= 0:
+            out.append(cur)
+            cur = ""
+        else:
+            cur += ch
+    return out + [cur]
 
 
 class Canvas:
@@ -614,8 +628,8 @@ def plot(c, p, items, plain):
             else:
                 ax, ay = sum(a for a, _ in pts) / len(pts), sum(b for _, b in pts) / len(pts)
             cx, cy = px(ax), py(ay) + 4
-            spots = [(cx, cy, "middle")] if it["at"] else [(cx + dx, cy + dy, "middle") for dx, dy in
-                                                            ((0, 0), (0, -14), (0, 14), (-30, 0), (30, 0), (-30, -14), (30, 14))]
+            spots = [(cx + dx, cy + dy, "middle") for dx, dy in
+                     ((0, 0), (0, -14), (0, 14), (-30, 0), (30, 0), (-30, -14), (30, 14), (0, -28), (0, 28))]
             labels_.append((spots, it["label"], "small", k))
     c.add(f'<line class="axis" x1="{num(left)}" y1="{num(bottom)}" x2="{num(right)}" y2="{num(bottom)}"/>')
     c.add(f'<line class="axis" x1="{num(left)}" y1="{num(bottom)}" x2="{num(left)}" y2="{num(top - 6)}"/>')
@@ -642,21 +656,18 @@ def plot(c, p, items, plain):
                 c.add(f'<line class="{cls}" x1="{num(left)}" y1="{num(py(v))}" x2="{num(right)}" y2="{num(py(v))}"/>')
                 c.seg(left, py(v), right, py(v), name, owner=k)
                 if it["label"]:
-                    if it["at"]:
-                        spots = [(px(number(it["at"], line, "@x")) + 4, py(v) - 7, "start")]
-                    else:
-                        spots = [(right - 4, py(v) - 7, "end"), (right - 4, py(v) + 17, "end"),
-                                 (left + 6, py(v) - 7, "start"), (left + 6, py(v) + 17, "start")]
+                    xs = [px(number(it["at"], line, "@x"))] if it["at"] else []
+                    xs += [right - 4, left + 6] + [left + (right - left) * f for f in (0.75, 0.5, 0.25)]
+                    spots = [(x, py(v) + dy, anchor) for x in xs for dy in (-7, 17)
+                             for anchor in (("end",) if x == right - 4 else ("start",) if x == left + 6 else ("start", "end"))]
                     labels_.append((spots, it["label"], txt_cls(st), k))
             else:
                 c.add(f'<line class="{cls}" x1="{num(px(v))}" y1="{num(bottom)}" x2="{num(px(v))}" y2="{num(top)}"/>')
                 c.seg(px(v), bottom, px(v), top, name, owner=k)
                 if it["label"]:
-                    if it["at"]:
-                        spots = [(px(v) + 6, py(number(it["at"], line, "@y")), "start")]
-                    else:
-                        spots = [(px(v) + 6, top + 12, "start"), (px(v) - 6, top + 12, "end"),
-                                 (px(v) + 6, (top + bottom) / 2, "start"), (px(v) - 6, (top + bottom) / 2, "end")]
+                    ys = [py(number(it["at"], line, "@y"))] if it["at"] else []
+                    ys += [top + 12] + [top + (bottom - top) * f for f in (0.25, 0.5, 0.75)]
+                    spots = [(px(v) + dx, y, anchor) for y in ys for dx, anchor in ((6, "start"), (-6, "end"))]
                     labels_.append((spots, it["label"], txt_cls(st), k))
         elif kind == "curve":
             data = it["data"]
@@ -695,15 +706,19 @@ def plot(c, p, items, plain):
                     c.seg(ax, ay, bx, by, name, owner=k)
             if it["label"]:
                 cand = [pt for r in runs for pt in r]
-                if it["at"]:
+                anchors = []
+                if it["at"]:  # the author's spot first; if it is taken, the usual ones
                     xa = px(number(it["at"], line, "@x"))
-                    anchors = [min(cand, key=lambda q: abs(q[0] - xa))]
-                else:  # the end of the curve first, then points back along it
-                    anchors = [runs[-1][-1]] + [cand[int(len(cand) * f)] for f in (0.85, 0.7, 0.55, 0.4, 0.25, 0.1)]
+                    anchors.append(min(cand, key=lambda q: abs(q[0] - xa)))
+                # the end of the curve, then points back along it
+                anchors += [runs[-1][-1]] + [cand[min(len(cand) - 1, int(len(cand) * f))]
+                                             for f in (0.92, 0.85, 0.78, 0.7, 0.62, 0.55, 0.45, 0.35, 0.25, 0.15, 0.05)]
                 spots = []
-                for lx, ly in anchors:
-                    spots += [(lx + 8, ly - 8, "start"), (lx - 8, ly - 10, "end"), (lx + 8, ly + 18, "start"),
-                              (lx - 8, ly + 18, "end")]
+                for far in (0, 1):
+                    for lx, ly in anchors:
+                        d = 8 + 10 * far
+                        spots += [(lx + d, ly - d, "start"), (lx - d, ly - d - 2, "end"), (lx + d, ly + d + 10, "start"),
+                                  (lx - d, ly + d + 10, "end")]
                 cls_t = tone["w" if "w" in st else "m" if "m" in st else "a"]
                 labels_.append((spots, it["label"], cls_t, k))
         elif kind == "point":
@@ -718,10 +733,18 @@ def plot(c, p, items, plain):
             if it["label"]:
                 dirs = {"ne": (8, -9, "start"), "nw": (-8, -9, "end"), "se": (8, 19, "start"), "sw": (-8, 19, "end"),
                         "e": (10, 4.5, "start"), "w": (-10, 4.5, "end"), "n": (0, -11, "middle"), "s": (0, 22, "middle")}
-                order = [it["at"].lower()] if it["at"] else list(dirs)
-                if order[0] not in dirs:
-                    raise Fig(line, f"figure plot: a point label goes @ne, @nw, @se, @sw, @n, @s, @e or @w, not @{order[0]}")
-                spots = [(x + dirs[d][0], y + dirs[d][1], dirs[d][2]) for d in order]
+                pref = (it["at"] or "").lower()
+                if pref and pref not in dirs:
+                    raise Fig(line, f"figure plot: a point label goes @ne, @nw, @se, @sw, @n, @s, @e or @w, not @{pref}")
+                # the author's direction first (further out if needed), then every direction, near before far
+                order = [(pref, r) for r in (1, 2, 3)] if pref else []
+                order += [(d, r) for r in (1, 2, 3) for d in dirs]
+                def spot(d, r):
+                    dx, dy, anchor = dirs[d]
+                    if d in ("e", "w"):
+                        return x + dx * r, y + dy, anchor
+                    return x + dx * r, (y + dy * r if dy < 0 else y + dy + 12 * (r - 1)), anchor
+                spots = [spot(d, r) for d, r in order]
                 labels_.append((spots, it["label"], txt_cls(st, ""), k))
         elif kind == "arrow":
             pts = pairs(it["data"], line, "an arrow")
@@ -732,16 +755,22 @@ def plot(c, p, items, plain):
             c.seg(a1, b1, a2, b2, name, owner=k)
             if it["label"]:
                 mx = (a1 + a2) / 2
-                spots = [(mx, min(b1, b2) - 8, "middle"), (mx, max(b1, b2) + 18, "middle")]
+                spots = [(mx, min(b1, b2) - 8, "middle"), (mx, max(b1, b2) + 18, "middle"),
+                         (mx, min(b1, b2) - 20, "middle"), (mx, max(b1, b2) + 30, "middle"),
+                         (max(a1, a2) + 8, b2 + 4.5, "start"), (min(a1, a2) - 8, b1 + 4.5, "end")]
                 labels_.append((spots, it["label"], txt_cls(st, "atxt"), k))
         elif kind == "text":
             a, b = pairs(it["data"], line, "a text position")[0]
             cls = {"small": "small", "acc": "atxt", "warn": "wtxt", "ttl": "ttl"}
             style = next((cls[s] for s in st if s in cls), "")
-            labels_.append(([(px(a), py(b), "middle" if "center" in st else "start")], it["label"], style, k))
+            anchors = ("middle",) if "center" in st else ("start", "end")
+            spots = [(px(a) + dx, py(b) + dy, anchor) for anchor in anchors
+                     for dx, dy in ((0, 0), (0, -10), (0, 12), (-12, 0), (12, 0))]
+            labels_.append((spots, it["label"], style, k))
     for spots, s, cls, owner in labels_:
         c.place(spots, s, (cls + " halo").strip(), owner, height)
-    c.check(height, "Move a label with @x for a curve or line, @ne/@sw/... for a point, or new x, y for a text.")
+    c.check(height, "No free spot was found near these; shorten the label, move it with @x (curves, lines) or "
+                    "@ne/@sw/... (points), or make the figure taller with 'height:'.")
     return height
 
 

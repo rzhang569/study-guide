@@ -88,7 +88,8 @@ class Markdown(unittest.TestCase):
     def test_formula_fallbacks_read_as_plain_text(self):
         for tex, text in (('\\frac{a+b}{2}', '(a+b)/2'), ('\\binom{8}{3}', 'C(8, 3)'), ('x_i^2', 'x<sub>i</sub>²'),
                           ('\\sqrt{np(1-p)}', '√(np(1-p))'), ('\\mathrm{Var}(aX+b)', 'Var(aX+b)'),
-                          ('\\alpha \\cdot \\beta_{12}', 'α · β₁₂'), ('\\left( \\frac{|A|}{|\\Omega|} \\right)', '( |A|/|Ω| )')):
+                          ('\\alpha \\cdot \\beta_{12}', 'α · β₁₂'), ('\\left( \\frac{|A|}{|\\Omega|} \\right)', '( |A|/|Ω| )'),
+                          ('P(B)>0, x^{a<b}', 'P(B)&gt;0, x<sup>a&lt;b</sup>')):
             with self.subTest(tex=tex):
                 self.assertEqual(md.tex_fallback(tex), text)
         self.assertEqual(md.plain_label('**P** = $x^{ab}$'), 'P = x^(ab)')
@@ -140,6 +141,8 @@ class Figures(unittest.TestCase):
         self.assertEqual(h.count('class="bar l"'), 2)
         heights = [float(v) for v in re.findall(r'class="bar[^"]*"[^>]* height="([\d.]+)"', h)]
         self.assertAlmostEqual(heights[1] / heights[2], 4 / 6, places=2)
+        h, _ = figure('bars', 'x: buyers (inelastic, |Ed| = 0.5), sellers (elastic)\ny: 0.8, 0.2\ncaption: c')
+        self.assertIn('>buyers (inelastic, |Ed| = 0.5)</text>', h)
 
     def test_demo_figures_have_no_warnings(self):
         rep = b.Report()
@@ -165,11 +168,15 @@ class Figures(unittest.TestCase):
             self.assertTrue(all(top - 0.1 <= y <= bottom + 0.1 for y in ys), path)
         self.assertEqual(re.findall(r'class="atxt halo"[^>]*>([^<]+)<', h), ['Demand'])
 
-    def test_crowded_labels_are_reported(self):
-        _, warns = figure('plot', 'x: 0..10 | x\ny: 0..10 | y\n' + ''.join(
-            f'- point: 5, 5 | a long label number {k} @ne\n' for k in range(3)) + 'caption: c')
+    def test_labels_move_to_a_free_spot_and_crowding_is_reported(self):
+        h, warns = figure('plot', 'x: 0..10 | x\ny: 0..10 | y\n- curve: x | rising\n- curve w: 10 - x | falling\n'
+                                  '- point: 5, 5 | where they cross @ne\n- point: 5, 5 | same spot @ne\ncaption: c')
+        self.assertEqual(warns, [])  # @ne is taken by the first label and crossed by both lines: both move
+        self.assertEqual(len(re.findall(r'class="halo"', h)), 2)
+        _, warns = figure('plot', 'x: 0..10 | x\ny: 0..10 | y\nheight: 180\n' + ''.join(
+            f'- point: 5, 5 | a long label number {k}\n' for k in range(30)) + 'caption: c')
         self.assertEqual(len(warns), 1)
-        self.assertRegex(warns[0], r'sections/x\.md line 4: figure plot: "a long label number \d" overlaps')
+        self.assertRegex(warns[0], r'sections/x\.md line 4: figure plot: "a long label number \d+" (overlaps|runs past)')
 
     def test_expressions_allow_only_math(self):
         for bad in ("__import__('os')", 'x.real', '[1][0]', "open('f')", 'lambda: 1', '2x', 'y + 1'):

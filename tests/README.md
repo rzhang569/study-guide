@@ -10,8 +10,9 @@ node tests/browser/run.mjs   # real headless Chrome; prints SKIP without a brows
 
 The browser tests build the demo in English and Chinese into a temporary folder and drive
 headless Chrome over the DevTools protocol (`tests/browser/cdp.mjs`, no npm packages). They
-cover the practice center, short-answer redo, a full mock paper and its score report, and the
-mistake notebook. CI runs all three suites (`.github/workflows/test.yml`) on Ubuntu (Python
+cover the practice center, short-answer redo, a full mock paper and its score report, the
+mistake notebook, and the demo's template figures (no text overlaps another or leaves its
+figure, measured from the rendered page). CI runs all three suites (`.github/workflows/test.yml`) on Ubuntu (Python
 3.9 and 3.13) and on Windows (Python 3.13), with `REQUIRE_BROWSER=1`, so a missing browser
 fails the job instead of skipping.
 
@@ -41,6 +42,10 @@ Python uses only the standard library. Node uses built-in modules (`node:test`,
 `node:vm`, filesystem/path loading, and assertions); there are no npm packages.
 `tests/__init__.py` enables discovery with the exact Python command above, including
 `test_count_exam.py`. That existing test retains its optional pypdf/eval PDF check.
+
+`test_sectionmd.py` covers Markdown sections and figure templates: every block and its HTML,
+the plain-text formula fallbacks, the price-versus-math rule for `$`, errors that name the file
+and line, label placement and overlap warnings, and that figure expressions accept only math.
 
 All authored test courses are tiny fictional fixtures in `TemporaryDirectory`.
 The demo and drills-from-progress files are read-only test inputs. Demo builds and

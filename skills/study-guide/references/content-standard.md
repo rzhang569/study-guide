@@ -106,7 +106,7 @@ The build stops with the file name and line number when a block is unknown or ne
 - Math-heavy topics get plotted curves (learning-rate schedules, likelihoods, distributions) computed from the formula, not sketched.
 - The caption says what to notice, with the slide reference. Every figure needs one.
 
-Four templates cover most figures; you write numbers and labels, the build draws the SVG and warns when a label would overlap a line, a dot or another label, or leave the figure. Labels without a position are placed automatically in a free spot.
+Four templates cover most figures; you write numbers and labels, the build draws the SVG. Plot labels are placed automatically where they clear every line, dot and other label; the build warns only when it finds no free spot (or, in a grid or tree, when labels are too long for the space).
 
 ````
 ::: figure grid                  # a table of outcomes, e.g. two dice
@@ -158,7 +158,7 @@ caption: …
 :::
 ````
 
-Expressions use `+ - * / ^`, parentheses and `sqrt exp log ln sin cos abs min max comb factorial floor ceil round pi e`. To move a label, end it with `@x` (curves and lines: the x position), `@ne`, `@nw`, `@se`, `@sw`, `@n`, `@s`, `@e`, `@w` (points) or `@x,y` (areas). Other optional keys: `height:` (pixels), `xticks:` / `yticks:` (a list, or `none`), `grid: yes`, `cell:` (grid cell size), `alt:` (screen-reader text; default: the caption).
+Expressions use `+ - * / ^`, parentheses and `sqrt exp log ln sin cos abs min max comb factorial floor ceil round pi e`. To suggest a spot, end a label with `@x` (curves and lines: the x position), `@ne`, `@nw`, `@se`, `@sw`, `@n`, `@s`, `@e`, `@w` (points) or `@x,y` (areas); the build moves it if that spot is taken. Commas inside parentheses stay part of a label. Other optional keys: `height:` (pixels), `xticks:` / `yticks:` (a list, or `none`), `grid: yes`, `cell:` (grid cell size), `alt:` (screen-reader text; default: the caption).
 
 When no template fits, draw inline SVG inside `::: html` (see section 8 for the classes) with a 560-wide viewBox, compute text extents (about 0.55 × font size per Latin character, 1 × per CJK character) and confirm with a screenshot that no text overlaps.
 

@@ -87,7 +87,7 @@ def tex_fallback(tex, markup=True):
         if all(ord(ch) in table for ch in body):
             return body.translate(table)
         if markup:
-            return f"<{tag}>{html.escape(body, quote=False)}</{tag}>"
+            return f"<{tag}>{body}</{tag}>"  # escaped below with the rest of the text
         mark = "^" if tag == "sup" else "_"
         return mark + (body if len(body) == 1 else f"({body})")
 
