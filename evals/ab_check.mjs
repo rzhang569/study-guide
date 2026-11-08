@@ -101,7 +101,11 @@ for (const run of runs) {
     boxes.forEach((a, i) => {
       if (a.r.left < s.left - 1 || a.r.right > s.right + 1 || a.r.top < s.top - 1 || a.r.bottom > s.bottom + 1) problems.push(`"${a.s}" leaves the figure`);
       boxes.slice(i + 1).forEach(b => {
-        if (a.r.left < b.r.right - 1 && b.r.left < a.r.right - 1 && a.r.top < b.r.bottom - 2 && b.r.top < a.r.bottom - 2) problems.push(`"${a.s}" x "${b.s}"`);
+        /* glyph boxes include line spacing, so two stacked lines touch; count an overlap only when it covers more
+           than a third of the shorter label's height */
+        const w = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
+        const h = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
+        if (w > 2 && h > Math.min(a.r.height, b.r.height) / 3) problems.push(`"${a.s}" x "${b.s}"`);
       });
     });
     return {section: svg.closest('section')?.id || '', texts: boxes.length, text_problems: problems,
