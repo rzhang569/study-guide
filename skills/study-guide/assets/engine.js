@@ -78,7 +78,10 @@
       catTitle: { tf: "判断题", single: "单选题", multi: "多选题", fill: "填空题" },
       catDesc: { tf: "True / False。", single: "选一个最合适的。", multi: "可以选多个，按部分给分。", fill: "填最后的结果。数值按大小判对，分数、小数都行。" },
       catShort: { tf: "判断", single: "单选", multi: "多选", fill: "填空" },
-      railK: "本节小节", railPrac: "本节练习 ↓"
+      railK: "本节小节", railPrac: "本节练习 ↓",
+      walkTag: "分步讲解", walkStep: "第 {k} / {n} 步", walkPrev: "← 上一步", walkNext: "下一步 →",
+      walkPlay: "▶ 朗读播放", walkPause: "❚❚ 暂停", walkReplay: "↺ 从头再来",
+      walkNoVoice: "这个浏览器不支持朗读，播放时只会自动翻页。"
     },
     en: {
       partNo: "Practice", title: "Practice and exams",
@@ -149,7 +152,10 @@
       catTitle: { tf: "True / False", single: "Multiple choice", multi: "Multiple select", fill: "Fill in" },
       catDesc: { tf: "True or false.", single: "Pick the best answer.", multi: "Pick all that apply; partial credit.", fill: "Type the final result. Numbers are compared by value; fractions and decimals both work." },
       catShort: { tf: "true/false", single: "multiple choice", multi: "multiple select", fill: "fill-in" },
-      railK: "In this section", railPrac: "Section practice ↓"
+      railK: "In this section", railPrac: "Section practice ↓",
+      walkTag: "Walkthrough", walkStep: "Step {k} / {n}", walkPrev: "← Back", walkNext: "Next →",
+      walkPlay: "▶ Play with voice", walkPause: "❚❚ Pause", walkReplay: "↺ Start over",
+      walkNoVoice: "This browser can't read aloud; Play only turns the steps."
     }
   };
   var S = STR[CFG.lang] || STR.zh, ZH = S === STR.zh;
@@ -1546,8 +1552,111 @@
     });
     var tab = lsGet("tab");
     if (tab) { var tb = document.querySelector('[data-tab="' + tab + '"]'); if (tb) tb.click(); }
+    initWalks();
     renderTex(document.body);
     initSpy();
+  }
+
+  /* ================= step-by-step walkthroughs =================
+     <div class="walk"> holds an optional .walk-stage (a figure whose elements carry data-show / data-hl
+     step lists such as "2", "2-", "2-4", "1,3") and an <ol class="walk-steps"> with one <li> per step.
+     Without JavaScript every step stays listed and the figure shows its final state. Play reads each
+     step aloud with the browser's own speech (li[data-say] overrides the spoken text) and turns the page
+     when the sentence ends; without speech support it turns pages on a timer. */
+  function inSteps(spec, k) {
+    if (spec == null) return false;
+    return String(spec).split(",").some(function (part) {
+      var m = part.trim().match(/^(\d+)(?:\s*(-)\s*(\d*))?$/);
+      if (!m) return false;
+      var a = +m[1], b = m[2] ? (m[3] ? +m[3] : Infinity) : a;
+      return k >= a && k <= b;
+    });
+  }
+  var speech = window.speechSynthesis && window.SpeechSynthesisUtterance ? window.speechSynthesis : null;
+  var walkPlaying = null;
+  function initWalks() {
+    document.querySelectorAll(".walk").forEach(function (w) {
+      var steps = [].slice.call(w.querySelectorAll(".walk-steps > li"));
+      if (!steps.length || w.classList.contains("js")) return;
+      var n = steps.length, cur = 0, playing = false, timer = null;
+      var marks = [].slice.call(w.querySelectorAll(".walk-stage [data-show], .walk-stage [data-hl]"));
+      var head = w.querySelector(".walk-title");
+      if (head && !head.querySelector(".try-tag")) head.insertAdjacentHTML("afterbegin", span("try-tag", t("walkTag")) + " ");
+      var bar = el("div", "walk-bar");
+      var prev = button("btn ghost small", t("walkPrev")), next = button("btn small", t("walkNext"));
+      var play = button("btn ghost small walk-play", t("walkPlay"));
+      var count = el("span", "walk-count");
+      var dots = el("span", "walk-dots");
+      steps.forEach(function (li, i) {
+        var d = button("walk-dot", ""); d.setAttribute("aria-label", t("walkStep", { k: i + 1, n: n }));
+        d.addEventListener("click", function () { stop(); show(i); });
+        dots.appendChild(d);
+      });
+      [prev, count, next, dots, play].forEach(function (x) { bar.appendChild(x); });
+      var list = w.querySelector(".walk-steps");
+      list.setAttribute("aria-live", "polite");
+      list.parentNode.insertBefore(bar, list.nextSibling);
+      if (!speech) { var nv = el("p", "walk-note", t("walkNoVoice")); bar.parentNode.insertBefore(nv, bar.nextSibling); }
+      w.classList.add("js");
+      function show(k) {
+        cur = Math.max(0, Math.min(n - 1, k));
+        var s = cur + 1;
+        steps.forEach(function (li, i) { li.classList.toggle("cur", i === cur); });
+        [].forEach.call(dots.children, function (d, i) { d.classList.toggle("on", i === cur); d.classList.toggle("seen", i < cur); });
+        marks.forEach(function (m) {
+          var sh = m.getAttribute("data-show");
+          m.classList.toggle("walk-off", sh != null && !inSteps(sh, s));
+          m.classList.toggle("walk-hl", inSteps(m.getAttribute("data-hl"), s));
+        });
+        count.textContent = t("walkStep", { k: s, n: n });
+        prev.disabled = cur === 0;
+        next.disabled = cur === n - 1;
+      }
+      function sayText(li) { return (li.getAttribute("data-say") || li.innerText || li.textContent || "").replace(/\s+/g, " ").trim(); }
+      function run() {
+        if (!playing) return;
+        var done = function () {
+          if (!playing) return;
+          if (cur < n - 1) { show(cur + 1); run(); } else stop(true);
+        };
+        var text = sayText(steps[cur]);
+        if (speech) {
+          var u = new SpeechSynthesisUtterance(text);
+          u.lang = ZH ? "zh-CN" : "en-US";
+          u.rate = 1;
+          u.onend = function () { timer = setTimeout(done, 450); };
+          u.onerror = function (e) { if (e && e.error === "interrupted" || e && e.error === "canceled") return; timer = setTimeout(done, 1200); };
+          speech.cancel();
+          speech.speak(u);
+        } else {
+          timer = setTimeout(done, Math.max(2600, text.length * (ZH ? 220 : 65)));
+        }
+      }
+      function stop(finished) {
+        playing = false;
+        clearTimeout(timer);
+        if (speech && walkPlaying === stop) speech.cancel();
+        if (walkPlaying === stop) walkPlaying = null;
+        play.textContent = finished ? t("walkReplay") : t("walkPlay");
+        w.classList.remove("playing");
+      }
+      play.addEventListener("click", function () {
+        if (playing) { stop(); return; }
+        if (walkPlaying) walkPlaying();
+        if (cur === n - 1 && play.textContent === t("walkReplay")) show(0);
+        playing = true; walkPlaying = stop;
+        play.textContent = t("walkPause");
+        w.classList.add("playing");
+        run();
+      });
+      prev.addEventListener("click", function () { stop(); show(cur - 1); });
+      next.addEventListener("click", function () { stop(); show(cur + 1); });
+      bar.addEventListener("keydown", function (e) {
+        if (e.key === "ArrowRight") { stop(); show(cur + 1); e.preventDefault(); }
+        else if (e.key === "ArrowLeft") { stop(); show(cur - 1); e.preventDefault(); }
+      });
+      show(0);
+    });
   }
 
   window.StudyGuide = { t: t, el: el, renderTex: function (root) { renderTex(root || document.body); }, report: buildReport };

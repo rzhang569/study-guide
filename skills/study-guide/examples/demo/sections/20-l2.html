@@ -67,5 +67,31 @@
     </figure>
     <div class="plain"><b>In plain words</b>The test is good, but healthy people outnumber sick people 99 to 1. Even a small false-alarm rate on that huge group produces more positives than the real cases do.</div>
     <div class="trap"><b>Trap</b><span class="m">P(+ | D)</span> (how good the test is) is not <span class="m">P(D | + )</span> (what a positive means for you). Mixing them up is called base-rate neglect.</div>
+    <div class="walk" id="walk-bayes">
+      <p class="walk-title">A positive test, one step at a time</p>
+      <div class="walk-stage"><div class="dia"><svg viewBox="0 0 560 304" role="img" aria-label="The same tree built up step by step: 1000 people, 10 sick and 990 healthy, 9 and about 50 positives, 59 positives in all, 9 of them sick">
+        <rect class="node" x="200" y="14" width="160" height="40" rx="8" data-hl="1"/><text x="280" y="40" text-anchor="middle" class="ttl">1000 people</text>
+        <g data-show="2-"><line class="edge" x1="280" y1="54" x2="130" y2="96"/><line class="edge" x1="280" y1="54" x2="440" y2="96"/></g>
+        <g data-show="2-"><rect class="node" x="30" y="96" width="200" height="40" rx="8" data-hl="2-3"/><text x="130" y="122" text-anchor="middle">10 sick (1%)</text></g>
+        <g data-show="2-"><rect class="node" x="330" y="96" width="220" height="40" rx="8" data-hl="4"/><text x="440" y="122" text-anchor="middle">990 healthy (99%)</text></g>
+        <g data-show="3-"><line class="edge" x1="130" y1="136" x2="62" y2="184"/><line class="edge" x1="130" y1="136" x2="176" y2="184"/>
+          <rect class="node hl" x="10" y="184" width="104" height="44" rx="8"/><text x="62" y="211" text-anchor="middle">9 test +</text>
+          <rect class="node ghost" x="124" y="184" width="104" height="44" rx="8"/><text x="176" y="211" text-anchor="middle" class="small">1 test −</text></g>
+        <g data-show="4-"><line class="edge" x1="440" y1="136" x2="382" y2="184"/><line class="edge" x1="440" y1="136" x2="498" y2="184"/>
+          <rect class="node wn" x="330" y="184" width="104" height="44" rx="8"/><text x="382" y="211" text-anchor="middle">≈50 test +</text>
+          <rect class="node ghost" x="446" y="184" width="104" height="44" rx="8"/><text x="498" y="211" text-anchor="middle" class="small">940 test −</text></g>
+        <g data-show="5-"><line class="edge acc" x1="62" y1="228" x2="180" y2="252"/><line class="edge acc" x1="382" y1="228" x2="262" y2="252"/>
+          <rect class="node" x="120" y="252" width="200" height="40" rx="8" data-hl="5"/><text x="220" y="278" text-anchor="middle">9 + 50 = 59 test +</text></g>
+        <g data-show="6-"><rect class="node hl" x="336" y="252" width="214" height="40" rx="8"/><text x="443" y="278" text-anchor="middle" class="ttl">P(sick | +) = 9/59 ≈ 15%</text></g>
+      </svg></div></div>
+      <ol class="walk-steps">
+        <li>Picture 1,000 people taking the test. Counting people is easier than multiplying probabilities.</li>
+        <li>The disease is rare: 1% of 1,000 is 10 sick people. The other 990 are healthy.</li>
+        <li>The test catches 90% of sick people, so 9 of the 10 test positive and 1 is missed.</li>
+        <li data-say="It also raises a false alarm for 5 percent of healthy people: about 50 of the 990.">It also raises a false alarm for 5% of healthy people: about 50 of the 990.</li>
+        <li>You tested positive, so you are one of the positives. There are 9 + 50 = 59 of them.</li>
+        <li data-say="Only 9 of those 59 are actually sick. So a positive result means about a 15 percent chance of being sick, not 90 percent.">Only 9 of those 59 are actually sick, so P(sick | +) = 9/59 ≈ 15%, not 90%.</li>
+      </ol>
+    </div>
   </article>
 </section>
