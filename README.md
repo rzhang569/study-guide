@@ -1,32 +1,46 @@
 # study-guide
 
-An [Agent Skill](https://agentskills.io) that turns a course's slides and notes into an **interactive exam review page**, and then keeps improving it from how you actually answer.
+Turn your course slides into an **interactive exam review page**. Then export how you answered, and your agent writes new drills for your weak spots.
 
-**Live demo: <https://rzhang569.github.io/study-guide/>** (a fictional intro probability course; your answers are saved only in your own browser)
+An [Agent Skill](https://agentskills.io) for Claude Code and Codex; other agents that support Agent Skills should work too.
 
-> **Status: v0.1.0, early release.** Feedback and issues are welcome.
->
-> - **Tested:** building pages; using them locally in a browser; the Export progress → paste to Claude loop; installing the Claude Code plugin from GitHub; Codex CLI and the Codex app on macOS (calling `$study-guide`, and picking the skill on its own in a new chat); a small with/without-skill comparison of an earlier version (see [Evaluation](#evaluation)).
-> - **Documented by each agent but not tested end to end:** Gemini CLI, Cursor and GitHub Copilot (see [Install](#install)).
-> - **Experimental, not yet tested end to end:** uploading to claude.ai; automatic progress sync when the page runs as a Claude artifact; whether agents other than Codex pick the skill on their own in a normal conversation.
+**▶ [Live demo](https://rzhang569.github.io/study-guide/)** (a fictional intro probability course; your answers stay in your own browser) · v0.1.0, early release, feedback welcome
 
-![Notes: each topic has a one-line lead, a formula, a worked figure and a plain-language box](docs/notes.png)
+![Demo: notes with a worked figure, a practice question with an explanation for every option, then a timed mock exam and its score report](docs/demo.gif)
 
-Ask your coding agent something like *"my BIO 201 midterm covers lectures 1–8, here are the slides, make me a review page"*. You get one HTML file with:
+## Quick start
 
-- **Notes by lecture.** Every claim cites a slide page ("L7 p.23"). Each lecture has a glossary, one-line leads, concrete examples before formulas, "in plain words" boxes, figures and red trap boxes for what true/false questions twist.
-- **A practice box at the end of every section**, so you test yourself right after reading instead of after five lectures.
-- **A practice bank** with instant feedback, an explanation for **every** option, partial credit on multi-select, and fill-ins graded by value (`1/2`, `0.5` and `50%` all count).
+Claude Code:
+
+```bash
+claude plugin marketplace add rzhang569/study-guide
+claude plugin install study-guide@study-guide
+```
+
+Codex:
+
+```bash
+git clone https://github.com/rzhang569/study-guide.git
+mkdir -p ~/.agents/skills && cp -R study-guide/skills/study-guide ~/.agents/skills/
+```
+
+Then ask your agent: *"my BIO 201 midterm covers lectures 1–8, here are the slides, make me a review page."* Other agents are under [Install](#install).
+
+## What you get
+
+One HTML file with:
+
+- **Notes by lecture**, every claim citing a slide page ("L7 p.23"), with a glossary, examples before formulas, plain-language boxes, figures and trap boxes.
+- **Practice everywhere**: a box at the end of each section, plus a full bank with an explanation for **every** option, partial credit on multi-select, and fill-ins graded by value (`1/2`, `0.5` and `50%` all count).
 - **Step-by-step short answers** that mirror the exam's long questions, with points per step.
-- **Timed mock exams** drawn from a **separate pool** in the real exam's proportions. They have an answer sheet, flags for questions you're unsure about, auto-submit, and a score report by lecture.
-- **A mistake notebook** that collects first-try misses and wrong or flagged mock questions.
-- **A progress report** your agent reads back. It names your weak spots and writes new questions that re-ask the same concept in different words, not the same question again.
+- **Timed mock exams** from a separate pool, in the real exam's proportions, with an answer sheet, flags, auto-submit and a score report by lecture.
+- **A mistake notebook and a progress report.** Your agent reads the report back and writes new questions that re-ask your weak concepts in different words.
 
-| Practice with per-option explanations | Mock exam report |
-|---|---|
-| ![A missed practice question showing why the picked option is wrong](docs/practice.png) | ![Mock exam score report by lecture with flag calibration](docs/mock.png) |
+| Notes | Practice | Mock exam report |
+|---|---|---|
+| ![Notes: a one-line lead, a formula, a worked figure and a plain-language box](docs/notes.png) | ![A missed practice question showing why the picked option is wrong](docs/practice.png) | ![Mock exam score report by lecture with flag calibration](docs/mock.png) |
 
-The demo course in [`skills/study-guide/examples/demo`](skills/study-guide/examples/demo) is fictional (three lectures of intro probability). Try it at the [live demo](https://rzhang569.github.io/study-guide/), or build it locally with `python3 skills/study-guide/scripts/build.py skills/study-guide/examples/demo` and open the `review.html` it writes.
+The demo course in [`skills/study-guide/examples/demo`](skills/study-guide/examples/demo) is fictional (three lectures of intro probability). Build it locally with `python3 skills/study-guide/scripts/build.py skills/study-guide/examples/demo` and open the `review.html` it writes.
 
 ## What's different
 
@@ -64,6 +78,14 @@ cp -R study-guide/skills/study-guide ~/.agents/skills/
 **claude.ai (experimental, not yet tested):** zip the `skills/study-guide` folder and upload it in the Skills section of claude.ai settings. Code execution must be on. Pages published as artifacts try to sync progress through the artifact database; if that doesn't work for you, use Export progress.
 
 **Other agents:** any agent that supports the [Agent Skills](https://agentskills.io) format and can run scripts should be able to load `skills/study-guide`; put it wherever that agent looks for skills.
+
+### What has been tested
+
+v0.1.0 is an early release; issues and feedback are welcome.
+
+- **Tested:** building pages; using them locally in a browser; the Export progress → paste to Claude loop; installing the Claude Code plugin from GitHub; Codex CLI and the Codex app on macOS (calling `$study-guide`, and picking the skill on its own in a new chat); a small with/without-skill comparison of an earlier version (see [Evaluation](#evaluation)).
+- **Documented by each agent but not tested end to end:** Gemini CLI, Cursor and GitHub Copilot.
+- **Experimental, not yet tested end to end:** uploading to claude.ai; automatic progress sync when the page runs as a Claude artifact; whether agents other than Codex pick the skill on their own in a normal conversation.
 
 ## Use
 
