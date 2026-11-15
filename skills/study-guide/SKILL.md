@@ -85,7 +85,7 @@ Delete the demo's sections and questions as you replace them. See `references/da
 
 Write one file per lecture in `sections/` (`10-l1.html`, `20-l2.html`, …), plus `00-hero.html` for logistics and a final traps list. Each lecture is a `<section class="part" id="...">`. Its practice box appears automatically when a practice group points at that id with `"sec"`.
 
-`references/content-standard.md` has the full recipe and the HTML for every component. In short: cite every claim, open hard lectures with a glossary and analogies, give each topic a one-line lead, a concrete example before any formula, a plain-language box, a figure where a picture helps, and a trap box for what true/false questions twist.
+`references/content-standard.md` has the full recipe and the HTML for every component. In short: cite every claim, open hard lectures with a glossary and analogies, give each topic a one-line lead, a concrete example before any formula, a plain-language box, a figure where a picture helps, and a trap box for what true/false questions twist. For the one process per lecture students find hardest to follow, a step-by-step walkthrough (section 8 there) builds the figure up one step at a time and can read the steps aloud.
 
 ## 5. Write the questions
 
@@ -135,7 +135,7 @@ Then:
 
 1. **Name the weak spots** in a few lines. Count lectures below about 80% first-try accuracy, repeated misconceptions, and short-answer steps that keep failing. Also count questions flagged as unsure but answered right; those are shaky knowledge too.
 2. **Write new drills** for each weak spot. Re-ask the same concept in different words, numbers or scenarios; never repeat the question they missed. Add them to `practice.json` with new ids, and to `mock.json` if the mock pool is thin there.
-3. **Fix the explanation**, not just the questions. If a misconception repeats, the section probably explains it badly. Add a plain-language box, a worked example or a figure aimed at that exact mix-up.
+3. **Fix the explanation**, not just the questions. If a misconception repeats, the section probably explains it badly. Add a plain-language box, a worked example, a figure or a step-by-step walkthrough aimed at that exact mix-up.
 4. Rebuild, then tell the student what changed and where.
 
 ### Keep saved progress valid when editing

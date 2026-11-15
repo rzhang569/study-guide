@@ -103,3 +103,28 @@ Diagram classes inside `div.dia > svg`: `text` (with `.small`, `.ttl`, `.mono`, 
 ## 7. Optional: interactive "try it" widgets
 
 For a topic students find hard to picture, add a sandbox in `extra.js`, such as a slider that redraws a curve, or a generator that makes endless practice variants with Check / Show answer. Keep it unscored and separate from the practice boxes. Put a placeholder in the section (`<div class="try" id="try-momentum"></div>`), fill it from `extra.js`, and style it with the `.try*` classes in `page.css`. `extra.js` runs after the engine; `window.StudyGuide` exposes `el(tag, cls, html)`, `t(key)` and `renderTex(root)`. Use widgets sparingly; a good figure usually does the job.
+
+## 8. Optional: step-by-step walkthroughs
+
+When a process is hard to follow in one static figure (a probability tree, an algorithm's loop, a derivation), add a walkthrough: one figure that builds up one step at a time, a one-sentence caption per step, Back / Next buttons, and a Play button that reads each caption aloud with the browser's own voice and turns the page when it finishes. It needs no extra files and no network.
+
+```html
+<div class="walk" id="walk-bayes">
+  <p class="walk-title">A positive test, one step at a time</p>
+  <div class="walk-stage"><div class="dia"><svg viewBox="0 0 560 300" role="img" aria-label="…">
+    <rect class="node" … data-hl="1"/>            <!-- highlighted on step 1 -->
+    <g data-show="2-">…</g>                        <!-- appears on step 2 and stays -->
+    <rect class="node" … data-hl="2-3"/>          <!-- highlighted on steps 2 to 3 -->
+  </svg></div></div>
+  <ol class="walk-steps">
+    <li>Picture 1,000 people taking the test.</li>
+    <li data-say="… 5 percent …">… 5% …</li>      <!-- data-say: what the voice reads -->
+  </ol>
+</div>
+```
+
+- `data-show` and `data-hl` take step lists: `2` (only step 2), `2-` (from step 2 on), `2-4`, `1,3`. Unmarked elements are always visible. The stage is optional; a walkthrough of captions alone also works.
+- 3 to 7 steps, one idea and one sentence each. Each caption says what changed in the figure and why, with the real numbers.
+- Write `data-say` whenever a caption has symbols the voice would misread (`%`, `≈`, `|`, formulas, code). Write it in plain words.
+- Without JavaScript, every caption stays listed and the figure shows its final state, so the box still reads as a normal figure with numbered steps.
+- Use them sparingly, about one per lecture at most, for the topic students ask about most.
