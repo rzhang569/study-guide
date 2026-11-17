@@ -1560,9 +1560,11 @@
   /* ================= step-by-step walkthroughs =================
      <div class="walk"> holds an optional .walk-stage (a figure whose elements carry data-show / data-hl
      step lists such as "2", "2-", "2-4", "1,3") and an <ol class="walk-steps"> with one <li> per step.
-     Without JavaScript every step stays listed and the figure shows its final state. Play reads each
-     step aloud with the browser's own speech (li[data-say] overrides the spoken text) and turns the page
-     when the sentence ends; without speech support it turns pages on a timer. */
+     Without JavaScript every step stays listed and every stage element shows. Play reads each step aloud
+     with the browser's own speech (li[data-say] overrides the spoken text), preferring an on-device voice,
+     and turns the page when the sentence ends. Without speech, or after a speech error, it turns pages
+     on a timer sized to the caption. Each Play gets a token, so callbacks from a cancelled sentence
+     can never advance a later run. */
   function inSteps(spec, k) {
     if (spec == null) return false;
     return String(spec).split(",").some(function (part) {
@@ -1573,12 +1575,19 @@
     });
   }
   var speech = window.speechSynthesis && window.SpeechSynthesisUtterance ? window.speechSynthesis : null;
-  var walkPlaying = null;
+  var walkPlaying = null, voiceBroken = false;
+  /* an on-device voice for the page language when the browser has one; otherwise the browser default */
+  function pickVoice() {
+    var want = ZH ? "zh" : "en", list = [];
+    try { list = speech.getVoices() || []; } catch (e) { list = []; }
+    var same = list.filter(function (v) { return String(v.lang || "").toLowerCase().indexOf(want) === 0; });
+    return same.filter(function (v) { return v.localService; })[0] || null;
+  }
   function initWalks() {
     document.querySelectorAll(".walk").forEach(function (w) {
       var steps = [].slice.call(w.querySelectorAll(".walk-steps > li"));
       if (!steps.length || w.classList.contains("js")) return;
-      var n = steps.length, cur = 0, playing = false, timer = null;
+      var n = steps.length, cur = 0, playing = false, ended = false, timer = null, token = 0, note = null;
       var marks = [].slice.call(w.querySelectorAll(".walk-stage [data-show], .walk-stage [data-hl]"));
       var head = w.querySelector(".walk-title");
       if (head && !head.querySelector(".try-tag")) head.insertAdjacentHTML("afterbegin", span("try-tag", t("walkTag")) + " ");
@@ -1596,44 +1605,68 @@
       var list = w.querySelector(".walk-steps");
       list.setAttribute("aria-live", "polite");
       list.parentNode.insertBefore(bar, list.nextSibling);
-      if (!speech) { var nv = el("p", "walk-note", t("walkNoVoice")); bar.parentNode.insertBefore(nv, bar.nextSibling); }
+      function showNote() {
+        if (note) return;
+        note = el("p", "walk-note", t("walkNoVoice"));
+        bar.parentNode.insertBefore(note, bar.nextSibling);
+      }
+      if (!speech || voiceBroken) showNote();
       w.classList.add("js");
       function show(k) {
         cur = Math.max(0, Math.min(n - 1, k));
         var s = cur + 1;
         steps.forEach(function (li, i) { li.classList.toggle("cur", i === cur); });
-        [].forEach.call(dots.children, function (d, i) { d.classList.toggle("on", i === cur); d.classList.toggle("seen", i < cur); });
+        [].forEach.call(dots.children, function (d, i) {
+          d.classList.toggle("on", i === cur); d.classList.toggle("seen", i < cur);
+          if (i === cur) d.setAttribute("aria-current", "step"); else d.removeAttribute("aria-current");
+        });
         marks.forEach(function (m) {
           var sh = m.getAttribute("data-show");
           m.classList.toggle("walk-off", sh != null && !inSteps(sh, s));
           m.classList.toggle("walk-hl", inSteps(m.getAttribute("data-hl"), s));
         });
         count.textContent = t("walkStep", { k: s, n: n });
-        prev.disabled = cur === 0;
-        next.disabled = cur === n - 1;
+        /* a focused button that becomes disabled drops focus to <body>; hand it to the other one first */
+        var atStart = cur === 0, atEnd = cur === n - 1, focused = document.activeElement;
+        if (atStart && focused === prev && !atEnd) next.focus();
+        if (atEnd && focused === next && !atStart) prev.focus();
+        prev.disabled = atStart;
+        next.disabled = atEnd;
       }
       function sayText(li) { return (li.getAttribute("data-say") || li.innerText || li.textContent || "").replace(/\s+/g, " ").trim(); }
+      function readingTime(text) { return Math.max(2600, text.length * (ZH ? 220 : 65)); }
       function run() {
         if (!playing) return;
+        var my = token;
+        var live = function () { return playing && my === token; };
         var done = function () {
-          if (!playing) return;
+          if (!live()) return;
           if (cur < n - 1) { show(cur + 1); run(); } else stop(true);
         };
         var text = sayText(steps[cur]);
-        if (speech) {
+        if (speech && !voiceBroken) {
           var u = new SpeechSynthesisUtterance(text);
           u.lang = ZH ? "zh-CN" : "en-US";
+          var v = pickVoice(); if (v) u.voice = v;
           u.rate = 1;
-          u.onend = function () { timer = setTimeout(done, 450); };
-          u.onerror = function (e) { if (e && e.error === "interrupted" || e && e.error === "canceled") return; timer = setTimeout(done, 1200); };
+          u.onend = function () { if (live()) timer = setTimeout(done, 450); };
+          u.onerror = function (e) {
+            var err = e && e.error;
+            if (!live() || err === "interrupted" || err === "canceled") return;
+            /* no usable voice: keep going on the reading timer and say so */
+            voiceBroken = true; showNote();
+            timer = setTimeout(done, readingTime(text));
+          };
           speech.cancel();
           speech.speak(u);
         } else {
-          timer = setTimeout(done, Math.max(2600, text.length * (ZH ? 220 : 65)));
+          timer = setTimeout(done, readingTime(text));
         }
       }
       function stop(finished) {
+        token++;
         playing = false;
+        ended = !!finished;
         clearTimeout(timer);
         if (speech && walkPlaying === stop) speech.cancel();
         if (walkPlaying === stop) walkPlaying = null;
@@ -1643,8 +1676,9 @@
       play.addEventListener("click", function () {
         if (playing) { stop(); return; }
         if (walkPlaying) walkPlaying();
-        if (cur === n - 1 && play.textContent === t("walkReplay")) show(0);
-        playing = true; walkPlaying = stop;
+        if (ended && cur === n - 1) show(0);
+        token++;
+        playing = true; ended = false; walkPlaying = stop;
         play.textContent = t("walkPause");
         w.classList.add("playing");
         run();

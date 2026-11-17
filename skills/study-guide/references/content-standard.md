@@ -106,7 +106,7 @@ For a topic students find hard to picture, add a sandbox in `extra.js`, such as 
 
 ## 8. Optional: step-by-step walkthroughs
 
-When a process is hard to follow in one static figure (a probability tree, an algorithm's loop, a derivation), add a walkthrough: one figure that builds up one step at a time, a one-sentence caption per step, Back / Next buttons, and a Play button that reads each caption aloud with the browser's own voice and turns the page when it finishes. It needs no extra files and no network.
+When a process is hard to follow in one static figure (a probability tree, an algorithm's loop, a derivation), add a walkthrough: one figure that builds up one step at a time, a one-sentence caption per step, Back / Next buttons, and a Play button that reads each caption aloud with the browser's own voice and turns the page when it finishes. It needs no extra files. The page prefers an on-device voice; when the browser has none for the page language it uses the browser's default voice, which in some browsers (Chrome's "Google" voices) is an online service that receives the caption text. Without speech, or if speech fails, Play turns the steps on a timer instead.
 
 ```html
 <div class="walk" id="walk-bayes">
@@ -126,5 +126,5 @@ When a process is hard to follow in one static figure (a probability tree, an al
 - `data-show` and `data-hl` take step lists: `2` (only step 2), `2-` (from step 2 on), `2-4`, `1,3`. Unmarked elements are always visible. The stage is optional; a walkthrough of captions alone also works.
 - 3 to 7 steps, one idea and one sentence each. Each caption says what changed in the figure and why, with the real numbers.
 - Write `data-say` whenever a caption has symbols the voice would misread (`%`, `≈`, `|`, formulas, code). Write it in plain words.
-- Without JavaScript, every caption stays listed and the figure shows its final state, so the box still reads as a normal figure with numbered steps.
+- Without JavaScript, every caption stays listed and **every** stage element shows at once. So build up rather than swap: use open ranges (`2-`) for `data-show`, and mark a temporary state with `data-hl` instead of a shape that a later shape replaces in the same spot. A closed range such as `data-show="1-2"` is fine only for something that doesn't overlap anything shown later.
 - Use them sparingly, about one per lecture at most, for the topic students ask about most.

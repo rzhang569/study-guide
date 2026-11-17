@@ -182,6 +182,62 @@ test('a full mock paper is handed in, the score report has the per-lecture table
   assert.equal(await page.text('#bank-book'), book);
 });
 
+test('a walkthrough steps through its figure with buttons, dots and arrow keys, and keeps keyboard focus at the ends', async () => {
+  await fresh('en');
+  const W = '#walk-bayes';
+  const state = () => page.eval(W => {
+    const w = document.querySelector(W);
+    return {js: w.classList.contains('js'), cur: [...w.querySelectorAll('.walk-steps > li')].findIndex(l => l.classList.contains('cur')) + 1,
+      off: w.querySelectorAll('.walk-off').length, shows: w.querySelectorAll('.walk-stage [data-show]').length,
+      count: w.querySelector('.walk-count').textContent, current: [...w.querySelectorAll('.walk-dot')].findIndex(d => d.getAttribute('aria-current') === 'step') + 1};
+  }, W);
+  let s = await state();
+  assert.equal(s.js, true);
+  assert.deepEqual([s.cur, s.off, s.count, s.current], [1, s.shows, 'Step 1 / 6', 1]);   // nothing marked data-show is up yet
+  const last = await page.eval(W => {                                                   // Next from a focused button to the end
+    const w = document.querySelector(W), [prev, next] = w.querySelectorAll('.walk-bar .btn');
+    next.focus(); for (let i = 0; i < 5; i++) next.click();
+    return {nextDisabled: next.disabled, focusOnPrev: document.activeElement === prev};
+  }, W);
+  assert.deepEqual(last, {nextDisabled: true, focusOnPrev: true});
+  s = await state();
+  assert.deepEqual([s.cur, s.off, s.current], [6, 0, 6]);                                // final state: everything shown
+  await page.eval(() => document.activeElement.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowLeft', bubbles: true})));
+  assert.equal((await state()).cur, 5);
+  await page.eval(W => document.querySelectorAll(`${W} .walk-dot`)[0].click(), W);
+  s = await state();
+  assert.deepEqual([s.cur, s.current], [1, 1]);
+});
+
+test('walkthrough Play ignores callbacks from a cancelled sentence and falls back to a timer when speech fails', async () => {
+  /* a fake speech engine: utterances are recorded and their callbacks fired by hand */
+  const {identifier} = await page.send('Page.addScriptToEvaluateOnNewDocument', {source: `
+    window.__utts = [];
+    window.SpeechSynthesisUtterance = function (text) { this.text = text; };
+    Object.defineProperty(window, 'speechSynthesis', {configurable: true, value: {speak: u => __utts.push(u), cancel() {}, getVoices: () => []}});`});
+  try {
+    await fresh('en');
+    const cur = () => page.eval(() => [...document.querySelectorAll('#walk-bayes .walk-steps > li')].findIndex(l => l.classList.contains('cur')) + 1);
+    const play = () => page.eval(() => document.querySelector('#walk-bayes .walk-play').click());
+    await play();                                          // Play: utterance 0
+    await play();                                          // Pause
+    await play();                                          // Play again: utterance 1
+    assert.equal(await page.eval(() => __utts.length), 2);
+    await page.eval(() => __utts[0].onend());               // late end of the cancelled sentence
+    await new Promise(r => setTimeout(r, 700));
+    assert.equal(await cur(), 1, 'a cancelled sentence must not advance the new run');
+    await page.eval(() => __utts[1].onend());
+    await page.waitFor(() => document.querySelectorAll('#walk-bayes .walk-steps > li')[1].classList.contains('cur'));
+    assert.equal(await page.eval(() => __utts.length), 3);  // step 2 is being read
+    await page.eval(() => __utts[2].onerror({error: 'language-unavailable'}));
+    assert.equal(await page.eval(() => !!document.querySelector('#walk-bayes .walk-note')), true);
+    await new Promise(r => setTimeout(r, 1500));
+    assert.equal(await cur(), 2, 'after a speech error the step stays up for its reading time, not 1.2 s');
+  } finally {
+    await page.send('Page.removeScriptToEvaluateOnNewDocument', {identifier});
+  }
+});
+
 test('the zh build renders Chinese UI strings', async () => {
   await fresh('zh');
   const info = await page.eval(() => ({
