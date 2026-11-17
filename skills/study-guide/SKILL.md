@@ -47,10 +47,12 @@ Most students have not downloaded anything yet, so don't stop at "please send me
 
 1. **What is already here.** Files the student attached or dragged into the chat, and PDFs in the current folder. Look before asking.
 2. **Public pages.** Many course websites, schedules and slide links are public. If you have web access, open them and download the slides directly.
-3. **Pages behind a login** (Canvas, Moodle, Blackboard, Piazza). Check whether you have a browser tool that works in the student's own signed-in browser, such as the Claude in Chrome tools in Claude Code. If you do, say in one line which course and which files you are about to fetch, then download them yourself and list what you got. Stay inside that course's files, modules and syllabus; don't open grades, messages or other courses. If a sign-in page appears, ask the student to sign in; never type a password.
-4. **No such tool.** Offer the two ways in one short message and let the student pick:
-   - connect a browser extension your agent supports (for Claude Code, Claude in Chrome), then say so, and you fetch everything;
-   - or download the files themselves, with the exact clicks. On Canvas: open the course, go to **Files**, tick the lecture files (or select all) and press **Download**, which makes one zip. Then drag the zip into the chat or tell you the folder.
+3. **Pages behind a login** (Canvas, Moodle, Blackboard, Piazza). Check whether you have a tool that works in the student's own signed-in browser, such as the Claude in Chrome tools in Claude Code or a computer-use tool. That browser is the student's account, so **ask first and wait for a yes**, unless the student already asked you to fetch from it: name the site, the course and the files ("Canvas, STAT 240, the slides for lectures 1–4 and the syllabus"). Once they agree, download only those files and list what you got. Stay inside that course's files, modules and syllabus; don't open grades, messages, submissions or other courses. If a sign-in page appears, ask the student to sign in; never type a password.
+4. **No such tool, or the student says no.** Offer the two ways in one short message and let the student pick:
+   - connect a browser extension your agent supports (for Claude Code, Claude in Chrome), then say so, and you fetch the files you named;
+   - or download the files themselves, with the exact clicks. On Canvas: open the course, go to **Files**, tick the slides for the lectures in scope (and the syllabus) and press **Download**, which makes one zip. Then drag the zip into the chat or tell you the folder.
+
+Whichever way, collect only course material for the exam's scope: never homework solutions, answer keys or graded submissions. Fetch a sample exam only if the student asks, and don't open it (see step 2).
 
 Ask only for what you need first: the slides for the lectures in scope. The syllabus, practice questions and a sample exam can come later. Unzip archives yourself. Convert `.pptx` or `.key` decks to PDF when you can, so slide references match the page numbers the student sees.
 
