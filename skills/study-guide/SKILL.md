@@ -2,7 +2,7 @@
 name: study-guide
 description: Build an interactive exam review website for a course. It has lecture-by-lecture notes with slide references and plain-language explanations, a practice bank that explains every option, step-by-step short answers, timed mock exams drawn from a separate pool calibrated to the real exam, and a mistake notebook. Exported progress lets you find weak spots and write targeted new drills. Use this whenever a student wants to prepare for a midterm, final or quiz, or asks for a study guide, review page, practice questions or a mock exam from their slides, notes or course website. Also use it when they share exam-prep progress and ask what to review next, even if they never say "website".
 license: MIT
-compatibility: Works with any agent that can run scripts. Needs Python 3 to build (standard library only; count_exam.py also needs pypdf). Web access helps research the course; a browser helps check the page. The built page is one HTML file that works offline except for fonts and MathJax from public CDNs.
+compatibility: Works with any agent that can run scripts. Needs Python 3 to build (standard library only; count_exam.py also needs pypdf). Web access helps research the course; a browser tool in the student's signed-in browser lets the agent fetch course files from Canvas and similar sites, and also helps check the page. The built page is one HTML file that works offline except for fonts and MathJax from public CDNs.
 metadata:
   version: "0.1.0"
 ---
@@ -40,6 +40,19 @@ Get these facts before writing anything. Look them up when you can, and ask the 
 - **Exam:** date and time, length in minutes, which lectures are in scope, the format, and allowed materials. Format means question types, how many of each and their points. Materials means note sheets, a calculator or nothing.
 - **Sources:** slides (PDFs or links), readings, the course website, and any official practice questions, quiz results or sample exam.
 - **Student:** the language they want the page in (`lang`: `zh` or `en` for the interface; write the content in their language), and how strong their background is. A student who says "I'm lost" needs plain-language boxes on almost every topic.
+
+### Get the files yourself
+
+Most students have not downloaded anything yet, so don't stop at "please send me your slides". Collect the files into a `materials/` folder in the working directory (not inside the course folder), in this order:
+
+1. **What is already here.** Files the student attached or dragged into the chat, and PDFs in the current folder. Look before asking.
+2. **Public pages.** Many course websites, schedules and slide links are public. If you have web access, open them and download the slides directly.
+3. **Pages behind a login** (Canvas, Moodle, Blackboard, Piazza). Check whether you have a browser tool that works in the student's own signed-in browser, such as the Claude in Chrome tools in Claude Code. If you do, say in one line which course and which files you are about to fetch, then download them yourself and list what you got. Stay inside that course's files, modules and syllabus; don't open grades, messages or other courses. If a sign-in page appears, ask the student to sign in; never type a password.
+4. **No such tool.** Offer the two ways in one short message and let the student pick:
+   - connect a browser extension your agent supports (for Claude Code, Claude in Chrome), then say so, and you fetch everything;
+   - or download the files themselves, with the exact clicks. On Canvas: open the course, go to **Files**, tick the lecture files (or select all) and press **Download**, which makes one zip. Then drag the zip into the chat or tell you the folder.
+
+Ask only for what you need first: the slides for the lectures in scope. The syllabus, practice questions and a sample exam can come later. Unzip archives yourself. Convert `.pptx` or `.key` decks to PDF when you can, so slide references match the page numbers the student sees.
 
 If you can browse, research the course yourself: the schedule page, the syllabus and posted quiz results. Look for patterns worth telling the student, such as "the in-class checkpoint questions come right after a specific slide" or "the official bank says it uses the same format as the exam". Put the logistics in the page's hero section.
 
