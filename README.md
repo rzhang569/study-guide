@@ -6,6 +6,8 @@ An [Agent Skill](https://agentskills.io) for Claude Code and Codex; other agents
 
 **▶ [Live demo](https://rzhang569.github.io/study-guide/)** (a fictional intro probability course; your answers stay in your own browser) · v0.1.0, early release, feedback welcome
 
+> **New to Claude or Codex, or never used a terminal?** Follow the step-by-step [getting started guide](docs/GETTING-STARTED.md) · [中文新手指南](docs/GETTING-STARTED.zh.md). It covers installing the app, Python and the skill (or letting the AI install it), connecting your browser for Canvas, and your first page.
+
 ![Demo: notes with a worked figure, a practice question with an explanation for every option, then a timed mock exam and its score report](docs/demo.gif)
 
 ## Quick start
@@ -70,7 +72,7 @@ mkdir -p ~/.agents/skills
 cp -R study-guide/skills/study-guide ~/.agents/skills/
 ```
 
-- **Codex** (CLI, IDE extension and app) also reads `.agents/skills/` inside a repository. Type `$study-guide` to call it explicitly.
+- **Codex** (the Codex mode of the ChatGPT desktop app, the CLI and the IDE extension) also reads `.agents/skills/` inside a repository. To call it explicitly, type `@` and pick it in the app, or `$study-guide` in the CLI. Asking Codex to install the skill from this repository's URL also works; its built-in installer puts it in `~/.codex/skills/`.
 - **Gemini CLI** can install straight from GitHub: `gemini skills install https://github.com/rzhang569/study-guide.git --path skills/study-guide`. Gemini CLI was succeeded by Antigravity CLI in June 2026; Antigravity's skill folders are not confirmed here.
 - **Cursor** also reads `~/.cursor/skills/` and `~/.claude/skills/`. Importing from GitHub inside Cursor needs a Cursor plugin package, which this repository doesn't have yet.
 - **GitHub Copilot**: VS Code local sessions also read `~/.copilot/skills/`; for one repository, use `.github/skills/`. Copilot's cloud agent can't see a skill installed on your computer.
@@ -144,6 +146,7 @@ node tests/browser/run.mjs   # real headless Chrome; prints SKIP if no Chrome is
 The suites cover course validation/builds, grading, timers, saved progress, and the
 Export progress contract. See [the rule audit and test notes](tests/README.md).
 The existing PDF test skips when its optional `pypdf` dependency is unavailable.
+CI also pastes the manual install commands from the [getting started guide](docs/GETTING-STARTED.md) into bash and PowerShell (`tests/install_docs.py`) and checks the installed copies build.
 
 ## Evaluation
 
@@ -170,4 +173,4 @@ MIT
 
 ---
 
-**中文简介（v0.1.0 早期版本）：** 一个 Agent Skill。把课程的 PPT、笔记整理成交互式复习网页：内容按讲组织，每条结论都标出处；练习题的每个选项都有解析；简答题按步骤给分；模拟考试用单独的题库，按真考比例抽题、计时；错题本自动收集错题。导出的作答记录交给你用的 AI 编程助手（Claude Code、Codex 等），它会找出薄弱点，再出针对性的新题。界面支持中文和英文（`"lang": "zh"`）。
+**中文简介（v0.1.0 早期版本）：** 一个 Agent Skill。把课程的 PPT、笔记整理成交互式复习网页：内容按讲组织，每条结论都标出处；练习题的每个选项都有解析；简答题按步骤给分；模拟考试用单独的题库，按真考比例抽题、计时；错题本自动收集错题。导出的作答记录交给你用的 AI 编程助手（Claude Code、Codex 等），它会找出薄弱点，再出针对性的新题。界面支持中文和英文（`"lang": "zh"`）。第一次用？看[中文新手指南](docs/GETTING-STARTED.zh.md)。

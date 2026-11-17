@@ -36,6 +36,8 @@ jobs:
         run: node tests/browser/run.mjs
         env:
           REQUIRE_BROWSER: "1"
+      - name: Install commands from the getting-started guide (bash)
+        run: python tests/install_docs.py
 
   # The same three suites on Windows: python (not python3), cp1252 pipes, Windows paths and Chrome locations.
   # Chrome is preinstalled on the runner; tests/browser/cdp.mjs finds it under Program Files by itself.
@@ -62,3 +64,5 @@ jobs:
         run: node tests/browser/run.mjs
         env:
           REQUIRE_BROWSER: "1"
+      - name: Install commands from the getting-started guide (PowerShell)
+        run: python tests/install_docs.py
