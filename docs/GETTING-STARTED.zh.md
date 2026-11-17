@@ -38,7 +38,7 @@
 也可以自己检查：
 
 - **Mac**：打开**终端**（按 `Cmd` + `空格`，输入 `终端` 或 `Terminal`，回车），输入 `python3 --version` 后回车。看到 `Python 3.x.x` 就说明装好了。如果弹出窗口问要不要安装"命令行开发者工具"，点**安装**，等它装完，Python 3 和 Git 就都有了。
-- **Windows**：从 [python.org/downloads](https://www.python.org/downloads/) 下载 Python。安装程序第一页**一定要勾选 "Add python.exe to PATH"**，再点安装。检查方法：打开 **PowerShell**（开始菜单里搜 `PowerShell`），输入 `py --version`。
+- **Windows**：从 [python.org/downloads](https://www.python.org/downloads/) 或 **Microsoft Store**（搜 "Python install manager"）安装 **Python 安装管理器**。如果它问要不要把某个文件夹加到 PATH，选同意。检查方法：打开 **PowerShell**（开始菜单里搜 `PowerShell`），输入 `py --version`。
 
 ## 4. 安装 skill
 
@@ -54,7 +54,12 @@
 
 ### 或者手动安装
 
-下面的命令可以粘贴进**终端**（Mac）或 **PowerShell**（Windows）运行。这些命令需要 Git：Mac 上第 3 步装开发者工具时已经带了，Windows 上装了 Git for Windows 就有。
+下面的命令可以粘贴进**终端**（Mac）或 **PowerShell**（Windows）运行。这些命令需要 **Git**，先输入 `git --version` 检查一下：
+
+- **Mac**：没装的话会弹窗问要不要安装"命令行开发者工具"，点**安装**（或者输入 `xcode-select --install`）。
+- **Windows**：安装 [Git for Windows](https://git-scm.com/downloads/win)，装完重新打开一个 PowerShell 窗口。
+
+不想装 Git？直接看下面的"没有 Git 的话"。
 
 **Claude**，如果你装了 `claude` 命令（Claude Code 的命令行版）：
 
@@ -112,13 +117,18 @@ Copy-Item -Recurse -Force study-guide\skills\study-guide "$HOME\.agents\skills\"
 2. 用和桌面版**同一个 Claude 账号**登录插件。
 3. 固定插件：点浏览器右上角的拼图图标，再点 **Claude** 旁边的图钉。
 
-需要用到你登录的浏览器时，Claude 会自动用上它。如果 Claude 说插件没连上，重启 Chrome 再试。这个插件需要 Claude 付费账号。
+需要用到你登录的浏览器时，Claude 会自动用上它。这个插件需要 Claude 付费账号。如果 Claude 说连不上你的浏览器：
+
+- 在 Claude 桌面版里打开 **Settings → Customize → Connectors**，找到 **Claude in Chrome**，点 **Configure** 并打开开关；
+- 确认插件登录的是和桌面版同一个 Claude 账号；
+- 重启 Chrome 再试。
 
 **Codex**
 
 1. 在 ChatGPT 桌面版里打开 **Settings → Computer Use**。
 2. 选你的浏览器，点 **Install**，在弹出的扩展商店页面里添加 ChatGPT 插件。
 3. 回到 **Computer Use**，确认你的浏览器旁边显示 **Manage**。
+4. 在 Codex 对话里输入 `@`，选你的浏览器（比如 **@Chrome**），Codex 才会在里面操作。要用装了插件、并且登录了 Canvas 的那个 Chrome 用户。
 
 Codex 每碰到一个新网站，都会先问你同不同意。
 
@@ -142,14 +152,14 @@ AI 会读课件、写笔记和题目，最后生成一个文件，一般是新�
 ## 7. 刷题，然后让 AI 针对性加练
 
 1. 读完一讲，就做这一讲末尾的练习。
-2. 在 **Practice and exams → Mock exam** 里做一套计时模拟考。
-3. 点 **Export progress**，复制进度报告，粘贴到对话框里问：*"这是我的进度，我该复习什么？能针对这些加几道练习吗？"* AI 会专门针对你错的地方出新题。
+2. 在 **练习和考试 → 模拟考试** 里做一套计时模拟考（英文界面是 Practice and exams → Mock exam）。
+3. 点 **导出进度**（Export progress），再点 **复制**，把进度报告粘贴到对话框里问：*"这是我的进度，我该复习什么？能针对这些加几道练习吗？"* AI 会专门针对你错的地方出新题。
 
 ## 8. 遇到问题怎么办
 
 - **AI 好像没用这个 skill**：直接点名，说"用 study-guide 这个 skill"。Codex 里也可以输入 `@`（桌面版）或 `$study-guide`（命令行版）来选它。
-- **Windows 提示找不到 python**：把命令里的 `python` 换成 `py`；或者重装 Python，记得勾选 **Add python.exe to PATH**。
+- **Windows 提示找不到 python**：把命令里的 `python` 换成 `py`。如果 `py` 也找不到，按第 3 步装好 Python 安装管理器，再重新打开一个 PowerShell 窗口。
 - **Code 标签页提示升级**：Claude Code 需要 Claude 付费账号。
 - **公式显示成普通文字**：电脑没联网。联网后刷新一下页面就好；没联网时文字版也能看懂。
-- **作答记录不见了**：记录存在你当时用的浏览器里。用同一个浏览器打开同一个 `review.html`；换电脑之前先点 **Export progress** 导出。
+- **作答记录不见了**：记录存在你当时用的浏览器里，所以要用同一个浏览器打开同一个 `review.html`。换电脑或换浏览器，网页会从头开始：**导出进度**生成的报告可以交给 AI，让它针对性出题，但不能再导回网页里恢复记录。
 - **注意课程的 AI 政策**：有些课不允许用 AI 做复习材料。AI 会去查教学大纲，但遵守课程规定是你自己的责任。

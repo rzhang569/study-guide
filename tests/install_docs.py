@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
 """Runs the manual install commands from docs/GETTING-STARTED*.md, the way a reader would paste them.
 
-On Windows it runs the ```powershell blocks, elsewhere the ```bash blocks, that clone the repository
-(the `claude plugin` block needs the Claude CLI and is skipped). The clone URL is pointed at this
-checkout so a pull request tests its own files. Each command installs into the real home folder, so
-this runs only in CI (CI=true) or with --yes. Afterwards the installed copies must match the repo's
-skills/study-guide and build the demo page.
+On Windows it runs the ```powershell blocks with both Windows PowerShell 5.1 (`powershell`, what most
+readers have) and PowerShell 7 (`pwsh`); elsewhere it runs the ```bash blocks. Only the blocks that clone
+the repository are run (the `claude plugin` block needs the Claude CLI).
 
-    python tests/install_docs.py          # in CI
-    python tests/install_docs.py --yes    # on your own machine, if you accept writing to ~/.claude and ~/.agents
+Two edits keep the run self-contained, and nothing else in the commands changes:
+- the clone URL points at this checkout (cloned into a folder named `study-guide`, as a real clone is),
+  so a pull request tests its own files;
+- the home folder (`~/` in bash, `$HOME\\` in PowerShell) is replaced by a fresh temporary folder,
+  so the real ~/.claude and ~/.agents are never touched.
+
+Afterwards each installed copy must match skills/study-guide byte for byte and build the demo page.
+Not covered: the public URL and its default branch, the plugin install, the ZIP route, and whether
+an agent app then discovers the skill.
+
+    python tests/install_docs.py
 """
 import filecmp
 import os
@@ -30,41 +37,56 @@ def blocks(doc, lang):
 
 
 def same_tree(a, b):
+    """True when both folders hold the same files with the same bytes (ignoring __pycache__)."""
     cmp = filecmp.dircmp(a, b, ignore=["__pycache__"])
-    if cmp.left_only or cmp.right_only or cmp.diff_files:
+    if cmp.left_only or cmp.right_only or cmp.funny_files or cmp.common_funny:
+        return False
+    match, mismatch, errors = filecmp.cmpfiles(a, b, cmp.common_files, shallow=False)
+    if mismatch or errors:
         return False
     return all(same_tree(Path(a) / d, Path(b) / d) for d in cmp.common_dirs)
 
 
+def run(shell, cmd, home):
+    work = tempfile.mkdtemp(prefix="sg-install-")
+    src = ROOT.as_uri() if WIN else str(ROOT)
+    assert f"git clone {URL}" in cmd, "the guide's clone command changed; update this test"
+    script = cmd.replace(f"git clone {URL}", f'git clone "{src}" study-guide')
+    if shell == "bash":
+        assert "~/" in script, "the bash commands no longer use ~/; update this test"
+        script = script.replace("~/", f"{home}/")
+        argv = ["bash", "-euo", "pipefail", "-c", script]
+    else:
+        assert "$HOME\\" in script, "the PowerShell commands no longer use $HOME\\; update this test"
+        script = "$ErrorActionPreference = 'Stop'\n" + script.replace("$HOME\\", f"{home}\\")
+        argv = [shell, "-NoProfile", "-NonInteractive", "-Command", script]
+    print(f"$ ({shell}, in {work})\n{script}", flush=True)
+    subprocess.run(argv, cwd=work, check=True)
+
+
+def check(target):
+    assert (target / "SKILL.md").is_file(), f"not installed: {target}"
+    assert same_tree(ROOT / "skills" / "study-guide", target), f"installed copy differs from the repo: {target}"
+    out = Path(tempfile.mkdtemp(prefix="sg-build-")) / "review.html"
+    subprocess.run([sys.executable, str(target / "scripts" / "build.py"), str(target / "examples" / "demo"), "-o", str(out)], check=True)
+    assert out.stat().st_size > 50_000, "built page is suspiciously small"
+    print(f"ok: {target}", flush=True)
+
+
 def main():
-    if not (os.environ.get("CI") or "--yes" in sys.argv):
-        print("SKIP: writes to ~/.claude/skills and ~/.agents/skills; run in CI or pass --yes")
-        return 0
     lang = "powershell" if WIN else "bash"
     found = {doc: blocks(doc, lang) for doc in ("GETTING-STARTED.md", "GETTING-STARTED.zh.md")}
-    # both languages must document the same commands
     assert found["GETTING-STARTED.md"] == found["GETTING-STARTED.zh.md"], "English and Chinese guides differ"
     cmds = found["GETTING-STARTED.md"]
     assert len(cmds) == 2, f"expected the Claude and Codex {lang} blocks, found {len(cmds)}"
-    home = Path.home()
-    targets = [home / ".claude" / "skills" / "study-guide", home / ".agents" / "skills" / "study-guide"]
-    for t in targets:
-        shutil.rmtree(t, ignore_errors=True)
-    for cmd in cmds:
-        work = tempfile.mkdtemp(prefix="sg-install-")
-        src = ROOT.as_uri() if WIN else str(ROOT)
-        assert f"git clone {URL}" in cmd, "the guide's clone command changed; update this test"
-        script = cmd.replace(f"git clone {URL}", f'git clone "{src}" study-guide')   # same folder name as a real clone
-        shell = ["pwsh", "-NoProfile", "-Command", script] if WIN else ["bash", "-euo", "pipefail", "-c", script]
-        print(f"$ ({lang}, in {work})\n{script}")
-        subprocess.run(shell, cwd=work, check=True)
-    for t in targets:
-        assert (t / "SKILL.md").is_file(), f"not installed: {t}"
-        assert same_tree(ROOT / "skills" / "study-guide", t), f"installed copy differs from the repo: {t}"
-        out = Path(tempfile.mkdtemp(prefix="sg-build-")) / "review.html"
-        subprocess.run([sys.executable, str(t / "scripts" / "build.py"), str(t / "examples" / "demo"), "-o", str(out)], check=True)
-        assert out.stat().st_size > 50_000, "built page is suspiciously small"
-        print(f"ok: {t}")
+    shells = [s for s in ("powershell", "pwsh") if shutil.which(s)] if WIN else ["bash"]
+    assert shells, "no PowerShell found"
+    for shell in shells:
+        home = Path(tempfile.mkdtemp(prefix="sg-home-"))
+        for cmd in cmds:
+            run(shell, cmd, home)
+        for sub in (".claude", ".agents"):
+            check(home / sub / "skills" / "study-guide")
     return 0
 
 

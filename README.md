@@ -146,7 +146,7 @@ node tests/browser/run.mjs   # real headless Chrome; prints SKIP if no Chrome is
 The suites cover course validation/builds, grading, timers, saved progress, and the
 Export progress contract. See [the rule audit and test notes](tests/README.md).
 The existing PDF test skips when its optional `pypdf` dependency is unavailable.
-CI also pastes the manual install commands from the [getting started guide](docs/GETTING-STARTED.md) into bash and PowerShell (`tests/install_docs.py`) and checks the installed copies build.
+`python tests/install_docs.py` pastes the manual install commands from the [getting started guide](docs/GETTING-STARTED.md) into bash (on Ubuntu in CI, standing in for the Mac commands) or into Windows PowerShell 5.1 and PowerShell 7, installing into a temporary home folder, and checks that the installed copies match the repository and build. It clones this checkout rather than the public URL, and doesn't cover the plugin install, the ZIP route or whether an agent app then finds the skill.
 
 ## Evaluation
 

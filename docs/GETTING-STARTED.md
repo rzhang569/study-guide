@@ -38,7 +38,7 @@ The easiest way is to ask your AI:
 Or check yourself:
 
 - **Mac:** open **Terminal** (press `Cmd` + `Space`, type `Terminal`, press `Enter`) and type `python3 --version`, then `Enter`. If you see `Python 3.x.x`, you're done. If a window offers to install the **command line developer tools**, click **Install** and wait; that installs Python 3 (and Git).
-- **Windows:** download Python from [python.org/downloads](https://www.python.org/downloads/). On the first installer screen, **tick "Add python.exe to PATH"** before clicking Install. To check, open **PowerShell** (Start menu, type `PowerShell`) and type `py --version`.
+- **Windows:** install the **Python install manager** from [python.org/downloads](https://www.python.org/downloads/) or from the **Microsoft Store** (search for "Python install manager"). If it asks whether to add a folder to your PATH, say yes. To check, open **PowerShell** (Start menu, type `PowerShell`) and type `py --version`.
 
 ## 4. Install the skill
 
@@ -54,7 +54,12 @@ Approve when it asks to download or copy files. When it says it's done, **start 
 
 ### Or install it by hand
 
-You can paste these into **Terminal** (Mac) or **PowerShell** (Windows). They need Git; on a Mac it comes with the developer tools from step 3, and on Windows with Git for Windows.
+You can paste these into **Terminal** (Mac) or **PowerShell** (Windows). They need **Git**. Check first by typing `git --version`:
+
+- **Mac:** if it isn't installed, a window offers the **command line developer tools**; click **Install** (or type `xcode-select --install`).
+- **Windows:** install [Git for Windows](https://git-scm.com/downloads/win), then open a new PowerShell window.
+
+No Git? Skip to **Without Git** below.
 
 **Claude**, if you also have the `claude` command (the Claude Code command-line tool):
 
@@ -112,13 +117,18 @@ Without this, you download your slides yourself and drag them into the chat. Wit
 2. Sign in to the extension with the **same Claude account** as the app.
 3. Pin it: click the puzzle-piece icon, then the pin next to **Claude**.
 
-Claude uses it when a task needs your signed-in browser. If Claude says the extension isn't connected, restart Chrome and try again. This needs a paid Claude plan.
+Claude uses it when a task needs your signed-in browser. This needs a paid Claude plan. If Claude says it can't reach your browser:
+
+- in the Claude app, open **Settings → Customize → Connectors**, find **Claude in Chrome**, click **Configure** and turn it on;
+- make sure the extension is signed in to the same Claude account as the app;
+- restart Chrome and try again.
 
 **Codex**
 
 1. In the ChatGPT app, open **Settings → Computer Use**.
 2. Select your browser and click **Install**; add the ChatGPT extension from the store page that opens.
 3. Back in **Computer Use**, check that your browser now shows **Manage**.
+4. In a Codex chat, type `@` and pick your browser (for example **@Chrome**) so Codex works in it. Use the Chrome profile where you installed the extension and are signed in to Canvas.
 
 Codex asks before it uses each new website.
 
@@ -143,13 +153,13 @@ The AI reads the slides, writes notes and questions, and builds one file, usuall
 
 1. Read a lecture, then do the practice box at the end of it.
 2. Take a timed mock exam from **Practice and exams → Mock exam**.
-3. Click **Export progress**, copy the report, paste it into the chat, and ask: *"Here's my progress. What should I review, and can you add drills for it?"* The AI writes new questions for exactly what you got wrong.
+3. Click **Export progress**, then **Copy**, paste the report into the chat, and ask: *"Here's my progress. What should I review, and can you add drills for it?"* The AI writes new questions for exactly what you got wrong.
 
 ## 8. If something goes wrong
 
 - **The AI doesn't seem to use the skill.** Say its name: *"Use the study-guide skill."* In Codex you can also pick it with `@` (app) or `$study-guide` (command line).
-- **"python: command not found" on Windows.** Use `py` instead of `python`, or reinstall Python with **Add python.exe to PATH** ticked.
+- **"python: command not found" on Windows.** Use `py` instead of `python`. If `py` is missing too, install the Python install manager (step 3) and open a new PowerShell window.
 - **The Code tab asks you to upgrade.** Claude Code needs a paid Claude plan.
 - **Formulas show as plain text.** You're offline; connect once and reload the page. The text version stays readable.
-- **My answers disappeared.** Progress lives in the browser you used. Open the same `review.html` in the same browser, or use **Export progress** before switching computers.
+- **My answers disappeared.** Progress lives in the browser you used, so open the same `review.html` in the same browser. Switching computers or browsers starts the page fresh: **Export progress** saves a report the AI can read to write drills, but it can't be loaded back into the page.
 - **Check your course's AI policy.** Some courses don't allow AI-made study material. The AI checks the syllabus, but you're responsible for following your course's rules.
