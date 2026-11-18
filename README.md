@@ -14,7 +14,11 @@ An [Agent Skill](https://agentskills.io) for Claude Code and Codex; other agents
 
 ## Quick start
 
-Claude Code:
+The easiest way, in Claude Code or Codex: send your agent one message, with your own course details.
+
+> Install this skill for me so I can use it in every project: https://github.com/rzhang569/study-guide. Then read its SKILL.md and use it right away to make me a review page: my BIO 201 midterm is next Tuesday, it covers lectures 1–8, multiple choice plus two short answers. The slides are in this folder; if they aren't, get them yourself if you can.
+
+Or install it yourself. Claude Code:
 
 ```bash
 claude plugin marketplace add rzhang569/study-guide
@@ -27,7 +31,7 @@ Codex:
 d=$(mktemp -d) && git clone https://github.com/rzhang569/study-guide.git "$d/study-guide" && mkdir -p ~/.agents/skills && cp -R "$d/study-guide/skills/study-guide" ~/.agents/skills/
 ```
 
-Then ask your agent: *"my BIO 201 midterm covers lectures 1–8, here are the slides, make me a review page."* Other agents are under [Install](#install).
+Then, in a new chat, ask your agent: *"my BIO 201 midterm covers lectures 1–8, here are the slides, make me a review page."* Other agents are under [Install](#install).
 
 ## What you get
 

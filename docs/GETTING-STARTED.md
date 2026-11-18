@@ -2,7 +2,13 @@
 
 [中文版](GETTING-STARTED.zh.md)
 
-This guide takes you from nothing installed to your first review page, in about 15 minutes. You never have to write code: you talk to an AI assistant, and it does the technical steps.
+This guide takes you from nothing installed to your first review page. You never have to write code: you talk to an AI assistant, and it does the technical steps.
+
+**Short version:** install the Claude or ChatGPT app (step 2), open a folder for your exam, and send this one message, with your own course details:
+
+> Install this skill for me so I can use it in every project: https://github.com/rzhang569/study-guide. Then read its SKILL.md and use it right away to make me a review page: my BIO 201 midterm is next Tuesday, it covers lectures 1–8, multiple choice plus two short answers. The slides are in this folder; if they aren't, get them yourself if you can.
+
+Approve what it asks to do. If it needs Python, it installs it and tells you which button to click. The rest of this guide explains each step and what to do if something goes wrong.
 
 ## 1. What you need
 
@@ -10,7 +16,7 @@ This guide takes you from nothing installed to your first review page, in about 
 - **One AI assistant** (pick one):
   - **Claude**: the Claude desktop app, using its **Code** tab. The Code tab needs a paid Claude plan (Pro, Max, Ultra, Team or Enterprise).
   - **Codex**: the ChatGPT desktop app, in **Codex** mode. Any ChatGPT account can sign in; Free and Go get a smaller model, so a paid plan works better for long exams.
-- **Python 3**, which builds the page (step 3 checks it).
+- **Python 3**, which builds the page. If it's missing, the AI installs it for you (step 3).
 - **Your course slides** as PDFs, or let the AI fetch them (step 5).
 
 ## 2. Install the AI app
@@ -31,9 +37,11 @@ This guide takes you from nothing installed to your first review page, in about 
 
 ## 3. Check that Python is installed
 
-The easiest way is to ask your AI:
+You can skip this step: when the AI needs Python and it's missing, it installs it for you. You only click the button it tells you about (on a Mac, **Install** in Apple's window; on Windows, **Yes** if Windows asks for permission).
 
-> Check whether Python 3 is installed on this computer. If it isn't, tell me how to install it, step by step.
+To check ahead of time, ask your AI:
+
+> Check whether Python 3 is installed on this computer. If it isn't, install it for me and tell me what to click.
 
 Or check yourself:
 
@@ -44,11 +52,13 @@ Or check yourself:
 
 ### Easiest: let the AI install it
 
-Paste this into your AI and send it:
+Send the one message from the top of this guide: it installs the skill and makes your first page in the same chat. (If you want the AI to get your slides from Canvas, do step 5 first.)
+
+To only install it for now, send:
 
 > Please install this skill for me so I can use it in every project: https://github.com/rzhang569/study-guide
 
-Approve when it asks to download or copy files, or to run Python. When it says it's done, **start a new chat** so the skill loads.
+Approve when it asks to download or copy files, or to run Python. When it says it's done, start a new chat before you ask for a review page, so the skill loads (or tell it to read the skill's SKILL.md and continue).
 
 Tested with Codex (it installs the skill into `~/.codex/skills/study-guide` by itself) and with Claude Code on Windows. In the Claude test, the first try copied the whole repository into the skills folder, which doesn't work: only the `skills/study-guide` folder belongs there. If the skill doesn't show up later (see **Check that it worked**), tell the AI: *"Copy only the skills/study-guide folder into the skills folder, so SKILL.md is directly inside it."*
 
@@ -146,7 +156,7 @@ Codex asks before it uses each new website.
 
 ## 6. Make your first review page
 
-In the exam folder you opened in step 2, tell the AI about your exam, in your own words. For example:
+If you sent the one-message start, the AI is already doing this; skip to the end of this step. Otherwise, in the exam folder you opened in step 2, tell the AI about your exam, in your own words. For example:
 
 > My BIO 201 midterm is next Tuesday. It covers lectures 1–8, 50 minutes, multiple choice plus two short answers, no calculator. The slides are in this folder. Make me a review page.
 
