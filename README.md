@@ -24,7 +24,7 @@ claude plugin install study-guide@study-guide
 Codex:
 
 ```bash
-cd "$(mktemp -d)" && git clone https://github.com/rzhang569/study-guide.git && mkdir -p ~/.agents/skills && cp -R study-guide/skills/study-guide ~/.agents/skills/
+d=$(mktemp -d) && git clone https://github.com/rzhang569/study-guide.git "$d/study-guide" && mkdir -p ~/.agents/skills && cp -R "$d/study-guide/skills/study-guide" ~/.agents/skills/
 ```
 
 Then ask your agent: *"my BIO 201 midterm covers lectures 1–8, here are the slides, make me a review page."* Other agents are under [Install](#install).
@@ -68,7 +68,7 @@ Inside a session the commands are `/plugin marketplace add rzhang569/study-guide
 **Codex (tested on macOS), Gemini CLI, Cursor and GitHub Copilot in VS Code (documented, not tested end to end):** all four read skills from `~/.agents/skills/`, so one copy serves them all:
 
 ```bash
-cd "$(mktemp -d)" && git clone https://github.com/rzhang569/study-guide.git && mkdir -p ~/.agents/skills && cp -R study-guide/skills/study-guide ~/.agents/skills/
+d=$(mktemp -d) && git clone https://github.com/rzhang569/study-guide.git "$d/study-guide" && mkdir -p ~/.agents/skills && cp -R "$d/study-guide/skills/study-guide" ~/.agents/skills/
 ```
 
 - **Codex** (the Codex mode of the ChatGPT desktop app, the CLI and the IDE extension) also reads `.agents/skills/` inside a repository. To call it explicitly, type `@` and pick it in the app, or `$study-guide` in the CLI. Asking Codex to install the skill from this repository's URL also works; its built-in installer puts it in `~/.codex/skills/`.
