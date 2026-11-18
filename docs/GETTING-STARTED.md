@@ -75,34 +75,34 @@ claude plugin install study-guide@study-guide
 **Claude (desktop app only)**, Mac:
 
 ```bash
-cd "$(mktemp -d)" && git clone https://github.com/rzhang569/study-guide.git && mkdir -p ~/.claude/skills && cp -R study-guide/skills/study-guide ~/.claude/skills/
+d=$(mktemp -d) && git clone https://github.com/rzhang569/study-guide.git "$d/study-guide" && mkdir -p ~/.claude/skills && cp -R "$d/study-guide/skills/study-guide" ~/.claude/skills/
 ```
 
 **Claude (desktop app only)**, Windows PowerShell:
 
 ```powershell
-Set-Location (New-Item -ItemType Directory -Path "$env:TEMP\study-guide-$(Get-Random)")
-git clone https://github.com/rzhang569/study-guide.git
+$d = Join-Path $env:TEMP "study-guide-$(Get-Random)"
+git clone https://github.com/rzhang569/study-guide.git "$d\study-guide"
 if ($LASTEXITCODE -eq 0) {
   New-Item -ItemType Directory -Force "$HOME\.claude\skills" | Out-Null
-  Copy-Item -Recurse -Force study-guide\skills\study-guide "$HOME\.claude\skills\"
+  Copy-Item -Recurse -Force "$d\study-guide\skills\study-guide" "$HOME\.claude\skills\"
 }
 ```
 
 **Codex**, Mac:
 
 ```bash
-cd "$(mktemp -d)" && git clone https://github.com/rzhang569/study-guide.git && mkdir -p ~/.agents/skills && cp -R study-guide/skills/study-guide ~/.agents/skills/
+d=$(mktemp -d) && git clone https://github.com/rzhang569/study-guide.git "$d/study-guide" && mkdir -p ~/.agents/skills && cp -R "$d/study-guide/skills/study-guide" ~/.agents/skills/
 ```
 
 **Codex**, Windows PowerShell:
 
 ```powershell
-Set-Location (New-Item -ItemType Directory -Path "$env:TEMP\study-guide-$(Get-Random)")
-git clone https://github.com/rzhang569/study-guide.git
+$d = Join-Path $env:TEMP "study-guide-$(Get-Random)"
+git clone https://github.com/rzhang569/study-guide.git "$d\study-guide"
 if ($LASTEXITCODE -eq 0) {
   New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null
-  Copy-Item -Recurse -Force study-guide\skills\study-guide "$HOME\.agents\skills\"
+  Copy-Item -Recurse -Force "$d\study-guide\skills\study-guide" "$HOME\.agents\skills\"
 }
 ```
 

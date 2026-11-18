@@ -6,8 +6,7 @@ readers have) and PowerShell 7 (`pwsh`); elsewhere it runs the ```bash blocks. O
 the repository are run (the `claude plugin` block needs the Claude CLI).
 
 Two edits keep the run self-contained, and nothing else in the commands changes:
-- the clone URL points at this checkout (cloned into a folder named `study-guide`, as a real clone is),
-  so a pull request tests its own files;
+- the clone URL points at this checkout, so a pull request tests its own files;
 - the home folder points at a fresh temporary folder: HOME (and USERPROFILE) are set to it, so bash's
   `~/` expands there, and PowerShell's `$HOME\\` is replaced by that path (the commands already quote it). The real ~/.claude and
   ~/.agents are never touched. The temp-folder variables point at a scratch folder, and Git runs
@@ -51,7 +50,8 @@ def same_tree(a, b):
 
 def isolated_env(home, work):
     """Environment for the pasted commands: temp home and temp folder, and Git with no outside config or hooks."""
-    env = {k: v for k, v in os.environ.items() if not k.upper().startswith("GIT_")}
+    env = {k: v for k, v in os.environ.items()
+           if not k.upper().startswith("GIT_") and k.upper() not in ("BASH_ENV", "ENV", "CDPATH")}
     empty = home / ".gitconfig-empty"
     empty.write_text("", encoding="utf-8")
     no_hooks = home / ".no-git-hooks"
@@ -66,10 +66,10 @@ def run(shell, cmd, home):
     work = tempfile.mkdtemp(prefix="sg-install-")
     src = ROOT.as_uri() if WIN else str(ROOT)
     assert f"git clone {URL}" in cmd, "the guide's clone command changed; update this test"
-    script = cmd.replace(f"git clone {URL}", f'git clone "{src}" study-guide')
+    script = cmd.replace(f"git clone {URL}", f'git clone "{src}"')
     if shell == "bash":
         assert "~/" in script, "the bash commands no longer use ~/; update this test"
-        argv = ["bash", "-euo", "pipefail", "-c", script]
+        argv = ["bash", "--noprofile", "--norc", "-euo", "pipefail", "-c", script]
     else:
         assert "$HOME\\" in script, "the PowerShell commands no longer use $HOME\\; update this test"
         script = "$ErrorActionPreference = 'Stop'\n" + script.replace("$HOME\\", f"{home}\\")
