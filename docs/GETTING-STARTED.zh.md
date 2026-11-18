@@ -4,9 +4,9 @@
 
 跟着这份指南，从什么都没装，到做出第一个复习网页。全程不用写代码：你只需要跟 AI 助手说话，技术上的步骤都由它来做。
 
-**最短版本**：装好 Claude 或 ChatGPT 桌面版（第 2 步），打开一个放这次考试的文件夹，把下面这段话改成你自己的课程信息，发给 AI：
+**最短版本**：装好 Claude 或 ChatGPT 桌面版（第 2 步），切换到 **Code**（Claude）或 **Codex**（ChatGPT），不是普通聊天，再打开一个放这次考试的文件夹，把下面这段话改成你自己的课程信息，发给 AI：
 
-> 帮我装上这个 skill，以后每个项目都能用：https://github.com/rzhang569/study-guide 。装好后读一下它的 SKILL.md，马上用它帮我做复习网页：我下周二考 BIO 201 期中，考第 1 到 8 讲，选择题加两道简答。课件在这个文件夹里；如果没有，你能自己拿就自己拿。
+> 帮我装上这个 skill，以后每个项目都能用：https://github.com/rzhang569/study-guide/tree/main/skills/study-guide 。装好后读一下它的 SKILL.md，马上用它帮我做复习网页：我下周二考 BIO 201 期中，考第 1 到 8 讲，选择题加两道简答。课件在这个文件夹里；如果没有，你能自己拿就自己拿。
 
 它要做什么，点同意就行。如果需要 Python，它会自己装，并告诉你点哪个按钮。指南后面是每一步的详细说明，以及出问题时怎么办。
 
@@ -37,7 +37,7 @@
 
 ## 3. 检查有没有装 Python
 
-这一步可以跳过：AI 需要 Python 而电脑上没有时，它会自己帮你装。你只需要点它说的那个按钮（Mac 上是苹果弹窗里的**安装**；Windows 上如果弹出权限提示，点**是**）。
+这一步可以跳过：AI 需要 Python 而电脑上没有时，它会自己帮你装。你只需要点它说的那个按钮（Mac 上是苹果的弹窗：先点**安装**，再点**同意**，装完点**完成**；Windows 上如果弹出权限提示，点**是**）。
 
 想提前检查的话，可以问 AI：
 
@@ -45,7 +45,7 @@
 
 也可以自己检查：
 
-- **Mac**：打开**终端**（按 `Cmd` + `空格`，输入 `终端` 或 `Terminal`，回车），输入 `python3 --version` 后回车。看到 `Python 3.x.x` 就说明装好了。如果弹出窗口问要不要安装"命令行开发者工具"，点**安装**，等它装完，Python 3 和 Git 就都有了。
+- **Mac**：打开**终端**（按 `Cmd` + `空格`，输入 `终端` 或 `Terminal`，回车），输入 `python3 --version` 后回车。看到 `Python 3.x.x` 就说明装好了。如果弹出窗口问要不要安装"命令行开发者工具"，点**安装**，再点**同意**，等它装完点**完成**，Python 3 和 Git 就都有了。
 - **Windows**：从 [python.org/downloads](https://www.python.org/downloads/) 或 **Microsoft Store**（搜 "Python install manager"）安装 **Python 安装管理器**。如果它问要不要把某个文件夹加到 PATH，选同意。检查方法：打开 **PowerShell**（开始菜单里搜 `PowerShell`），输入 `py --version`。
 
 ## 4. 安装 skill
@@ -56,7 +56,7 @@
 
 如果现在只想装、不做网页，发送：
 
-> Please install this skill for me so I can use it in every project: https://github.com/rzhang569/study-guide
+> Please install this skill for me so I can use it in every project: https://github.com/rzhang569/study-guide/tree/main/skills/study-guide
 
 它问能不能下载、复制文件或者运行 Python 时，点同意。它说装好之后，先新开一个对话再让它做复习网页，skill 才会加载（或者直接让它读一下 skill 的 SKILL.md 接着做）。
 

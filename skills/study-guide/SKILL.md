@@ -34,11 +34,11 @@ Don't read `assets/engine.js`, `assets/page.css` or any built `review.html`. `bu
 In the commands below, `<skill-dir>` is the folder that contains this `SKILL.md`. On Windows, use `py -3` (or `python`) instead of `python3`: there `python3` is often a Microsoft Store placeholder that prints nothing and exits with code 9009, or opens the Store. Elsewhere, if `python3` is not found, try `python`.
 
 **No Python at all?** Install it for the student; don't send them off to do it. Before you start, tell them what will pop up and what to click.
-- **Windows:** `winget install -e --id Python.Python.3.13`. If `winget` is missing, open the Microsoft Store page for "Python install manager" and ask them to click **Get**. Windows may ask for permission; they click **Yes**.
-- **macOS:** run `xcode-select --install`. Apple's window offers the command line developer tools, which include Python 3 and Git; they click **Install** and wait a few minutes.
+- **Windows:** `winget install -e --id Python.Python.3.13 --source winget` (`--source winget` avoids the Microsoft Store source, whose first use asks a Y/N question inside your shell that the student can't see or answer). If `winget` is missing, open the Microsoft Store page for "Python install manager" and ask them to click **Get**. Windows may ask for permission; they click **Yes**.
+- **macOS:** run `xcode-select --install`. Apple's window offers the command line developer tools, which include Python 3 and Git; they click **Install**, then **Agree** to the license, wait a few minutes, and click **Done**.
 - **Linux:** use the system package manager (for example `sudo apt install python3`); they type their own password if asked.
 
-Afterwards, open a new shell, because PATH only updates there, and check with `py -3 --version` or `python3 --version`. If the install can't run from your shell, give the student the exact clicks instead.
+Afterwards, open a new shell, because PATH only updates there, and check with `py -3 --version` or `python3 --version`. On Windows a new shell inside the same app can keep the old PATH, so a successful install can look like a failure. If the check fails, call the new interpreter by its full path, usually `%LOCALAPPDATA%\Programs\Python\Python313\python.exe` (or `C:\Program Files\Python313\python.exe`), and keep going in the same chat. If the install can't run from your shell at all, give the student the exact clicks instead.
 
 ## 1. Find out what the exam is
 
