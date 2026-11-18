@@ -24,8 +24,7 @@ claude plugin install study-guide@study-guide
 Codex:
 
 ```bash
-git clone https://github.com/rzhang569/study-guide.git
-mkdir -p ~/.agents/skills && cp -R study-guide/skills/study-guide ~/.agents/skills/
+cd "$(mktemp -d)" && git clone https://github.com/rzhang569/study-guide.git && mkdir -p ~/.agents/skills && cp -R study-guide/skills/study-guide ~/.agents/skills/
 ```
 
 Then ask your agent: *"my BIO 201 midterm covers lectures 1–8, here are the slides, make me a review page."* Other agents are under [Install](#install).
@@ -69,9 +68,7 @@ Inside a session the commands are `/plugin marketplace add rzhang569/study-guide
 **Codex (tested on macOS), Gemini CLI, Cursor and GitHub Copilot in VS Code (documented, not tested end to end):** all four read skills from `~/.agents/skills/`, so one copy serves them all:
 
 ```bash
-git clone https://github.com/rzhang569/study-guide.git
-mkdir -p ~/.agents/skills
-cp -R study-guide/skills/study-guide ~/.agents/skills/
+cd "$(mktemp -d)" && git clone https://github.com/rzhang569/study-guide.git && mkdir -p ~/.agents/skills && cp -R study-guide/skills/study-guide ~/.agents/skills/
 ```
 
 - **Codex** (the Codex mode of the ChatGPT desktop app, the CLI and the IDE extension) also reads `.agents/skills/` inside a repository. To call it explicitly, type `@` and pick it in the app, or `$study-guide` in the CLI. Asking Codex to install the skill from this repository's URL also works; its built-in installer puts it in `~/.codex/skills/`.
@@ -87,7 +84,7 @@ cp -R study-guide/skills/study-guide ~/.agents/skills/
 
 v0.1.0 is an early release; issues and feedback are welcome.
 
-- **Tested:** building pages; using them locally in a browser; the Export progress → paste to Claude loop; installing the Claude Code plugin from GitHub; Codex CLI and the Codex app on macOS (calling `$study-guide`, and picking the skill on its own in a new chat); a small with/without-skill comparison of an earlier version (see [Evaluation](#evaluation)).
+- **Tested:** building pages; using them locally in a browser; the Export progress → paste to Claude loop; installing the Claude Code plugin from GitHub; Codex CLI and the Codex app on macOS (calling `$study-guide`, and picking the skill on its own in a new chat); Claude Code on Windows (asking it to install the skill, finding it under `/` in a new chat, building a page and opening it by double-click); a small with/without-skill comparison of an earlier version (see [Evaluation](#evaluation)).
 - **Documented by each agent but not tested end to end:** Gemini CLI, Cursor and GitHub Copilot.
 - **Experimental, not yet tested end to end:** uploading to claude.ai; automatic progress sync when the page runs as a Claude artifact; whether agents other than Codex pick the skill on their own in a normal conversation.
 

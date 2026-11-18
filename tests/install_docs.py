@@ -10,7 +10,8 @@ Two edits keep the run self-contained, and nothing else in the commands changes:
   so a pull request tests its own files;
 - the home folder points at a fresh temporary folder: HOME (and USERPROFILE) are set to it, so bash's
   `~/` expands there, and PowerShell's `$HOME\\` is replaced by that path (the commands already quote it). The real ~/.claude and
-  ~/.agents are never touched, and Git runs without the user's global or system config (no hooks).
+  ~/.agents are never touched. The temp-folder variables point at a scratch folder, and Git runs
+  with no global, system or environment config and an empty hooks folder.
 
 Afterwards each installed copy must match skills/study-guide byte for byte and build the demo page.
 Not covered: the public URL and its default branch, the plugin install, the ZIP route, and whether
@@ -48,11 +49,16 @@ def same_tree(a, b):
     return all(same_tree(Path(a) / d, Path(b) / d) for d in cmp.common_dirs)
 
 
-def isolated_env(home):
-    env = dict(os.environ, HOME=str(home), USERPROFILE=str(home), GIT_CONFIG_NOSYSTEM="1")
+def isolated_env(home, work):
+    """Environment for the pasted commands: temp home and temp folder, and Git with no outside config or hooks."""
+    env = {k: v for k, v in os.environ.items() if not k.upper().startswith("GIT_")}
     empty = home / ".gitconfig-empty"
     empty.write_text("", encoding="utf-8")
-    env["GIT_CONFIG_GLOBAL"] = str(empty)
+    no_hooks = home / ".no-git-hooks"
+    no_hooks.mkdir(exist_ok=True)
+    env.update(HOME=str(home), USERPROFILE=str(home), TMPDIR=work, TEMP=work, TMP=work,
+               GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=str(empty),
+               GIT_CONFIG_COUNT="1", GIT_CONFIG_KEY_0="core.hooksPath", GIT_CONFIG_VALUE_0=str(no_hooks))
     return env
 
 
@@ -69,7 +75,7 @@ def run(shell, cmd, home):
         script = "$ErrorActionPreference = 'Stop'\n" + script.replace("$HOME\\", f"{home}\\")
         argv = [shell, "-NoProfile", "-NonInteractive", "-Command", script]
     print(f"$ ({shell}, in {work})\n{script}", flush=True)
-    subprocess.run(argv, cwd=work, env=isolated_env(home), check=True)
+    subprocess.run(argv, cwd=work, env=isolated_env(home, work), check=True)
 
 
 def check(target):
