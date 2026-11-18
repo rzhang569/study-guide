@@ -4,9 +4,9 @@
 
 This guide takes you from nothing installed to your first review page. You never have to write code: you talk to an AI assistant, and it does the technical steps.
 
-**Short version:** install the Claude or ChatGPT app (step 2), open a folder for your exam, and send this one message, with your own course details:
+**Short version:** install the Claude or ChatGPT app (step 2), switch to **Code** (Claude) or **Codex** (ChatGPT), not the normal chat, open a folder for your exam, and send this one message, with your own course details:
 
-> Install this skill for me so I can use it in every project: https://github.com/rzhang569/study-guide. Then read its SKILL.md and use it right away to make me a review page: my BIO 201 midterm is next Tuesday, it covers lectures 1–8, multiple choice plus two short answers. The slides are in this folder; if they aren't, get them yourself if you can.
+> Install this skill for me so I can use it in every project: https://github.com/rzhang569/study-guide/tree/main/skills/study-guide . Then read its SKILL.md and use it right away to make me a review page: my BIO 201 midterm is next Tuesday, it covers lectures 1–8, multiple choice plus two short answers. The slides are in this folder; if they aren't, get them yourself if you can.
 
 Approve what it asks to do. If it needs Python, it installs it and tells you which button to click. The rest of this guide explains each step and what to do if something goes wrong.
 
@@ -37,7 +37,7 @@ Approve what it asks to do. If it needs Python, it installs it and tells you whi
 
 ## 3. Check that Python is installed
 
-You can skip this step: when the AI needs Python and it's missing, it installs it for you. You only click the button it tells you about (on a Mac, **Install** in Apple's window; on Windows, **Yes** if Windows asks for permission).
+You can skip this step: when the AI needs Python and it's missing, it installs it for you. You only click the button it tells you about (on a Mac, Apple's window: **Install**, then **Agree**, then **Done** when it finishes; on Windows, **Yes** if Windows asks for permission).
 
 To check ahead of time, ask your AI:
 
@@ -45,7 +45,7 @@ To check ahead of time, ask your AI:
 
 Or check yourself:
 
-- **Mac:** open **Terminal** (press `Cmd` + `Space`, type `Terminal`, press `Enter`) and type `python3 --version`, then `Enter`. If you see `Python 3.x.x`, you're done. If a window offers to install the **command line developer tools**, click **Install** and wait; that installs Python 3 (and Git).
+- **Mac:** open **Terminal** (press `Cmd` + `Space`, type `Terminal`, press `Enter`) and type `python3 --version`, then `Enter`. If you see `Python 3.x.x`, you're done. If a window offers to install the **command line developer tools**, click **Install**, then **Agree**, wait, and click **Done**; that installs Python 3 (and Git).
 - **Windows:** install the **Python install manager** from [python.org/downloads](https://www.python.org/downloads/) or from the **Microsoft Store** (search for "Python install manager"). If it asks whether to add a folder to your PATH, say yes. To check, open **PowerShell** (Start menu, type `PowerShell`) and type `py --version`.
 
 ## 4. Install the skill
@@ -56,7 +56,7 @@ Send the one message from the top of this guide: it installs the skill and makes
 
 To only install it for now, send:
 
-> Please install this skill for me so I can use it in every project: https://github.com/rzhang569/study-guide
+> Please install this skill for me so I can use it in every project: https://github.com/rzhang569/study-guide/tree/main/skills/study-guide
 
 Approve when it asks to download or copy files, or to run Python. When it says it's done, start a new chat before you ask for a review page, so the skill loads (or tell it to read the skill's SKILL.md and continue).
 
