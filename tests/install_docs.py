@@ -8,8 +8,9 @@ the repository are run (the `claude plugin` block needs the Claude CLI).
 Two edits keep the run self-contained, and nothing else in the commands changes:
 - the clone URL points at this checkout (cloned into a folder named `study-guide`, as a real clone is),
   so a pull request tests its own files;
-- the home folder (`~/` in bash, `$HOME\\` in PowerShell) is replaced by a fresh temporary folder,
-  so the real ~/.claude and ~/.agents are never touched.
+- the home folder points at a fresh temporary folder: HOME (and USERPROFILE) are set to it, so bash's
+  `~/` expands there, and PowerShell's `$HOME\\` is replaced by that path (the commands already quote it). The real ~/.claude and
+  ~/.agents are never touched, and Git runs without the user's global or system config (no hooks).
 
 Afterwards each installed copy must match skills/study-guide byte for byte and build the demo page.
 Not covered: the public URL and its default branch, the plugin install, the ZIP route, and whether
@@ -47,6 +48,14 @@ def same_tree(a, b):
     return all(same_tree(Path(a) / d, Path(b) / d) for d in cmp.common_dirs)
 
 
+def isolated_env(home):
+    env = dict(os.environ, HOME=str(home), USERPROFILE=str(home), GIT_CONFIG_NOSYSTEM="1")
+    empty = home / ".gitconfig-empty"
+    empty.write_text("", encoding="utf-8")
+    env["GIT_CONFIG_GLOBAL"] = str(empty)
+    return env
+
+
 def run(shell, cmd, home):
     work = tempfile.mkdtemp(prefix="sg-install-")
     src = ROOT.as_uri() if WIN else str(ROOT)
@@ -54,14 +63,13 @@ def run(shell, cmd, home):
     script = cmd.replace(f"git clone {URL}", f'git clone "{src}" study-guide')
     if shell == "bash":
         assert "~/" in script, "the bash commands no longer use ~/; update this test"
-        script = script.replace("~/", f"{home}/")
         argv = ["bash", "-euo", "pipefail", "-c", script]
     else:
         assert "$HOME\\" in script, "the PowerShell commands no longer use $HOME\\; update this test"
         script = "$ErrorActionPreference = 'Stop'\n" + script.replace("$HOME\\", f"{home}\\")
         argv = [shell, "-NoProfile", "-NonInteractive", "-Command", script]
     print(f"$ ({shell}, in {work})\n{script}", flush=True)
-    subprocess.run(argv, cwd=work, check=True)
+    subprocess.run(argv, cwd=work, env=isolated_env(home), check=True)
 
 
 def check(target):
@@ -81,6 +89,8 @@ def main():
     assert len(cmds) == 2, f"expected the Claude and Codex {lang} blocks, found {len(cmds)}"
     shells = [s for s in ("powershell", "pwsh") if shutil.which(s)] if WIN else ["bash"]
     assert shells, "no PowerShell found"
+    if WIN and os.environ.get("CI") and len(shells) < 2:
+        raise AssertionError(f"CI should test both Windows PowerShell and PowerShell 7, found {shells}")
     for shell in shells:
         home = Path(tempfile.mkdtemp(prefix="sg-home-"))
         for cmd in cmds:

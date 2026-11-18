@@ -4,6 +4,8 @@ Turn your course slides into an **interactive exam review page**. Then export ho
 
 An [Agent Skill](https://agentskills.io) for Claude Code and Codex; other agents that support Agent Skills should work too.
 
+**Installing, for people and AI agents:** the skill is the folder [`skills/study-guide`](skills/study-guide), not the whole repository. Copy that folder into your agent's skills folder (for example `~/.claude/skills/` or `~/.agents/skills/`) so that `SKILL.md` sits directly in `.../skills/study-guide/`. Cloning the whole repository into the skills folder puts `SKILL.md` two levels too deep, and the skill won't show up.
+
 **▶ [Live demo](https://rzhang569.github.io/study-guide/)** (a fictional intro probability course; your answers stay in your own browser) · v0.1.0, early release, feedback welcome
 
 > **New to Claude or Codex, or never used a terminal?** Follow the step-by-step [getting started guide](docs/GETTING-STARTED.md) · [中文新手指南](docs/GETTING-STARTED.zh.md). It covers installing the app, Python and the skill (or letting the AI install it), connecting your browser for Canvas, and your first page.

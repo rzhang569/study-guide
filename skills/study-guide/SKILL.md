@@ -31,7 +31,7 @@ The engine (`assets/engine.js`) and the styles (`assets/page.css`) are finished 
 
 Don't read `assets/engine.js`, `assets/page.css` or any built `review.html`. `build.py` inlines them, they are tens of thousands of tokens, and nothing in them needs your edits.
 
-In the commands below, `<skill-dir>` is the folder that contains this `SKILL.md`. If `python3` is not found (common on Windows), use `python` or `py -3`.
+In the commands below, `<skill-dir>` is the folder that contains this `SKILL.md`. On Windows, use `py -3` (or `python`) instead of `python3`: there `python3` is often a Microsoft Store placeholder that prints nothing and exits with code 9009, or opens the Store. Elsewhere, if `python3` is not found, try `python`.
 
 ## 1. Find out what the exam is
 
@@ -50,7 +50,7 @@ Most students have not downloaded anything yet, so don't stop at "please send me
 3. **Pages behind a login** (Canvas, Moodle, Blackboard, Piazza). Check whether you have a tool that works in the student's own signed-in browser, such as the Claude in Chrome tools in Claude Code or a computer-use tool. That browser is the student's account, so **ask first and wait for a yes**, unless the student already asked you to fetch from it: name the site, the course and the files ("Canvas, STAT 240, the slides for lectures 1–4 and the syllabus"). Once they agree, download only those files and list what you got. Stay inside that course's files, modules and syllabus; don't open grades, messages, submissions or other courses. If a sign-in page appears, ask the student to sign in; never type a password.
 4. **No such tool, or the student says no.** Offer the two ways in one short message and let the student pick:
    - connect a browser extension your agent supports (for Claude Code, Claude in Chrome), then say so, and you fetch the files you named;
-   - or download the files themselves, with the exact clicks. On Canvas: open the course, go to **Files**, tick the slides for the lectures in scope (and the syllabus) and press **Download**, which makes one zip. Then drag the zip into the chat or tell you the folder.
+   - or download the files themselves, with the exact clicks. On Canvas: open the course, go to **Files**, tick the slides for the lectures in scope (and the syllabus) and press **Download**, which makes one zip. If the instructor hid **Files**, go through **Modules** and download each slide file. Then drag the zip into the chat or tell you the folder.
 
 Whichever way, collect only course material for the exam's scope: never homework solutions, answer keys or graded submissions. Fetch a sample exam only if the student asks, and don't open it (see step 2).
 
