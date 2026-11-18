@@ -48,9 +48,11 @@
 
 > Please install this skill for me so I can use it in every project: https://github.com/rzhang569/study-guide
 
-它问能不能下载、复制文件时，点同意。它说装好之后，**新开一个对话**，skill 才会加载。
+它问能不能下载、复制文件或者运行 Python 时，点同意。它说装好之后，**新开一个对话**，skill 才会加载。
 
-（已用 Codex 实测：它会自己把 skill 装到 `~/.codex/skills/study-guide`。）
+已用 Codex（它会自己把 skill 装到 `~/.codex/skills/study-guide`）和 Windows 上的 Claude Code 实测。Claude 那次第一遍把整个仓库都复制进了 skills 文件夹，这样是用不了的：skills 文件夹里只该放 `skills/study-guide` 这一个文件夹。如果后面发现 skill 没出现（见下面"检查装好没有"），就跟 AI 说：*"只把 skills/study-guide 这个文件夹复制到 skills 文件夹里，让 SKILL.md 直接在它下面。"*
+
+如果 AI 说某一步被拒绝或被拦住了，那是在等你批准：点同意，或者用下面的命令自己来。
 
 ### 或者手动安装
 
@@ -60,6 +62,8 @@
 - **Windows**：安装 [Git for Windows](https://git-scm.com/downloads/win)，装完重新打开一个 PowerShell 窗口。
 
 不想装 Git？直接看下面的"没有 Git 的话"。
+
+这些命令会先在终端或 PowerShell 当前所在的位置，把仓库下载到一个叫 `study-guide` 的文件夹，再从里面把 skill 复制出来；只有下载成功才会复制。如果提示 `already exists`，说明之前运行过：删掉那个 `study-guide` 文件夹（不是 `.claude` 或 `.agents` 里面那个），再运行一次。
 
 **Claude**，如果你装了 `claude` 命令（Claude Code 的命令行版）：
 
@@ -71,31 +75,33 @@ claude plugin install study-guide@study-guide
 **Claude（只装了桌面版）**，Mac：
 
 ```bash
-git clone https://github.com/rzhang569/study-guide.git
-mkdir -p ~/.claude/skills && cp -R study-guide/skills/study-guide ~/.claude/skills/
+git clone https://github.com/rzhang569/study-guide.git && mkdir -p ~/.claude/skills && cp -R study-guide/skills/study-guide ~/.claude/skills/
 ```
 
 **Claude（只装了桌面版）**，Windows PowerShell：
 
 ```powershell
 git clone https://github.com/rzhang569/study-guide.git
-New-Item -ItemType Directory -Force "$HOME\.claude\skills" | Out-Null
-Copy-Item -Recurse -Force study-guide\skills\study-guide "$HOME\.claude\skills\"
+if ($LASTEXITCODE -eq 0) {
+  New-Item -ItemType Directory -Force "$HOME\.claude\skills" | Out-Null
+  Copy-Item -Recurse -Force study-guide\skills\study-guide "$HOME\.claude\skills\"
+}
 ```
 
 **Codex**，Mac：
 
 ```bash
-git clone https://github.com/rzhang569/study-guide.git
-mkdir -p ~/.agents/skills && cp -R study-guide/skills/study-guide ~/.agents/skills/
+git clone https://github.com/rzhang569/study-guide.git && mkdir -p ~/.agents/skills && cp -R study-guide/skills/study-guide ~/.agents/skills/
 ```
 
 **Codex**，Windows PowerShell：
 
 ```powershell
 git clone https://github.com/rzhang569/study-guide.git
-New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null
-Copy-Item -Recurse -Force study-guide\skills\study-guide "$HOME\.agents\skills\"
+if ($LASTEXITCODE -eq 0) {
+  New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null
+  Copy-Item -Recurse -Force study-guide\skills\study-guide "$HOME\.agents\skills\"
+}
 ```
 
 **没有 Git 的话**：打开[仓库页面](https://github.com/rzhang569/study-guide)，点 **Code → Download ZIP**，解压。把里面的 `skills/study-guide` 文件夹，复制到上面命令里的 skills 文件夹：Claude 是个人文件夹下的 `.claude/skills`，Codex 是 `.agents/skills`。这两个文件夹名字以点开头，默认是隐藏的：Mac 上在访达里按 `Cmd` + `Shift` + `.` 就能显示；Windows 上在文件资源管理器的地址栏里粘贴 `%USERPROFILE%` 回车，没有这两个文件夹就自己新建。
@@ -107,6 +113,8 @@ Copy-Item -Recurse -Force study-guide\skills\study-guide "$HOME\.agents\skills\"
 - **Claude**：输入 `/`，在列表里找 **study-guide**。
 - **Codex 桌面版**：输入 `@`，找 **study-guide**。（Codex 命令行版输入 `$study-guide`。）
 
+找不到？打开 skills 文件夹看一眼：`SKILL.md` 要直接放在 `study-guide` 里面（Claude 的话是个人文件夹下的 `.claude/skills/study-guide/SKILL.md`），而不是更深一层的另一个 `skills/study-guide` 里。
+
 ## 5. 可选：让 AI 自己去 Canvas 拿资料
 
 不装这一步：你自己下载课件，拖进对话框就行。装了这一步：AI 可以在**你自己的** Chrome 里（你已经登录了 Canvas、Moodle、Blackboard 等）打开课程页面，帮你下载课件。
@@ -117,7 +125,7 @@ Copy-Item -Recurse -Force study-guide\skills\study-guide "$HOME\.agents\skills\"
 2. 用和桌面版**同一个 Claude 账号**登录插件。
 3. 固定插件：点浏览器右上角的拼图图标，再点 **Claude** 旁边的图钉。
 
-需要用到你登录的浏览器时，Claude 会自动用上它。这个插件需要 Claude 付费账号。如果 Claude 说连不上你的浏览器：
+这个插件需要 Claude 付费账号。需要用到你登录的浏览器时，Claude 会用上它；如果它说浏览器工具没打开，就给这个对话打开 **Claude in Chrome**（在输入框旁边的连接器或工具菜单里找）。如果 Claude 说连不上你的浏览器：
 
 - 在 Claude 桌面版里打开 **Settings → Customize → Connectors**，找到 **Claude in Chrome**，点 **Configure** 并打开开关；
 - 确认插件登录的是和桌面版同一个 Claude 账号；
@@ -132,7 +140,7 @@ Copy-Item -Recurse -Force study-guide\skills\study-guide "$HOME\.agents\skills\"
 
 Codex 每碰到一个新网站，都会先问你同不同意。
 
-**AI 会用它做什么**：skill 要求 AI 先问你，说清楚是哪个网站、哪门课、哪些文件，而且只下载考试范围内的课程资料，作业答案、参考答案一律不拿。碰到登录页，你自己登录，AI 绝不替你输密码。你随时可以拒绝，自己下载：在 Canvas 里进入这门课，点 **Files**，勾选需要的课件，点 **Download**，就会打包成一个 zip。
+**AI 会用它做什么**：skill 要求 AI 先说清楚是哪个网站、哪门课、哪些文件，问过你再动手（如果你本来就让它去拿资料，这就算同意了），而且只下载考试范围内的课程资料，作业答案、参考答案一律不拿。碰到登录页，你自己登录，AI 绝不替你输密码。你随时可以拒绝，自己下载：在 Canvas 里进入这门课，点 **Files**，勾选需要的课件，点 **Download**，就会打包成一个 zip。如果这门课没有 **Files**，就进 **Modules**，一个一个下载课件。
 
 ## 6. 做第一个复习网页
 
@@ -158,7 +166,7 @@ AI 会读课件、写笔记和题目，最后生成一个文件，一般是新�
 ## 8. 遇到问题怎么办
 
 - **AI 好像没用这个 skill**：直接点名，说"用 study-guide 这个 skill"。Codex 里也可以输入 `@`（桌面版）或 `$study-guide`（命令行版）来选它。
-- **Windows 提示找不到 python**：把命令里的 `python` 换成 `py`。如果 `py` 也找不到，按第 3 步装好 Python 安装管理器，再重新打开一个 PowerShell 窗口。
+- **Windows 上 Python 运行不了**：输入 `python3` 没反应或者弹出 Microsoft Store，或者 PowerShell 说无法识别 `python`。改用 `py`（AI 应该会自己换；没换的话就跟它说"Windows 上用 py"）。如果 `py` 也找不到，按第 3 步装好 Python 安装管理器，再重新打开一个 PowerShell 窗口。
 - **Code 标签页提示升级**：Claude Code 需要 Claude 付费账号。
 - **公式显示成普通文字**：电脑没联网。联网后刷新一下页面就好；没联网时文字版也能看懂。
 - **作答记录不见了**：记录存在你当时用的浏览器里，所以要用同一个浏览器打开同一个 `review.html`。换电脑或换浏览器，网页会从头开始：**导出进度**生成的报告可以交给 AI，让它针对性出题，但不能再导回网页里恢复记录。

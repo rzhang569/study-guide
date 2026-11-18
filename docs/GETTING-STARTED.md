@@ -48,9 +48,11 @@ Paste this into your AI and send it:
 
 > Please install this skill for me so I can use it in every project: https://github.com/rzhang569/study-guide
 
-Approve when it asks to download or copy files. When it says it's done, **start a new chat** so the skill loads.
+Approve when it asks to download or copy files, or to run Python. When it says it's done, **start a new chat** so the skill loads.
 
-(Tested with Codex: it installs the skill into `~/.codex/skills/study-guide` by itself.)
+Tested with Codex (it installs the skill into `~/.codex/skills/study-guide` by itself) and with Claude Code on Windows. In the Claude test, the first try copied the whole repository into the skills folder, which doesn't work: only the `skills/study-guide` folder belongs there. If the skill doesn't show up later (see **Check that it worked**), tell the AI: *"Copy only the skills/study-guide folder into the skills folder, so SKILL.md is directly inside it."*
+
+If the AI says a step was refused or blocked, it is waiting for your approval: approve it, or run the step yourself with the commands below.
 
 ### Or install it by hand
 
@@ -60,6 +62,8 @@ You can paste these into **Terminal** (Mac) or **PowerShell** (Windows). They ne
 - **Windows:** install [Git for Windows](https://git-scm.com/downloads/win), then open a new PowerShell window.
 
 No Git? Skip to **Without Git** below.
+
+The commands download the repository into a folder named `study-guide` wherever your Terminal or PowerShell is, then copy the skill out of it; the copy only runs if the download worked. If you see `already exists`, you ran them before: delete that `study-guide` folder (not the one inside `.claude` or `.agents`) and run them again.
 
 **Claude**, if you also have the `claude` command (the Claude Code command-line tool):
 
@@ -71,31 +75,33 @@ claude plugin install study-guide@study-guide
 **Claude (desktop app only)**, Mac:
 
 ```bash
-git clone https://github.com/rzhang569/study-guide.git
-mkdir -p ~/.claude/skills && cp -R study-guide/skills/study-guide ~/.claude/skills/
+git clone https://github.com/rzhang569/study-guide.git && mkdir -p ~/.claude/skills && cp -R study-guide/skills/study-guide ~/.claude/skills/
 ```
 
 **Claude (desktop app only)**, Windows PowerShell:
 
 ```powershell
 git clone https://github.com/rzhang569/study-guide.git
-New-Item -ItemType Directory -Force "$HOME\.claude\skills" | Out-Null
-Copy-Item -Recurse -Force study-guide\skills\study-guide "$HOME\.claude\skills\"
+if ($LASTEXITCODE -eq 0) {
+  New-Item -ItemType Directory -Force "$HOME\.claude\skills" | Out-Null
+  Copy-Item -Recurse -Force study-guide\skills\study-guide "$HOME\.claude\skills\"
+}
 ```
 
 **Codex**, Mac:
 
 ```bash
-git clone https://github.com/rzhang569/study-guide.git
-mkdir -p ~/.agents/skills && cp -R study-guide/skills/study-guide ~/.agents/skills/
+git clone https://github.com/rzhang569/study-guide.git && mkdir -p ~/.agents/skills && cp -R study-guide/skills/study-guide ~/.agents/skills/
 ```
 
 **Codex**, Windows PowerShell:
 
 ```powershell
 git clone https://github.com/rzhang569/study-guide.git
-New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null
-Copy-Item -Recurse -Force study-guide\skills\study-guide "$HOME\.agents\skills\"
+if ($LASTEXITCODE -eq 0) {
+  New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null
+  Copy-Item -Recurse -Force study-guide\skills\study-guide "$HOME\.agents\skills\"
+}
 ```
 
 **Without Git:** on the [repository page](https://github.com/rzhang569/study-guide), click **Code → Download ZIP** and unzip it. Copy the folder `skills/study-guide` into the skills folder from the commands above (`.claude/skills` for Claude, `.agents/skills` for Codex, inside your home folder). These folders start with a dot, so they are hidden: on a Mac, press `Cmd` + `Shift` + `.` in Finder to show them; on Windows, paste `%USERPROFILE%` into the File Explorer address bar and create the folders if they don't exist.
@@ -107,6 +113,8 @@ Start a new chat, then:
 - **Claude:** type `/` and look for **study-guide** in the list.
 - **Codex app:** type `@` and look for **study-guide**. (In the Codex command line, type `$study-guide`.)
 
+Not there? Open the skills folder and check that `SKILL.md` is directly inside `study-guide` (for Claude, `.claude/skills/study-guide/SKILL.md` in your home folder), not inside another `skills/study-guide` folder deeper down.
+
 ## 5. Optional: let the AI fetch your files from Canvas
 
 Without this, you download your slides yourself and drag them into the chat. With it, the AI can open Canvas (or Moodle, Blackboard…) in **your** Chrome, where you're already signed in, and download the slides for you.
@@ -117,7 +125,7 @@ Without this, you download your slides yourself and drag them into the chat. Wit
 2. Sign in to the extension with the **same Claude account** as the app.
 3. Pin it: click the puzzle-piece icon, then the pin next to **Claude**.
 
-Claude uses it when a task needs your signed-in browser. This needs a paid Claude plan. If Claude says it can't reach your browser:
+This needs a paid Claude plan. Claude uses it when a task needs your signed-in browser; if it says the browser tools are off, turn **Claude in Chrome** on for that chat (look for it among the connectors or tools next to the prompt box). If Claude says it can't reach your browser:
 
 - in the Claude app, open **Settings → Customize → Connectors**, find **Claude in Chrome**, click **Configure** and turn it on;
 - make sure the extension is signed in to the same Claude account as the app;
@@ -132,7 +140,7 @@ Claude uses it when a task needs your signed-in browser. This needs a paid Claud
 
 Codex asks before it uses each new website.
 
-**What the AI may do with it:** the skill tells the AI to ask you first, naming the site, the course and the files, and to download only course material for your exam (never homework solutions or answer keys). If a sign-in page appears, you sign in; the AI never types your password. You can always say no and download the files yourself: on Canvas, open the course, go to **Files**, tick the slides you need, and click **Download** to get one zip.
+**What the AI may do with it:** the skill tells the AI to name the site, the course and the files and ask you first (if you already asked it to fetch the files, that counts as your yes), and to download only course material for your exam (never homework solutions or answer keys). If a sign-in page appears, you sign in; the AI never types your password. You can always say no and download the files yourself: on Canvas, open the course, go to **Files**, tick the slides you need, and click **Download** to get one zip. If the course has no **Files** link, open **Modules** and download each slide file from there.
 
 ## 6. Make your first review page
 
@@ -158,7 +166,7 @@ The AI reads the slides, writes notes and questions, and builds one file, usuall
 ## 8. If something goes wrong
 
 - **The AI doesn't seem to use the skill.** Say its name: *"Use the study-guide skill."* In Codex you can also pick it with `@` (app) or `$study-guide` (command line).
-- **"python: command not found" on Windows.** Use `py` instead of `python`. If `py` is missing too, install the Python install manager (step 3) and open a new PowerShell window.
+- **Python doesn't run on Windows.** Typing `python3` prints nothing or opens the Microsoft Store, or PowerShell says `python` "is not recognized". Use `py` instead (the AI should do this by itself; if it doesn't, tell it "use py on Windows"). If `py` is missing too, install the Python install manager (step 3) and open a new PowerShell window.
 - **The Code tab asks you to upgrade.** Claude Code needs a paid Claude plan.
 - **Formulas show as plain text.** You're offline; connect once and reload the page. The text version stays readable.
 - **My answers disappeared.** Progress lives in the browser you used, so open the same `review.html` in the same browser. Switching computers or browsers starts the page fresh: **Export progress** saves a report the AI can read to write drills, but it can't be loaded back into the page.
