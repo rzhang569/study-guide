@@ -52,7 +52,7 @@ Approve when it asks to download or copy files, or to run Python. When it says i
 
 Tested with Codex (it installs the skill into `~/.codex/skills/study-guide` by itself) and with Claude Code on Windows. In the Claude test, the first try copied the whole repository into the skills folder, which doesn't work: only the `skills/study-guide` folder belongs there. If the skill doesn't show up later (see **Check that it worked**), tell the AI: *"Copy only the skills/study-guide folder into the skills folder, so SKILL.md is directly inside it."*
 
-If the AI says a step was refused or blocked, it is waiting for your approval: approve it, or run the step yourself with the commands below.
+If the AI says a step needs your approval, approve it. If it says a step was refused or blocked by a setting, run that step yourself with the commands below.
 
 ### Or install it by hand
 
@@ -63,7 +63,7 @@ You can paste these into **Terminal** (Mac) or **PowerShell** (Windows). They ne
 
 No Git? Skip to **Without Git** below.
 
-The commands download the repository into a folder named `study-guide` wherever your Terminal or PowerShell is, then copy the skill out of it; the copy only runs if the download worked. If you see `already exists`, you ran them before: delete that `study-guide` folder (not the one inside `.claude` or `.agents`) and run them again.
+The commands download the repository into a new temporary folder, then copy the skill out of it; the copy only runs if the download worked. Running them again later updates the skill.
 
 **Claude**, if you also have the `claude` command (the Claude Code command-line tool):
 
@@ -75,12 +75,13 @@ claude plugin install study-guide@study-guide
 **Claude (desktop app only)**, Mac:
 
 ```bash
-git clone https://github.com/rzhang569/study-guide.git && mkdir -p ~/.claude/skills && cp -R study-guide/skills/study-guide ~/.claude/skills/
+cd "$(mktemp -d)" && git clone https://github.com/rzhang569/study-guide.git && mkdir -p ~/.claude/skills && cp -R study-guide/skills/study-guide ~/.claude/skills/
 ```
 
 **Claude (desktop app only)**, Windows PowerShell:
 
 ```powershell
+Set-Location (New-Item -ItemType Directory -Path "$env:TEMP\study-guide-$(Get-Random)")
 git clone https://github.com/rzhang569/study-guide.git
 if ($LASTEXITCODE -eq 0) {
   New-Item -ItemType Directory -Force "$HOME\.claude\skills" | Out-Null
@@ -91,12 +92,13 @@ if ($LASTEXITCODE -eq 0) {
 **Codex**, Mac:
 
 ```bash
-git clone https://github.com/rzhang569/study-guide.git && mkdir -p ~/.agents/skills && cp -R study-guide/skills/study-guide ~/.agents/skills/
+cd "$(mktemp -d)" && git clone https://github.com/rzhang569/study-guide.git && mkdir -p ~/.agents/skills && cp -R study-guide/skills/study-guide ~/.agents/skills/
 ```
 
 **Codex**, Windows PowerShell:
 
 ```powershell
+Set-Location (New-Item -ItemType Directory -Path "$env:TEMP\study-guide-$(Get-Random)")
 git clone https://github.com/rzhang569/study-guide.git
 if ($LASTEXITCODE -eq 0) {
   New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null
@@ -140,7 +142,7 @@ This needs a paid Claude plan. Claude uses it when a task needs your signed-in b
 
 Codex asks before it uses each new website.
 
-**What the AI may do with it:** the skill tells the AI to name the site, the course and the files and ask you first (if you already asked it to fetch the files, that counts as your yes), and to download only course material for your exam (never homework solutions or answer keys). If a sign-in page appears, you sign in; the AI never types your password. You can always say no and download the files yourself: on Canvas, open the course, go to **Files**, tick the slides you need, and click **Download** to get one zip. If the course has no **Files** link, open **Modules** and download each slide file from there.
+**What the AI may do with it:** the skill tells the AI to name the site, the course and the files and ask you first (if you already asked it to get the files from Canvas or another signed-in site, that counts as your yes), and to download only course material for your exam (never homework solutions or answer keys). If a sign-in page appears, you sign in; the AI never types your password. You can always say no and download the files yourself: on Canvas, open the course, go to **Files**, tick the slides you need, and click **Download** to get one zip. If the course has no **Files** link, open **Modules** and download each slide file from there.
 
 ## 6. Make your first review page
 
@@ -154,7 +156,7 @@ Or, if you have nothing downloaded yet:
 
 The AI reads the slides, writes notes and questions, and builds one file, usually `review.html` inside a new folder. This can take a while for many lectures. When it's done:
 
-- **Open the page** by double-clicking `review.html`, or ask the AI to open it. It opens in your web browser; no internet is needed except for fonts and math formatting.
+- **Open the page** by double-clicking `review.html`; the AI should also open it for you in your usual (default) browser. Study in that browser, not in a preview pane inside the AI app. No internet is needed except for fonts and math formatting.
 - **Keep using the same browser and the same file location**: your answers are saved in that browser.
 
 ## 7. Study, then come back for targeted practice
