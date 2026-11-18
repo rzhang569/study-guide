@@ -38,7 +38,7 @@ In the commands below, `<skill-dir>` is the folder that contains this `SKILL.md`
 - **macOS:** run `xcode-select --install`. Apple's window offers the command line developer tools, which include Python 3 and Git; they click **Install**, then **Agree** to the license, wait a few minutes, and click **Done**.
 - **Linux:** use the system package manager (for example `sudo apt install python3`); they type their own password if asked.
 
-Afterwards, open a new shell, because PATH only updates there, and check with `py -3 --version` or `python3 --version`. On Windows a new shell inside the same app can keep the old PATH, so a successful install can look like a failure. If the check fails, call the new interpreter by its full path, usually `%LOCALAPPDATA%\Programs\Python\Python313\python.exe` (or `C:\Program Files\Python313\python.exe`), and keep going in the same chat. If the install can't run from your shell at all, give the student the exact clicks instead.
+Afterwards, open a new shell, because PATH only updates there, and check with `py -3 --version` or `python3 --version`. On Windows a new shell inside the same app can keep the old PATH, so a successful install can look like a failure. If the check fails, call the new interpreter by its full path, usually `%LOCALAPPDATA%\Programs\Python\Python313\python.exe` or `C:\Program Files\Python313\python.exe` (on Windows on ARM the folder is `Python313-arm64`), and keep going in the same chat. If the install can't run from your shell at all, give the student the exact clicks instead.
 
 ## 1. Find out what the exam is
 
