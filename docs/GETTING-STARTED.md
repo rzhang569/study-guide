@@ -8,7 +8,7 @@ This guide takes you from nothing installed to your first review page. You never
 
 > Install this skill for me so I can use it in every project: https://github.com/rzhang569/study-guide/tree/main/skills/study-guide . Then read its SKILL.md and use it right away to make me a review page: my BIO 201 midterm is next Tuesday, it covers lectures 1–8, multiple choice plus two short answers. The slides are in this folder; if they aren't, get them yourself if you can.
 
-Approve what it asks to do. If it needs Python, it installs it and tells you which button to click. The rest of this guide explains each step and what to do if something goes wrong.
+Approve what it asks to do. If it needs Python, it asks first, then installs it and tells you which button to click. The rest of this guide explains each step and what to do if something goes wrong.
 
 ## 1. What you need
 
@@ -37,7 +37,7 @@ Approve what it asks to do. If it needs Python, it installs it and tells you whi
 
 ## 3. Check that Python is installed
 
-You can skip this step: when the AI needs Python and it's missing, it installs it for you. You only click the button it tells you about (on a Mac, Apple's window: **Install**, then **Agree**, then **Done** when it finishes; on Windows, **Yes** if Windows asks for permission).
+You can skip this step: when the AI needs Python and it's missing, it asks you, then installs it. You only say yes and click the button it tells you about (on a Mac, Apple's window: **Install**, then **Agree**, then **Done** when it finishes; on Windows, **Yes** if Windows asks for permission).
 
 To check ahead of time, ask your AI:
 
