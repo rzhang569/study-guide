@@ -33,7 +33,7 @@ Don't read `assets/engine.js`, `assets/page.css` or any built `review.html`. `bu
 
 In the commands below, `<skill-dir>` is the folder that contains this `SKILL.md`. On Windows, use `py -3` (or `python`) instead of `python3`: there `python3` is often a Microsoft Store placeholder that prints nothing and exits with code 9009, or opens the Store. Elsewhere, if `python3` is not found, try `python`.
 
-**No Python at all?** Install it for the student; don't send them off to do it. Before you start, tell them what will pop up and what to click.
+**No Python at all?** Offer to install it for the student instead of sending them off to do it. Installing software changes their computer, so **ask first and wait for a yes**: say what you'll install, what will pop up and what they'll click. Once they agree, do it:
 - **Windows:** `winget install -e --id Python.Python.3.13 --source winget` (`--source winget` avoids the Microsoft Store source, whose first use asks a Y/N question inside your shell that the student can't see or answer). If `winget` is missing, open the Microsoft Store page for "Python install manager" and ask them to click **Get**. Windows may ask for permission; they click **Yes**.
 - **macOS:** run `xcode-select --install`. Apple's window offers the command line developer tools, which include Python 3 and Git; they click **Install**, then **Agree** to the license, wait a few minutes, and click **Done**.
 - **Linux:** use the system package manager (for example `sudo apt install python3`); they type their own password if asked.
